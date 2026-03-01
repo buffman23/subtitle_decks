@@ -81,11 +81,22 @@ async function openSession(id: number): Promise<void> {
   const res = await fetch(`/api/sessions/${id}`);
   if (!res.ok) { flash('Could not load session.', 'danger'); return; }
   const session = await res.json();
-  state.allResults = session.results;
   state.currentLanguage = session.language;
   state.currentFilename = session.srt_filename;
   state.currentSrtText = session.srt_content;
   state.activeSessionId = id;
+
+  // Re-apply current ignore list so additions/removals since save are reflected
+  const igRes = await fetch(`/api/ignorelist?language=${session.language}`);
+  if (igRes.ok) {
+    const entries: { word: string }[] = await igRes.json();
+    const ignoreSet = new Set(entries.map(e => e.word));
+    for (const r of session.results) {
+      r.ignored = ignoreSet.has(r.lemma);
+    }
+  }
+
+  state.allResults = session.results;
   renderResults(session.results, session.results.reduce((a: number, r: { frequency: number }) => a + r.frequency, 0));
   loadSessions();
 }
