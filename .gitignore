@@ -19,6 +19,9 @@ webapp/app.db
 # camel_tools model data (large ML files, stored separately)
 camel_tools/
 
+# Claude Code
+.claude/
+
 # Editor
 .idea/
 *.swp
