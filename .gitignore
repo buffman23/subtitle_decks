@@ -20,7 +20,6 @@ webapp/app.db
 camel_tools/
 
 # Editor
-.vscode/
 .idea/
 *.swp
 
