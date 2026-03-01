@@ -24,13 +24,15 @@
   background: #0d6efd22;
   font-weight: 600;
 }
-.session-item .btn-delete {
+.session-item .btn-delete,
+.session-item .btn-rename {
   opacity: 0;
   transition: opacity 0.15s;
   padding: 0 4px;
   font-size: 0.75rem;
 }
-.session-item:hover .btn-delete {
+.session-item:hover .btn-delete,
+.session-item:hover .btn-rename {
   opacity: 1;
 }
 
