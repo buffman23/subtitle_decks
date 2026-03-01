@@ -11,7 +11,6 @@ export function initAnalyzeForm(): void {
     e.preventDefault();
 
     const fileInput = document.getElementById('srt-file') as HTMLInputElement;
-    const ignoreListFileInput = document.getElementById('ignore-list-file') as HTMLInputElement;
     const langSel = document.getElementById('language-select') as HTMLSelectElement;
 
     if (!fileInput.files?.[0]) { flash('Please select an SRT file.', 'warning'); return; }
@@ -20,15 +19,9 @@ export function initAnalyzeForm(): void {
     state.currentFilename = fileInput.files[0].name;
     state.currentSrtText = await fileInput.files[0].text();
 
-    let ignoreListText = '';
-    if (ignoreListFileInput.files?.[0]) {
-      ignoreListText = await ignoreListFileInput.files[0].text();
-    }
-
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('language', state.currentLanguage);
-    formData.append('ignore_list_text', ignoreListText);
 
     const btn = document.getElementById('btn-analyze') as HTMLButtonElement;
     const spinner = document.getElementById('analyze-spinner');

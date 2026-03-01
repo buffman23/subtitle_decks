@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -55,6 +55,31 @@ async def add_to_ignore_list(
             .first()
         )
     return entry
+
+
+@router.post("/import")
+async def import_ignore_list(
+    request: Request,
+    language: str = Form("ar-msa"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    user = _require_user(request, db)
+    content = await file.read()
+    words = [w.strip() for w in content.decode("utf-8", errors="replace").splitlines() if w.strip()]
+    existing = {
+        e.word for e in db.query(IgnoreListEntry)
+        .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == language)
+        .all()
+    }
+    new_entries = [
+        IgnoreListEntry(user_id=user.id, word=w, language=language)
+        for w in words if w not in existing
+    ]
+    if new_entries:
+        db.bulk_save_objects(new_entries)
+        db.commit()
+    return {"imported": len(new_entries), "skipped": len(words) - len(new_entries)}
 
 
 @router.delete("/{entry_id}", status_code=204)

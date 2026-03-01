@@ -36,6 +36,68 @@
   opacity: 1;
 }
 
+/* Reserve space so content never slides under the FAB (1.5rem gap + 3.25rem button + 1rem breathing room) */
+#main-content {
+  padding-right: 6rem;
+}
+
+/* Floating Action Button */
+#fab-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+#btn-fab-toggle {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+#fab-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fab-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.fab-label {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  pointer-events: none;
+}
+
+.btn-fab-action {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
 /* Flash messages */
 .flash-alert {
   animation: fadeout 0.5s ease 3s forwards;

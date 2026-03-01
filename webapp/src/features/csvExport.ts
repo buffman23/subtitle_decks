@@ -1,7 +1,9 @@
 import { state } from '../state';
+import { closeFab } from './fab';
 
 export function initCsvExport(): void {
   document.getElementById('btn-csv')?.addEventListener('click', () => {
+    closeFab();
     if (!state.allResults.length) return;
     const header = 'rank,lemma,frequency,ignored\n';
     const rows = state.allResults.map((r, i) => `${i + 1},"${r.lemma}",${r.frequency},${r.ignored}`).join('\n');

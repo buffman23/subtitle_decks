@@ -20,7 +20,7 @@
   {% endif %}
 
   <!-- Main area -->
-  <div class="flex-grow-1 overflow-y-auto p-4">
+  <div id="main-content" class="flex-grow-1 overflow-y-auto p-4">
 
     <!-- Upload form -->
     <div id="upload-section">
@@ -37,10 +37,6 @@
         <div class="col-md-4">
           <label class="form-label">SRT file</label>
           <input type="file" class="form-control" name="file" id="srt-file" accept=".srt" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Ignore List <span class="text-muted">(optional, .txt)</span></label>
-          <input type="file" class="form-control" name="ignore_list_file" id="ignore-list-file" accept=".txt">
         </div>
         <div class="col-12">
           <button type="submit" class="btn btn-primary" id="btn-analyze">
@@ -60,17 +56,12 @@
         <button class="btn btn-sm btn-success" id="btn-save-session">
           <i class="bi bi-floppy"></i> Save session
         </button>
-        <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
-          <i class="bi bi-download"></i> CSV
-        </button>
         <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-ignored">
           <i class="bi bi-eye-slash"></i> Show ignored
         </button>
-        {% if user %}
-        <button class="btn btn-sm btn-outline-secondary" id="btn-export-ignorelist">
-          <i class="bi bi-download"></i> Export ignore list
+        <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
+          <i class="bi bi-filetype-csv"></i> Download CSV
         </button>
-        {% endif %}
       </div>
 
       <div class="results-table-wrapper">
@@ -90,6 +81,30 @@
 
   </div><!-- /main -->
 </div>
+
+<!-- Floating Action Button -->
+<div id="fab-container">
+  <div id="fab-menu" class="d-none">
+    {% if user %}
+    <div class="fab-menu-item">
+      <span class="fab-label">Export ignore list</span>
+      <button class="btn btn-light btn-fab-action shadow-sm" id="btn-export-ignorelist" title="Export ignore list">
+        <i class="bi bi-box-arrow-up"></i>
+      </button>
+    </div>
+    {% endif %}
+<div class="fab-menu-item">
+      <span class="fab-label">Upload ignore list</span>
+      <button class="btn btn-light btn-fab-action shadow-sm" id="btn-fab-upload-ignorelist" title="Upload ignore list">
+        <i class="bi bi-upload"></i>
+      </button>
+    </div>
+  </div>
+  <button class="btn btn-primary shadow" id="btn-fab-toggle" title="Actions">
+    <i class="bi bi-three-dots-vertical" id="fab-icon"></i>
+  </button>
+</div>
+<input type="file" id="ignore-list-file" accept=".txt" class="d-none">
 
 <!-- Login modal (for anonymous blacklist add) -->
 <div class="modal fade" id="login-modal" tabindex="-1">
