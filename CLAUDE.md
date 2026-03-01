@@ -22,3 +22,22 @@ cd webapp && ../.venv/Scripts/python.exe run.py
 
 ## camel_tools Data
 The camel_tools models are stored at the path in the `CAMELTOOLS_DATA` environment variable. No need to re-download them.
+
+## Frontend Build (TypeScript + Vite)
+Source lives in `webapp/src/`. Compiled output is `webapp/app/static/js/app.js` (gitignored).
+
+```bash
+cd webapp
+
+# Install dependencies (first time only)
+npm install
+
+# Compile once
+npm run build
+
+# Watch mode (recompile on save)
+npm run build:watch
+
+# Type-check without emitting
+npm run typecheck
+```

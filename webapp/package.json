@@ -1,0 +1,15 @@
+{
+  "name": "subtitle-decks-frontend",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bootstrap": "^5.2.10",
+    "@types/node": "^25.3.3",
+    "typescript": "^5.4.0",
+    "vite": "^6.0.0"
+  }
+}
