@@ -3,6 +3,9 @@ import path from 'path';
 
 export default defineConfig({
   build: {
+    watch: {
+      usePolling: true,
+    },
     lib: {
       entry: path.resolve(__dirname, 'src/main.ts'),
       name: 'App',        // required by Vite for IIFE; nothing reads window.App
