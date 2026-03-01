@@ -50,7 +50,20 @@ async def create_session(
     db: Session = Depends(get_db),
 ):
     user = _require_user(request, db)
-    name = os.path.splitext(payload.srt_filename)[0]
+    base_name = os.path.splitext(payload.srt_filename)[0]
+    name = base_name
+    existing = {
+        s.name
+        for s in db.query(AnalysisSession.name).filter(
+            AnalysisSession.user_id == user.id,
+            AnalysisSession.language == payload.language,
+        )
+    }
+    if name in existing:
+        counter = 2
+        while f"{base_name} ({counter})" in existing:
+            counter += 1
+        name = f"{base_name} ({counter})"
     session = AnalysisSession(
         user_id=user.id,
         name=name,
@@ -77,7 +90,16 @@ async def rename_session(
     session = db.get(AnalysisSession, session_id)
     if session is None or session.user_id != user.id:
         raise HTTPException(status_code=404, detail="Session not found.")
-    session.name = payload.name.strip() or session.name
+    new_name = payload.name.strip() or session.name
+    if new_name != session.name:
+        conflict = db.query(AnalysisSession).filter(
+            AnalysisSession.user_id == user.id,
+            AnalysisSession.language == session.language,
+            AnalysisSession.name == new_name,
+        ).first()
+        if conflict:
+            raise HTTPException(status_code=409, detail="A session with that name already exists.")
+    session.name = new_name
     db.commit()
     db.refresh(session)
     return session

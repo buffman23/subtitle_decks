@@ -65,7 +65,11 @@ function startRename(item: HTMLElement, id: number, currentName: string): void {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName }),
       });
-      if (!res.ok) flash('Failed to rename session.', 'danger');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        flash(body.detail ?? 'Failed to rename session.', 'danger');
+        return;
+      }
     }
     loadSessions();
   }
