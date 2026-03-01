@@ -58,7 +58,6 @@ class SessionDetail(BaseModel):
 
 
 class SessionCreateRequest(BaseModel):
-    name: str | None = None
     language: str
     srt_filename: str
     srt_content: str

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import Optional
 
@@ -49,7 +50,7 @@ async def create_session(
     db: Session = Depends(get_db),
 ):
     user = _require_user(request, db)
-    name = payload.name or f"Session {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+    name = os.path.splitext(payload.srt_filename)[0]
     session = AnalysisSession(
         user_id=user.id,
         name=name,

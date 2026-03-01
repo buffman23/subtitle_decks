@@ -132,12 +132,10 @@ export function initSessions(): void {
 
   document.getElementById('btn-save-session')?.addEventListener('click', async () => {
     if (!state.allResults.length) return;
-    const name = `Session ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
     const res = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name,
         language: state.currentLanguage,
         srt_filename: state.currentFilename,
         srt_content: state.currentSrtText,
