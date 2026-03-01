@@ -7,7 +7,7 @@ export async function loadSessions(): Promise<void> {
   const list = document.getElementById('session-list');
   if (!list) return;
   try {
-    const res = await fetch('/api/sessions');
+    const res = await fetch(`/api/sessions?language=${encodeURIComponent(state.currentLanguage)}`);
     if (!res.ok) return;
     const sessions = await res.json();
     if (sessions.length === 0) {
@@ -82,6 +82,12 @@ async function openSession(id: number): Promise<void> {
   if (!res.ok) { flash('Could not load session.', 'danger'); return; }
   const session = await res.json();
   state.currentLanguage = session.language;
+  // Sync the global language picker
+  const picker = document.getElementById('language-select') as HTMLSelectElement | null;
+  if (picker && picker.value !== session.language) {
+    picker.value = session.language;
+    localStorage.setItem('subtitleAnalyzer.language', session.language);
+  }
   state.currentFilename = session.srt_filename;
   state.currentSrtText = session.srt_content;
   state.activeSessionId = id;

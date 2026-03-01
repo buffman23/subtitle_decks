@@ -5,6 +5,7 @@ import { initAnalyzeForm, initToggleIgnored } from './features/analyze';
 import { initSessions, loadSessions } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
+import { state } from './state';
 
 /* ── Language select with localStorage persistence ── */
 const languageSelect = document.getElementById('language-select') as HTMLSelectElement | null;
@@ -13,8 +14,17 @@ if (languageSelect) {
   if (saved && [...languageSelect.options].some(o => o.value === saved)) {
     languageSelect.value = saved;
   }
+  // Sync initial state
+  state.currentLanguage = languageSelect.value;
+
   languageSelect.addEventListener('change', () => {
+    state.currentLanguage = languageSelect.value;
     localStorage.setItem('subtitleAnalyzer.language', languageSelect.value);
+    // Clear results — language context has changed
+    state.activeSessionId = null;
+    state.allResults = [];
+    document.getElementById('results-section')?.classList.add('d-none');
+    if (IS_LOGGED_IN) loadSessions();
   });
 }
 

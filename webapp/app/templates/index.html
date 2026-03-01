@@ -2,104 +2,109 @@
 {% block title %}Subtitle Decks{% endblock %}
 
 {% block content %}
-<div class="d-flex" style="height: calc(100vh - 56px);">
+<div class="d-flex flex-column" style="height: calc(100vh - 56px);">
 
-  <!-- Session Sidebar -->
-  {% if user %}
-  <div id="sidebar" class="bg-light border-end d-flex flex-column" style="width:240px;min-width:200px;overflow-y:auto;">
-    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-      <strong>Sessions</strong>
-      <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
-        <i class="bi bi-plus-lg"></i>
-      </button>
-    </div>
-    <div id="session-list" class="flex-grow-1 overflow-y-auto p-2">
-      <div class="text-muted small text-center mt-3">Loading…</div>
-    </div>
+  <!-- Language bar -->
+  <div class="border-bottom bg-light px-4 py-2 d-flex align-items-center gap-2 flex-shrink-0">
+    <label class="form-label mb-0 fw-semibold small text-muted" for="language-select">Language</label>
+    <select class="form-select form-select-sm w-auto" id="language-select" name="language">
+      {% for lang in languages %}
+      <option value="{{ lang.code }}">{{ lang.name }}</option>
+      {% endfor %}
+    </select>
   </div>
-  {% endif %}
 
-  <!-- Main area -->
-  <div id="main-content" class="flex-grow-1 overflow-y-auto p-4">
+  <div class="d-flex flex-grow-1 overflow-hidden">
 
-    <!-- Upload form -->
-    <div id="upload-section">
-      <h5>Analyze Subtitles</h5>
-      <form id="analyze-form" class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label">Language</label>
-          <select class="form-select" name="language" id="language-select">
-            {% for lang in languages %}
-            <option value="{{ lang.code }}">{{ lang.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">SRT file</label>
-          <input type="file" class="form-control" name="file" id="srt-file" accept=".srt" required>
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-primary" id="btn-analyze">
-            <i class="bi bi-play-fill"></i> Analyze
-          </button>
-          <span id="analyze-spinner" class="ms-2 d-none">
-            <span class="spinner-border spinner-border-sm"></span> Analyzing…
-          </span>
-        </div>
-      </form>
+    <!-- Session Sidebar -->
+    {% if user %}
+    <div id="sidebar" class="bg-light border-end d-flex flex-column" style="width:240px;min-width:200px;overflow-y:auto;">
+      <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+        <strong>Sessions</strong>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+      <div id="session-list" class="flex-grow-1 overflow-y-auto p-2">
+        <div class="text-muted small text-center mt-3">Loading…</div>
+      </div>
     </div>
+    {% endif %}
 
-    <!-- Results section -->
-    <div id="results-section" class="mt-4 d-none">
-      <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
-        <span id="result-summary" class="text-muted"></span>
-        <button class="btn btn-sm btn-success" id="btn-save-session">
-          <i class="bi bi-floppy"></i> Save session
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-ignored">
-          <i class="bi bi-eye-slash"></i> Show ignored
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
-          <i class="bi bi-filetype-csv"></i> Download CSV
-        </button>
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-list"></i> Ignore list
+    <!-- Main area -->
+    <div id="main-content" class="flex-grow-1 overflow-y-auto p-4">
+
+      <!-- Upload form -->
+      <div id="upload-section">
+        <h5>Analyze Subtitles</h5>
+        <form id="analyze-form" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">SRT file</label>
+            <input type="file" class="form-control" name="file" id="srt-file" accept=".srt" required>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary" id="btn-analyze">
+              <i class="bi bi-play-fill"></i> Analyze
+            </button>
+            <span id="analyze-spinner" class="ms-2 d-none">
+              <span class="spinner-border spinner-border-sm"></span> Analyzing…
+            </span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Results section -->
+      <div id="results-section" class="mt-4 d-none">
+        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+          <span id="result-summary" class="text-muted"></span>
+          <button class="btn btn-sm btn-success" id="btn-save-session">
+            <i class="bi bi-floppy"></i> Save session
           </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            {% if user %}
-            <li>
-              <button class="dropdown-item" id="btn-export-ignorelist">
-                <i class="bi bi-box-arrow-up me-2"></i>Export ignore list
-              </button>
-            </li>
-            {% endif %}
-            <li>
-              <button class="dropdown-item" id="btn-fab-upload-ignorelist">
-                <i class="bi bi-upload me-2"></i>Upload ignore list
-              </button>
-            </li>
-          </ul>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-ignored">
+            <i class="bi bi-eye-slash"></i> Show ignored
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
+            <i class="bi bi-filetype-csv"></i> Download CSV
+          </button>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-list"></i> Ignore list
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {% if user %}
+              <li>
+                <button class="dropdown-item" id="btn-export-ignorelist">
+                  <i class="bi bi-box-arrow-up me-2"></i>Export ignore list
+                </button>
+              </li>
+              {% endif %}
+              <li>
+                <button class="dropdown-item" id="btn-fab-upload-ignorelist">
+                  <i class="bi bi-upload me-2"></i>Upload ignore list
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="results-table-wrapper">
+          <table class="table table-sm table-hover align-middle" id="results-table">
+            <thead class="table-dark">
+              <tr>
+                <th style="width:calc(4ch + 1rem)">#<div class="col-resize-handle"></div></th>
+                <th>Word<div class="col-resize-handle"></div></th>
+                <th style="width:max(calc(4ch + 1rem), 6rem)">Frequency<div class="col-resize-handle"></div></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="results-tbody"></tbody>
+          </table>
         </div>
       </div>
 
-      <div class="results-table-wrapper">
-        <table class="table table-sm table-hover align-middle" id="results-table">
-          <thead class="table-dark">
-            <tr>
-              <th style="width:calc(4ch + 1rem)">#<div class="col-resize-handle"></div></th>
-              <th>Word<div class="col-resize-handle"></div></th>
-              <th style="width:max(calc(4ch + 1rem), 6rem)">Frequency<div class="col-resize-handle"></div></th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="results-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-  </div><!-- /main -->
-</div>
+    </div><!-- /main -->
+  </div><!-- /split -->
+</div><!-- /outer -->
 
 <input type="file" id="ignore-list-file" accept=".txt" class="d-none">
 

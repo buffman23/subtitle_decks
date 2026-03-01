@@ -11,11 +11,9 @@ export function initAnalyzeForm(): void {
     e.preventDefault();
 
     const fileInput = document.getElementById('srt-file') as HTMLInputElement;
-    const langSel = document.getElementById('language-select') as HTMLSelectElement;
 
     if (!fileInput.files?.[0]) { flash('Please select an SRT file.', 'warning'); return; }
 
-    state.currentLanguage = langSel.value;
     state.currentFilename = fileInput.files[0].name;
     state.currentSrtText = await fileInput.files[0].text();
 

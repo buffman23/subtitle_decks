@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -19,14 +20,16 @@ def _require_user(request: Request, db: Session):
 
 
 @router.get("", response_model=list[SessionOut])
-async def list_sessions(request: Request, db: Session = Depends(get_db)):
+async def list_sessions(
+    request: Request,
+    db: Session = Depends(get_db),
+    language: Optional[str] = Query(None),
+):
     user = _require_user(request, db)
-    sessions = (
-        db.query(AnalysisSession)
-        .filter(AnalysisSession.user_id == user.id)
-        .order_by(AnalysisSession.created_at.desc())
-        .all()
-    )
+    q = db.query(AnalysisSession).filter(AnalysisSession.user_id == user.id)
+    if language:
+        q = q.filter(AnalysisSession.language == language)
+    sessions = q.order_by(AnalysisSession.created_at.desc()).all()
     return sessions
 
 

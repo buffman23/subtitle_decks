@@ -4,8 +4,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
-from app.models import IgnoreListEntry
+from app.models import IgnoreListEntry, Language
 from app.schemas import IgnoreListEntryOut, IgnoreListAddRequest
+
+
+def _lang_id(code: str) -> int:
+    try:
+        return Language.from_code(code)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Unknown language: {code!r}")
 
 router = APIRouter(prefix="/api/ignorelist", tags=["ignorelist"])
 
@@ -26,7 +33,7 @@ async def get_ignore_list(
     user = _require_user(request, db)
     return (
         db.query(IgnoreListEntry)
-        .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == language)
+        .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == _lang_id(language))
         .all()
     )
 
@@ -38,7 +45,8 @@ async def add_to_ignore_list(
     db: Session = Depends(get_db),
 ):
     user = _require_user(request, db)
-    entry = IgnoreListEntry(user_id=user.id, word=payload.word, language=payload.language)
+    lang_id = _lang_id(payload.language)
+    entry = IgnoreListEntry(user_id=user.id, word=payload.word, language=lang_id)
     db.add(entry)
     try:
         db.commit()
@@ -50,7 +58,7 @@ async def add_to_ignore_list(
             .filter(
                 IgnoreListEntry.user_id == user.id,
                 IgnoreListEntry.word == payload.word,
-                IgnoreListEntry.language == payload.language,
+                IgnoreListEntry.language == lang_id,
             )
             .first()
         )
@@ -67,13 +75,14 @@ async def import_ignore_list(
     user = _require_user(request, db)
     content = await file.read()
     words = [w.strip() for w in content.decode("utf-8", errors="replace").splitlines() if w.strip()]
+    lang_id = _lang_id(language)
     existing = {
         e.word for e in db.query(IgnoreListEntry)
-        .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == language)
+        .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == lang_id)
         .all()
     }
     new_entries = [
-        IgnoreListEntry(user_id=user.id, word=w, language=language)
+        IgnoreListEntry(user_id=user.id, word=w, language=lang_id)
         for w in words if w not in existing
     ]
     if new_entries:
@@ -94,7 +103,7 @@ async def remove_from_ignore_list_by_word(
         .filter(
             IgnoreListEntry.user_id == user.id,
             IgnoreListEntry.word == payload.word,
-            IgnoreListEntry.language == payload.language,
+            IgnoreListEntry.language == _lang_id(payload.language),
         )
         .first()
     )
@@ -129,7 +138,7 @@ async def export_ignore_list(
     user = _require_user(request, db)
     entries = (
         db.query(IgnoreListEntry)
-        .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == language)
+        .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == _lang_id(language))
         .all()
     )
     data = "\n".join(e.word for e in entries)

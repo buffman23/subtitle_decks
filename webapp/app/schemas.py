@@ -1,5 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from app.models import Language
 
 
 class WordFrequency(BaseModel):
@@ -18,6 +19,13 @@ class IgnoreListEntryOut(BaseModel):
     id: int
     word: str
     language: str
+
+    @field_validator("language", mode="before")
+    @classmethod
+    def coerce_language(cls, v):
+        if isinstance(v, int):
+            return Language(v).code
+        return v
 
     model_config = {"from_attributes": True}
 
