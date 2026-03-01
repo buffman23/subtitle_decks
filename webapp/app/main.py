@@ -5,7 +5,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
-from app.database import create_db_tables
+from app.database import create_db_tables, engine
+from app.migrations import run as run_migrations
 from app.services.arabic_processor import preload_all as preload_arabic
 from app.auth import router as auth_router
 from app.routers.pages import router as pages_router
@@ -17,6 +18,7 @@ from app.routers.api_sessions import router as sessions_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_tables()
+    run_migrations(engine)
     preload_arabic()
     yield
 

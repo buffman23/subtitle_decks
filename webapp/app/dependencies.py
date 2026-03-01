@@ -1,10 +1,10 @@
 from typing import Generator
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.models import User
+from app.models import LanguageRow, User
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -25,3 +25,11 @@ def get_current_user(request: Request, db: Session = None) -> User | None:
     if not user_id or db is None:
         return None
     return db.get(User, user_id)
+
+
+def resolve_language_id(code: str, db: Session) -> int:
+    """Look up a language by code and return its DB id, or raise HTTP 422."""
+    lang = db.query(LanguageRow).filter(LanguageRow.code == code).first()
+    if lang is None:
+        raise HTTPException(status_code=422, detail=f"Unknown language: {code!r}")
+    return lang.id

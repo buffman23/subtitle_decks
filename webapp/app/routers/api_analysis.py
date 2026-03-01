@@ -3,8 +3,8 @@ import logging
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db, get_current_user
-from app.models import IgnoreListEntry, Language
+from app.dependencies import get_db, get_current_user, resolve_language_id
+from app.models import IgnoreListEntry
 from app.schemas import AnalyzeResponse
 from app.services.frequency_analyzer import analyze
 
@@ -31,16 +31,16 @@ async def analyze_srt(
 
     user = get_current_user(request, db)
     if user:
-        lang_id = Language.from_code(language)
+        lang_id = resolve_language_id(language, db)
         # Save any uploaded words to the user's DB ignore list
         if uploaded_words:
             existing = {
                 e.word for e in db.query(IgnoreListEntry)
-                .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == lang_id)
+                .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language_id == lang_id)
                 .all()
             }
             new_entries = [
-                IgnoreListEntry(user_id=user.id, word=w, language=lang_id)
+                IgnoreListEntry(user_id=user.id, word=w, language_id=lang_id)
                 for w in uploaded_words if w not in existing
             ]
             if new_entries:
@@ -50,7 +50,7 @@ async def analyze_srt(
         # Merge full DB ignore list into ignore_set
         for entry in (
             db.query(IgnoreListEntry)
-            .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language == lang_id)
+            .filter(IgnoreListEntry.user_id == user.id, IgnoreListEntry.language_id == lang_id)
             .all()
         ):
             ignore_set.add(entry.word)

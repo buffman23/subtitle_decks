@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, resolve_language_id
 from app.models import AnalysisSession
 from app.schemas import SessionCreateRequest, SessionDetail, SessionOut, SessionRenameRequest
 
@@ -29,7 +29,8 @@ async def list_sessions(
     user = _require_user(request, db)
     q = db.query(AnalysisSession).filter(AnalysisSession.user_id == user.id)
     if language:
-        q = q.filter(AnalysisSession.language == language)
+        lang_id = resolve_language_id(language, db)
+        q = q.filter(AnalysisSession.language_id == lang_id)
     sessions = q.order_by(AnalysisSession.created_at.desc()).all()
     return sessions
 
@@ -50,13 +51,14 @@ async def create_session(
     db: Session = Depends(get_db),
 ):
     user = _require_user(request, db)
+    lang_id = resolve_language_id(payload.language, db)
     base_name = os.path.splitext(payload.srt_filename)[0]
     name = base_name
     existing = {
         s.name
         for s in db.query(AnalysisSession.name).filter(
             AnalysisSession.user_id == user.id,
-            AnalysisSession.language == payload.language,
+            AnalysisSession.language_id == lang_id,
         )
     }
     if name in existing:
@@ -67,7 +69,7 @@ async def create_session(
     session = AnalysisSession(
         user_id=user.id,
         name=name,
-        language=payload.language,
+        language_id=lang_id,
         srt_filename=payload.srt_filename,
         srt_content=payload.srt_content,
         results=[r.model_dump() for r in payload.results],
@@ -94,7 +96,7 @@ async def rename_session(
     if new_name != session.name:
         conflict = db.query(AnalysisSession).filter(
             AnalysisSession.user_id == user.id,
-            AnalysisSession.language == session.language,
+            AnalysisSession.language_id == session.language_id,
             AnalysisSession.name == new_name,
         ).first()
         if conflict:
