@@ -82,6 +82,29 @@ async def import_ignore_list(
     return {"imported": len(new_entries), "skipped": len(words) - len(new_entries)}
 
 
+@router.post("/remove", status_code=204)
+async def remove_from_ignore_list_by_word(
+    request: Request,
+    payload: IgnoreListAddRequest,
+    db: Session = Depends(get_db),
+):
+    user = _require_user(request, db)
+    entry = (
+        db.query(IgnoreListEntry)
+        .filter(
+            IgnoreListEntry.user_id == user.id,
+            IgnoreListEntry.word == payload.word,
+            IgnoreListEntry.language == payload.language,
+        )
+        .first()
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found.")
+    db.delete(entry)
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.delete("/{entry_id}", status_code=204)
 async def remove_from_ignore_list(
     entry_id: int,

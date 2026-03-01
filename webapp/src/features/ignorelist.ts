@@ -26,6 +26,29 @@ export async function addToIgnoreList(word: string, _btn: HTMLButtonElement): Pr
   }
 }
 
+export async function removeFromIgnoreList(word: string, _btn: HTMLButtonElement): Promise<void> {
+  if (!IS_LOGGED_IN) {
+    new bootstrap.Modal(document.getElementById('login-modal') as HTMLElement).show();
+    return;
+  }
+  const res = await fetch('/api/ignorelist/remove', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ word, language: state.currentLanguage }),
+  });
+  if (res.ok) {
+    flash(`"${word}" removed from ignore list.`);
+    const item = state.allResults.find(r => r.lemma === word);
+    if (item) item.ignored = false;
+    buildVisibleIndices();
+    updateSummary();
+    const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement;
+    renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
+  } else {
+    flash('Failed to remove from ignore list.', 'danger');
+  }
+}
+
 export function initIgnoreList(): void {
   // Upload ignore list via FAB
   const fileInput = document.getElementById('ignore-list-file') as HTMLInputElement;

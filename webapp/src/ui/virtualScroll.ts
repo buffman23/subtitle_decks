@@ -8,9 +8,14 @@ let _topSpacer: HTMLTableRowElement | null = null;
 let _bottomSpacer: HTMLTableRowElement | null = null;
 
 let _onIgnore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
+let _onUnignore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
 
 export function registerIgnoreHandler(fn: (word: string, btn: HTMLButtonElement) => void): void {
   _onIgnore = fn;
+}
+
+export function registerUnignoreHandler(fn: (word: string, btn: HTMLButtonElement) => void): void {
+  _onUnignore = fn;
 }
 
 export function escapeHtml(str: string): string {
@@ -62,18 +67,23 @@ export function renderVirtual(scrollTop: number, containerHeight: number): void 
     const origIdx = state.visibleIndices[vi];
     const row = state.allResults[origIdx];
     const tr = document.createElement('tr');
+    const actionBtn = (row.ignored && state.showingIgnored)
+      ? `<button class="btn btn-outline-danger btn-sm btn-unignore"
+                 data-word="${escapeHtml(row.lemma)}"
+                 title="Remove from ignore list">
+           <i class="bi bi-eye"></i>
+         </button>`
+      : `<button class="btn btn-outline-secondary btn-sm btn-ignorelist"
+                 data-word="${escapeHtml(row.lemma)}"
+                 title="Add to ignore list"
+                 ${row.ignored ? 'disabled' : ''}>
+           <i class="bi bi-eye-slash"></i>
+         </button>`;
     tr.innerHTML = `
       <td class="text-muted">${origIdx + 1}</td>
       <td>${escapeHtml(row.lemma)}</td>
       <td>${row.frequency}</td>
-      <td>
-        <button class="btn btn-outline-secondary btn-sm btn-ignorelist"
-                data-word="${escapeHtml(row.lemma)}"
-                title="Add to ignore list"
-                ${row.ignored ? 'disabled' : ''}>
-          <i class="bi bi-eye-slash"></i>
-        </button>
-      </td>`;
+      <td>${actionBtn}</td>`;
     fragment.appendChild(tr);
   }
 
@@ -89,6 +99,12 @@ export function renderVirtual(scrollTop: number, containerHeight: number): void 
     btn.addEventListener('click', () => {
       const word = btn.dataset['word'];
       if (word && _onIgnore) _onIgnore(word, btn);
+    });
+  });
+  tbody.querySelectorAll<HTMLButtonElement>('.btn-unignore').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const word = btn.dataset['word'];
+      if (word && _onUnignore) _onUnignore(word, btn);
     });
   });
 

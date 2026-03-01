@@ -1,9 +1,9 @@
 import { applyColWidths, initColResize } from './ui/colResize';
 import { renderVirtual } from './ui/virtualScroll';
-import { registerIgnoreHandler } from './ui/virtualScroll';
+import { registerIgnoreHandler, registerUnignoreHandler } from './ui/virtualScroll';
 import { initAnalyzeForm, initToggleIgnored } from './features/analyze';
 import { initSessions, loadSessions } from './features/sessions';
-import { initIgnoreList, addToIgnoreList } from './features/ignorelist';
+import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
 
 /* ── Language select with localStorage persistence ── */
@@ -20,6 +20,7 @@ if (languageSelect) {
 
 /* ── Wire up all modules ── */
 registerIgnoreHandler(addToIgnoreList);
+registerUnignoreHandler(removeFromIgnoreList);
 
 initAnalyzeForm();
 initToggleIgnored();
