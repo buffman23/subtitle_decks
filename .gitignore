@@ -33,3 +33,5 @@ Thumbs.db
 # Frontend build artifacts
 webapp/app/static/js/app.js
 webapp/node_modules/
+
+todo.md
