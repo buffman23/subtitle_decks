@@ -9,8 +9,12 @@ let showingIgnored = false;
 let allResults = [];
 let visibleIndices = [];
 let totalTokensCached = 0;
-const ROW_HEIGHT = 33;   // Bootstrap table-sm row height in px
+let ROW_HEIGHT = 33;      // Bootstrap table-sm row height in px — recalibrated after first render
 const SCROLL_BUFFER = 10; // extra rows rendered above/below viewport
+
+/* Persistent spacer rows — never destroyed so scroll height stays stable */
+let _topSpacer = null;
+let _bottomSpacer = null;
 
 function buildVisibleIndices() {
   visibleIndices = [];
@@ -33,21 +37,33 @@ function renderVirtual(scrollTop, containerHeight) {
   if (!tbody) return;
 
   const total = visibleIndices.length;
-  if (total === 0) { tbody.innerHTML = ''; return; }
+  if (total === 0) {
+    tbody.innerHTML = '';
+    _topSpacer = null;
+    _bottomSpacer = null;
+    return;
+  }
 
   const firstVisible = Math.floor(scrollTop / ROW_HEIGHT);
   const lastVisible  = Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT);
   const renderStart  = Math.max(0, firstVisible - SCROLL_BUFFER);
   const renderEnd    = Math.min(total, lastVisible + SCROLL_BUFFER);
 
-  const fragment = document.createDocumentFragment();
-
-  if (renderStart > 0) {
-    const spacer = document.createElement('tr');
-    spacer.style.height = (renderStart * ROW_HEIGHT) + 'px';
-    fragment.appendChild(spacer);
+  /* Initialise persistent spacers if they don't exist yet */
+  if (!_topSpacer || !tbody.contains(_topSpacer)) {
+    tbody.innerHTML = '';
+    _topSpacer    = document.createElement('tr');
+    _bottomSpacer = document.createElement('tr');
+    tbody.appendChild(_topSpacer);
+    tbody.appendChild(_bottomSpacer);
   }
 
+  /* Update spacer heights — this keeps total scroll height stable */
+  _topSpacer.style.height    = (renderStart * ROW_HEIGHT) + 'px';
+  _bottomSpacer.style.height = ((total - renderEnd) * ROW_HEIGHT) + 'px';
+
+  /* Build new content rows */
+  const fragment = document.createDocumentFragment();
   for (let vi = renderStart; vi < renderEnd; vi++) {
     const origIdx = visibleIndices[vi];
     const row = allResults[origIdx];
@@ -67,18 +83,26 @@ function renderVirtual(scrollTop, containerHeight) {
     fragment.appendChild(tr);
   }
 
-  if (renderEnd < total) {
-    const spacer = document.createElement('tr');
-    spacer.style.height = ((total - renderEnd) * ROW_HEIGHT) + 'px';
-    fragment.appendChild(spacer);
-  }
+  /* Remove old content rows, keeping only the two spacers */
+  [...tbody.children].forEach(child => {
+    if (child !== _topSpacer && child !== _bottomSpacer) child.remove();
+  });
 
-  tbody.innerHTML = '';
-  tbody.appendChild(fragment);
+  /* Insert new rows before the bottom spacer */
+  _bottomSpacer.before(fragment);
 
   tbody.querySelectorAll('.btn-ignorelist').forEach(btn => {
     btn.addEventListener('click', () => addToIgnoreList(btn.dataset.word, btn));
   });
+
+  /* Recalibrate ROW_HEIGHT from an actual rendered row (runs cheaply after each render) */
+  const contentRow = [...tbody.children].find(tr => tr !== _topSpacer && tr !== _bottomSpacer);
+  if (contentRow && contentRow.offsetHeight > 0 && contentRow.offsetHeight !== ROW_HEIGHT) {
+    ROW_HEIGHT = contentRow.offsetHeight;
+    /* Immediately correct the spacer heights with the true row height */
+    _topSpacer.style.height    = (renderStart * ROW_HEIGHT) + 'px';
+    _bottomSpacer.style.height = ((total - renderEnd) * ROW_HEIGHT) + 'px';
+  }
 }
 
 /* ── Language select with localStorage persistence ── */
