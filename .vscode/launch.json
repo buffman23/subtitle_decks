@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI (webapp)",
+      "type": "debugpy",
+      "request": "launch",
+      "preLaunchTask": "Vite Build",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--host", "0.0.0.0", "--port", "8000"],
+      "cwd": "${workspaceFolder}/webapp",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/webapp"
+      },
+      "jinja": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Vite Build (watch)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/webapp/node_modules/.bin/vite",
+      "args": ["build", "--watch"],
+      "cwd": "${workspaceFolder}/webapp",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "FastAPI + Vite Watch",
+      "configurations": ["FastAPI (webapp)", "Vite Build (watch)"],
+      "stopAll": true
+    }
+  ]
+}
