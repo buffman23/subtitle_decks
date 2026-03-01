@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+.venv/
+
+# Environment variables (secrets)
+webapp/.env
+.env
+
+# SQLite database
+webapp/app.db
+*.db
+
+# camel_tools model data (large ML files, stored separately)
+camel_tools/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

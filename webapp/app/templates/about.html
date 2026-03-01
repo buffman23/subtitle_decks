@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}About — Subtitle Analyzer{% endblock %}
+{% block content %}
+<div class="container mt-5" style="max-width:700px">
+  <h2>About</h2>
+  <p>
+    This tool parses Arabic subtitle files (<code>.srt</code>), lemmatizes every word using
+    <a href="https://camel-tools.readthedocs.io/" target="_blank">CAMeL Tools</a> (MLE disambiguator),
+    and displays a sorted frequency table.
+  </p>
+  <h5>Features</h5>
+  <ul>
+    <li>Upload any Arabic <code>.srt</code> file — UTF-8 or Windows-1256 encoding supported</li>
+    <li>Per-user blacklist persisted in the database</li>
+    <li>Save and reload analysis sessions (requires Google sign-in)</li>
+    <li>Export results as CSV or blacklist as JSON</li>
+  </ul>
+  <h5>Tech stack</h5>
+  <ul>
+    <li>FastAPI · SQLAlchemy · SQLite</li>
+    <li>CAMeL Tools (MLEDisambiguator)</li>
+    <li>Bootstrap 5</li>
+  </ul>
+</div>
+{% endblock %}

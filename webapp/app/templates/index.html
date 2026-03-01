@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Subtitle Decks{% endblock %}
+
+{% block content %}
+<div class="d-flex" style="height: calc(100vh - 56px);">
+
+  <!-- Session Sidebar -->
+  {% if user %}
+  <div id="sidebar" class="bg-light border-end d-flex flex-column" style="width:240px;min-width:200px;overflow-y:auto;">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+      <strong>Sessions</strong>
+      <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
+        <i class="bi bi-plus-lg"></i>
+      </button>
+    </div>
+    <div id="session-list" class="flex-grow-1 overflow-y-auto p-2">
+      <div class="text-muted small text-center mt-3">Loading…</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main area -->
+  <div class="flex-grow-1 overflow-y-auto p-4">
+
+    <!-- Upload form -->
+    <div id="upload-section">
+      <h5>Analyze Subtitles</h5>
+      <form id="analyze-form" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Language</label>
+          <select class="form-select" name="language" id="language-select">
+            {% for lang in languages %}
+            <option value="{{ lang.code }}">{{ lang.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">SRT file</label>
+          <input type="file" class="form-control" name="file" id="srt-file" accept=".srt" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Ignore List <span class="text-muted">(optional, .txt)</span></label>
+          <input type="file" class="form-control" name="ignore_list_file" id="ignore-list-file" accept=".txt">
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary" id="btn-analyze">
+            <i class="bi bi-play-fill"></i> Analyze
+          </button>
+          <span id="analyze-spinner" class="ms-2 d-none">
+            <span class="spinner-border spinner-border-sm"></span> Analyzing…
+          </span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Results section -->
+    <div id="results-section" class="mt-4 d-none">
+      <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+        <span id="result-summary" class="text-muted"></span>
+        <button class="btn btn-sm btn-success" id="btn-save-session">
+          <i class="bi bi-floppy"></i> Save session
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
+          <i class="bi bi-download"></i> CSV
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-ignored">
+          <i class="bi bi-eye-slash"></i> Show ignored
+        </button>
+        {% if user %}
+        <button class="btn btn-sm btn-outline-secondary" id="btn-export-ignorelist">
+          <i class="bi bi-download"></i> Export ignore list
+        </button>
+        {% endif %}
+      </div>
+
+      <div class="results-table-wrapper">
+        <table class="table table-sm table-hover align-middle" id="results-table">
+          <thead class="table-dark">
+            <tr>
+              <th style="width:calc(4ch + 1rem)">#<div class="col-resize-handle"></div></th>
+              <th>Word (lemma)<div class="col-resize-handle"></div></th>
+              <th style="width:max(calc(4ch + 1rem), 6rem)">Frequency<div class="col-resize-handle"></div></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="results-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div>
+
+<!-- Login modal (for anonymous blacklist add) -->
+<div class="modal fade" id="login-modal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <h6 class="mb-3">Sign in to manage your ignore list</h6>
+        <a href="/auth/google" class="btn btn-outline-dark">
+          <i class="bi bi-google me-1"></i> Sign in with Google
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const IS_LOGGED_IN = {{ 'true' if user else 'false' }};
+</script>
+<script src="/static/js/app.js"></script>
+{% endblock %}

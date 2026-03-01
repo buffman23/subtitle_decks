@@ -1,0 +1,111 @@
+/* RTL support for Arabic text in results */
+#results-tbody td:nth-child(2) {
+  direction: rtl;
+  font-size: 1.1rem;
+  font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+}
+
+/* Sidebar session items */
+.session-item {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+}
+.session-item:hover {
+  background: #e9ecef;
+}
+.session-item.active {
+  background: #0d6efd22;
+  font-weight: 600;
+}
+.session-item .btn-delete {
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 0 4px;
+  font-size: 0.75rem;
+}
+.session-item:hover .btn-delete {
+  opacity: 1;
+}
+
+/* Flash messages */
+.flash-alert {
+  animation: fadeout 0.5s ease 3s forwards;
+}
+@keyframes fadeout {
+  to { opacity: 0; pointer-events: none; }
+}
+
+/* Spinner overlay */
+#analyze-spinner {
+  vertical-align: middle;
+}
+
+/* Scrollable results table */
+.results-table-wrapper {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+#results-table {
+  table-layout: fixed;
+}
+
+#results-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+#results-table thead th {
+  position: relative;
+  overflow: visible;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Earlier columns stack above later ones so their handles render on top */
+#results-table thead th:nth-child(1) { z-index: 3; }
+#results-table thead th:nth-child(2) { z-index: 2; }
+#results-table thead th:nth-child(3) { z-index: 1; }
+
+/* Action column: fixed, non-resizable, just wide enough for the button */
+#results-table thead th:last-child {
+  width: 50px;
+}
+
+#results-table tbody td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+#results-table tbody td:last-child {
+  overflow: visible;
+}
+
+.col-resize-handle {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  /* Visible 2px stripe centered on the column border */
+  background: linear-gradient(to right, transparent 2px, rgba(255,255,255,0.4) 2px, rgba(255,255,255,0.4) 4px, transparent 4px);
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.resizing {
+  background: rgba(255, 255, 255, 0.25);
+}
