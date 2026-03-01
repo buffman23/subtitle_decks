@@ -2,7 +2,6 @@ import { state, buildVisibleIndices } from '../state';
 import { flash } from '../ui/flash';
 import { updateSummary, renderVirtual } from '../ui/virtualScroll';
 import { loadSessions } from './sessions';
-import { closeFab } from './fab';
 
 export async function addToIgnoreList(word: string, _btn: HTMLButtonElement): Promise<void> {
   if (!IS_LOGGED_IN) {
@@ -32,7 +31,6 @@ export function initIgnoreList(): void {
   const fileInput = document.getElementById('ignore-list-file') as HTMLInputElement;
 
   document.getElementById('btn-fab-upload-ignorelist')?.addEventListener('click', () => {
-    closeFab();
     if (!IS_LOGGED_IN) {
       new bootstrap.Modal(document.getElementById('login-modal') as HTMLElement).show();
       return;
@@ -75,7 +73,6 @@ export function initIgnoreList(): void {
 
   // Export ignore list via FAB
   document.getElementById('btn-export-ignorelist')?.addEventListener('click', () => {
-    closeFab();
     window.location.href = `/api/ignorelist/export?language=${state.currentLanguage}`;
   });
 }

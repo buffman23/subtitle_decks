@@ -5,7 +5,6 @@ import { initAnalyzeForm, initToggleIgnored } from './features/analyze';
 import { initSessions, loadSessions } from './features/sessions';
 import { initIgnoreList, addToIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
-import { initFab } from './features/fab';
 
 /* ── Language select with localStorage persistence ── */
 const languageSelect = document.getElementById('language-select') as HTMLSelectElement | null;
@@ -22,7 +21,6 @@ if (languageSelect) {
 /* ── Wire up all modules ── */
 registerIgnoreHandler(addToIgnoreList);
 
-initFab();
 initAnalyzeForm();
 initToggleIgnored();
 initSessions();

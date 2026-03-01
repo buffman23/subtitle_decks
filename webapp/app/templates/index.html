@@ -62,6 +62,25 @@
         <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
           <i class="bi bi-filetype-csv"></i> Download CSV
         </button>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-list"></i> Ignore list
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% if user %}
+            <li>
+              <button class="dropdown-item" id="btn-export-ignorelist">
+                <i class="bi bi-box-arrow-up me-2"></i>Export ignore list
+              </button>
+            </li>
+            {% endif %}
+            <li>
+              <button class="dropdown-item" id="btn-fab-upload-ignorelist">
+                <i class="bi bi-upload me-2"></i>Upload ignore list
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div class="results-table-wrapper">
@@ -82,28 +101,6 @@
   </div><!-- /main -->
 </div>
 
-<!-- Floating Action Button -->
-<div id="fab-container">
-  <div id="fab-menu" class="d-none">
-    {% if user %}
-    <div class="fab-menu-item">
-      <span class="fab-label">Export ignore list</span>
-      <button class="btn btn-light btn-fab-action shadow-sm" id="btn-export-ignorelist" title="Export ignore list">
-        <i class="bi bi-box-arrow-up"></i>
-      </button>
-    </div>
-    {% endif %}
-<div class="fab-menu-item">
-      <span class="fab-label">Upload ignore list</span>
-      <button class="btn btn-light btn-fab-action shadow-sm" id="btn-fab-upload-ignorelist" title="Upload ignore list">
-        <i class="bi bi-upload"></i>
-      </button>
-    </div>
-  </div>
-  <button class="btn btn-primary shadow" id="btn-fab-toggle" title="Actions">
-    <i class="bi bi-three-dots-vertical" id="fab-icon"></i>
-  </button>
-</div>
 <input type="file" id="ignore-list-file" accept=".txt" class="d-none">
 
 <!-- Login modal (for anonymous blacklist add) -->
