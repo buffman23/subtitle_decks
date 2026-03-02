@@ -38,10 +38,7 @@ function renderProcessedText(text: string, segments: SubtitleSegment[]): string 
 }
 
 function renderNativeText(text: string): string {
-  return text.split(/(\s+)/).map(part =>
-    /\s+/.test(part) ? part :
-    `<span class="sub-word">${escapeHtml(part)}</span>`
-  ).join('');
+  return escapeHtml(text);
 }
 
 function renderSubtitleViewport(
@@ -145,6 +142,8 @@ function handleNativeWordClick(entry: HTMLElement): void {
       ? s : best
   );
   document.querySelectorAll('.subtitle-entry.active').forEach(el => el.classList.remove('active'));
+  entry.classList.add('active');
+  entry.scrollIntoView({ block: 'center', behavior: 'smooth' });
   const procEntry = document.getElementById(`subtitle-viewport-processed-sub-${nearest.index}`);
   procEntry?.classList.add('active');
   procEntry?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -183,8 +182,7 @@ export function initSubtitleViewer(): void {
   });
 
   document.getElementById('subtitle-viewport-native')?.addEventListener('click', e => {
-    const span = (e.target as Element).closest<HTMLElement>('.sub-word');
-    const entry = span?.closest<HTMLElement>('.subtitle-entry');
+    const entry = (e.target as Element).closest<HTMLElement>('.subtitle-entry');
     if (entry) handleNativeWordClick(entry);
   });
 }

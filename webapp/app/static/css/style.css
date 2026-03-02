@@ -120,7 +120,15 @@
   border-radius: 2px;
 }
 
-.sub-word:hover {
+#subtitle-viewport-processed .sub-word:hover {
+  text-decoration: underline;
+}
+
+#subtitle-viewport-native .subtitle-entry {
+  cursor: pointer;
+}
+
+#subtitle-viewport-native .subtitle-entry:hover .sub-text {
   text-decoration: underline;
 }
 
