@@ -4,7 +4,7 @@
     {
       "label": "Vite Build",
       "type": "shell",
-      "command": "npm run build",
+      "command": "npm run build:watch",
       "options": {
         "cwd": "${workspaceFolder}/webapp"
       },

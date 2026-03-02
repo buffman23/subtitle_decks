@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 
+const isWatch = process.env['npm_lifecycle_event'] === 'build:watch';
+
 export default defineConfig({
   build: {
-    watch: {
-      usePolling: true,
-    },
+    watch: isWatch ? { usePolling: true } : null,
     lib: {
       entry: path.resolve(__dirname, 'src/main.ts'),
       name: 'App',        // required by Vite for IIFE; nothing reads window.App
