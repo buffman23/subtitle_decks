@@ -8,7 +8,7 @@ def analyze(
     srt_content: str | bytes,
     language_code: str,
     ignore_set: set[str] | None = None,
-) -> tuple[list[dict], int, int]:
+) -> tuple[list[dict], int, int, list[dict]]:
     """
     Full analysis pipeline.
 
@@ -16,17 +16,41 @@ def analyze(
         results      — sorted list of {lemma, frequency, ignored} dicts (desc by frequency)
         total_unique — number of unique lemmas
         total_tokens — total lemma count before deduplication
+        subtitles    — list of subtitle dicts with character-offset segments
     """
     ignore_set = ignore_set or set()
     processor = get_processor(language_code)
 
-    subtitle_texts = parse_srt(srt_content)
+    subtitle_objects = parse_srt(srt_content)
 
     token_sentences: list[list[str]] = []
-    for text in subtitle_texts:
-        token_sentences.append(processor.tokenize(text))
+    for sub in subtitle_objects:
+        token_sentences.append(processor.tokenize(sub.text))
 
     flat_lemmas = processor.lemmatize(token_sentences)
+
+    # Build per-subtitle segment lists with character offsets
+    subtitles = []
+    offset = 0
+    for sub, tokens in zip(subtitle_objects, token_sentences):
+        sub_lemmas = flat_lemmas[offset:offset + len(tokens)]
+        offset += len(tokens)
+        segments = []
+        pos = 0
+        for token, lemma in zip(tokens, sub_lemmas):
+            idx = sub.text.find(token, pos)
+            if idx == -1:
+                continue
+            segments.append({"lemma": lemma, "start": idx, "length": len(token)})
+            pos = idx + len(token)
+        subtitles.append({
+            "index": sub.index,
+            "start_time": sub.start_time,
+            "end_time": sub.end_time,
+            "start_seconds": sub.start_seconds,
+            "text": sub.text,
+            "segments": segments,
+        })
 
     counter = Counter(flat_lemmas)
     total_tokens = sum(counter.values())
@@ -37,4 +61,4 @@ def analyze(
         for lemma, freq in counter.most_common()
     ]
 
-    return results, total_unique, total_tokens
+    return results, total_unique, total_tokens, subtitles

@@ -1,14 +1,15 @@
-import type { WordFrequency } from './types';
+import type { WordFrequency, SubtitleEntry } from './types';
 
 export const state = {
   currentLanguage: 'ar-msa',
   currentFilename: '',
-  currentSrtText: '',
   activeSessionId: null as number | null,
   showingIgnored: false,
   allResults: [] as WordFrequency[],
   visibleIndices: [] as number[],
   totalTokensCached: 0,
+  parsedSubtitles: [] as SubtitleEntry[],
+  selectedLemma: null as string | null,
 };
 
 export function buildVisibleIndices(): void {

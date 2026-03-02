@@ -11,6 +11,7 @@ def run(engine: Engine) -> None:
         _seed_languages(conn)
         _migrate_ignore_list_language(conn)
         _migrate_sessions_language(conn)
+        _migrate_sessions_subtitles(conn)
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +68,35 @@ def _migrate_sessions_language(conn) -> None:
             (SELECT l.id FROM languages l WHERE l.code = s.language),
             s.srt_filename, s.srt_content, s.results, s.created_at
         FROM analysis_sessions s
+    """))
+    conn.execute(text("DROP TABLE analysis_sessions"))
+    conn.execute(text("ALTER TABLE analysis_sessions_new RENAME TO analysis_sessions"))
+
+
+def _migrate_sessions_subtitles(conn) -> None:
+    """Replace analysis_sessions.srt_content (TEXT) with subtitles (JSON NULL)."""
+    cols = _table_columns(conn, "analysis_sessions")
+    if "srt_content" not in cols:
+        return  # already migrated
+
+    conn.execute(text("""
+        CREATE TABLE analysis_sessions_new (
+            id          INTEGER PRIMARY KEY,
+            user_id     INTEGER REFERENCES users(id),
+            name        VARCHAR NOT NULL,
+            language_id INTEGER REFERENCES languages(id),
+            srt_filename VARCHAR NOT NULL,
+            subtitles   JSON,
+            results     JSON NOT NULL,
+            created_at  DATETIME
+        )
+    """))
+    conn.execute(text("""
+        INSERT INTO analysis_sessions_new
+            (id, user_id, name, language_id, srt_filename, subtitles, results, created_at)
+        SELECT
+            id, user_id, name, language_id, srt_filename, NULL, results, created_at
+        FROM analysis_sessions
     """))
     conn.execute(text("DROP TABLE analysis_sessions"))
     conn.execute(text("ALTER TABLE analysis_sessions_new RENAME TO analysis_sessions"))

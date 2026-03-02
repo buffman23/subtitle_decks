@@ -9,6 +9,7 @@ let _bottomSpacer: HTMLTableRowElement | null = null;
 
 let _onIgnore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
 let _onUnignore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
+let _onLemmaSelect: ((lemma: string) => void) | null = null;
 
 export function registerIgnoreHandler(fn: (word: string, btn: HTMLButtonElement) => void): void {
   _onIgnore = fn;
@@ -16,6 +17,10 @@ export function registerIgnoreHandler(fn: (word: string, btn: HTMLButtonElement)
 
 export function registerUnignoreHandler(fn: (word: string, btn: HTMLButtonElement) => void): void {
   _onUnignore = fn;
+}
+
+export function registerLemmaSelectHandler(fn: (lemma: string) => void): void {
+  _onLemmaSelect = fn;
 }
 
 export function escapeHtml(str: string): string {
@@ -29,6 +34,16 @@ export function updateSummary(): void {
   summary.textContent = ignoredCount > 0
     ? `${state.allResults.length} unique lemmas (${ignoredCount} ignored) · ${state.totalTokensCached} total tokens`
     : `${state.allResults.length} unique lemmas · ${state.totalTokensCached} total tokens`;
+}
+
+export function scrollTableToLemma(lemma: string): void {
+  state.selectedLemma = lemma;
+  const vi = state.visibleIndices.findIndex(origIdx => state.allResults[origIdx].lemma === lemma);
+  if (vi === -1) return;
+  const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement | null;
+  if (!wrapper) return;
+  wrapper.scrollTop = vi * ROW_HEIGHT;
+  renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
 }
 
 export function renderVirtual(scrollTop: number, containerHeight: number): void {
@@ -67,6 +82,7 @@ export function renderVirtual(scrollTop: number, containerHeight: number): void 
     const origIdx = state.visibleIndices[vi];
     const row = state.allResults[origIdx];
     const tr = document.createElement('tr');
+    if (row.lemma === state.selectedLemma) tr.classList.add('selected-row');
     const actionBtn = (row.ignored && state.showingIgnored)
       ? `<button class="btn btn-outline-danger btn-sm btn-unignore"
                  data-word="${escapeHtml(row.lemma)}"
@@ -84,6 +100,13 @@ export function renderVirtual(scrollTop: number, containerHeight: number): void 
       <td>${escapeHtml(row.lemma)}</td>
       <td>${row.frequency}</td>
       <td>${actionBtn}</td>`;
+    tr.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('button')) return;
+      state.selectedLemma = row.lemma;
+      if (_onLemmaSelect) _onLemmaSelect(row.lemma);
+      const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement | null;
+      if (wrapper) renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
+    });
     fragment.appendChild(tr);
   }
 
@@ -122,6 +145,7 @@ export function renderResults(results: WordFrequency[], totalTokens: number): vo
   state.allResults = results;
   state.totalTokensCached = totalTokens;
   state.showingIgnored = false;
+  state.selectedLemma = null;
   buildVisibleIndices();
   updateSummary();
 

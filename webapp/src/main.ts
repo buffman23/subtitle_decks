@@ -1,10 +1,10 @@
 import { applyColWidths, initColResize } from './ui/colResize';
-import { renderVirtual } from './ui/virtualScroll';
-import { registerIgnoreHandler, registerUnignoreHandler } from './ui/virtualScroll';
-import { initAnalyzeForm, initToggleIgnored } from './features/analyze';
-import { initSessions, loadSessions } from './features/sessions';
+import { renderVirtual, registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler } from './ui/virtualScroll';
+import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler } from './features/analyze';
+import { initSessions, loadSessions, registerSessionAnalysisCompleteHandler } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
+import { initSubtitleViewer, selectLemma, onAnalysisComplete } from './features/subtitleViewer';
 import { state } from './state';
 
 /* ── Language select with localStorage persistence ── */
@@ -31,12 +31,16 @@ if (languageSelect) {
 /* ── Wire up all modules ── */
 registerIgnoreHandler(addToIgnoreList);
 registerUnignoreHandler(removeFromIgnoreList);
+registerLemmaSelectHandler(selectLemma);
+registerAnalysisCompleteHandler(onAnalysisComplete);
+registerSessionAnalysisCompleteHandler(onAnalysisComplete);
 
 initAnalyzeForm();
 initToggleIgnored();
 initSessions();
 initIgnoreList();
 initCsvExport();
+initSubtitleViewer();
 
 applyColWidths();
 initColResize();

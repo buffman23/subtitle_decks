@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Integer, String, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
@@ -53,7 +53,7 @@ class AnalysisSession(Base):
     name: Mapped[str] = mapped_column(String)
     language_id: Mapped[int] = mapped_column(Integer, ForeignKey("languages.id"))
     srt_filename: Mapped[str] = mapped_column(String)
-    srt_content: Mapped[str] = mapped_column(Text)
+    subtitles: Mapped[list | None] = mapped_column(JSON, nullable=True)
     results: Mapped[list] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

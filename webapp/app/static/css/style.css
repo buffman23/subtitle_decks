@@ -50,6 +50,19 @@
   vertical-align: middle;
 }
 
+/* Results table + subtitle panels row */
+.results-panels-row { display: flex; gap: 0.5rem; align-items: flex-start; }
+.results-panels-row .results-table-wrapper { flex: 0 0 35%; min-width: 180px; }
+
+/* Subtitle column: same height as the results table */
+.subtitle-panels-col { height: 60vh; }
+
+/* Viewports row fills remaining height inside the column */
+.subtitle-viewports-row { flex: 1 1 0; min-height: 0; }
+
+/* Each viewport's label+scroll wrapper must also shrink */
+.subtitle-viewports-row > * { min-height: 0; }
+
 /* Scrollable results table */
 .results-table-wrapper {
   max-height: 60vh;
@@ -58,6 +71,74 @@
   border: 1px solid #dee2e6;
   border-radius: 4px;
 }
+
+/* Subtitle viewports */
+.subtitle-viewport {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.subtitle-entry {
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.6rem;
+  border-left: 3px solid transparent;
+}
+
+.subtitle-entry.active {
+  background-color: #fff8e1;
+  border-left-color: #ffc107;
+}
+
+.sub-number, .sub-time {
+  font-size: 0.72rem;
+  color: #6c757d;
+  font-family: monospace;
+}
+
+.sub-text {
+  margin-top: 0.15rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+#subtitle-viewport-processed .sub-text {
+  direction: rtl;
+  font-family: "Amiri", "Scheherazade New", serif;
+  font-size: 1rem;
+}
+
+.sub-word {
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.sub-word:hover {
+  text-decoration: underline;
+}
+
+.sub-word.active-word {
+  background-color: #ffe066;
+}
+
+#results-tbody tr.selected-row {
+  background-color: #e8f0fe;
+}
+
+.subtitle-lemma-display {
+  font-family: "Amiri", "Scheherazade New", serif;
+  font-size: 1.05rem;
+  min-width: 4ch;
+}
+
+.min-width-0 { min-width: 0; }
 
 #results-table {
   table-layout: fixed;

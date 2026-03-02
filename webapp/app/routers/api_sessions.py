@@ -71,7 +71,7 @@ async def create_session(
         name=name,
         language_id=lang_id,
         srt_filename=payload.srt_filename,
-        srt_content=payload.srt_content,
+        subtitles=[s.model_dump() for s in payload.subtitles],
         results=[r.model_dump() for r in payload.results],
         created_at=datetime.utcnow(),
     )

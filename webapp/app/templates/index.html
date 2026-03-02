@@ -87,18 +87,53 @@
           </div>
         </div>
 
-        <div class="results-table-wrapper">
-          <table class="table table-sm table-hover align-middle text-start" dir="ltr" id="results-table">
-            <thead class="table-dark">
-              <tr>
-                <th style="width:calc(4ch + 1rem)">#<div class="col-resize-handle"></div></th>
-                <th>Word<div class="col-resize-handle"></div></th>
-                <th style="width:max(calc(4ch + 1rem), 6rem)">Frequency<div class="col-resize-handle"></div></th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="results-tbody"></tbody>
-          </table>
+        <div class="d-flex gap-2 results-panels-row">
+          <!-- Results table -->
+          <div class="results-table-wrapper">
+            <table class="table table-sm table-hover align-middle text-start" dir="ltr" id="results-table">
+              <thead class="table-dark">
+                <tr>
+                  <th style="width:calc(4ch + 1rem)">#<div class="col-resize-handle"></div></th>
+                  <th>Word<div class="col-resize-handle"></div></th>
+                  <th style="width:max(calc(4ch + 1rem), 6rem)">Frequency<div class="col-resize-handle"></div></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="results-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Subtitle panels -->
+          <div class="d-flex flex-column flex-grow-1 min-width-0 subtitle-panels-col">
+            <!-- Navigation bar -->
+            <div id="subtitle-nav" class="d-flex align-items-center gap-2 mb-1">
+              <button id="btn-prev-occurrence" class="btn btn-sm btn-outline-secondary" disabled>
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <span id="selected-lemma-display" dir="rtl" class="subtitle-lemma-display fw-bold">—</span>
+              <span id="occurrence-counter" class="text-muted small">Select a word</span>
+              <button id="btn-next-occurrence" class="btn btn-sm btn-outline-secondary" disabled>
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+            <!-- Two viewports side by side -->
+            <div class="d-flex gap-2 flex-grow-1 min-width-0 subtitle-viewports-row">
+              <div class="d-flex flex-column flex-grow-1 min-width-0">
+                <div class="small text-muted mb-1">Subtitles</div>
+                <div id="subtitle-viewport-processed" class="subtitle-viewport"></div>
+              </div>
+              <div class="d-flex flex-column flex-grow-1 min-width-0">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <span class="small text-muted">Native Subtitles</span>
+                  <label class="btn btn-outline-secondary btn-sm py-0 px-1 mb-0" title="Load native SRT">
+                    <i class="bi bi-upload"></i>
+                    <input type="file" id="native-srt-file" accept=".srt" class="d-none">
+                  </label>
+                </div>
+                <div id="subtitle-viewport-native" class="subtitle-viewport"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

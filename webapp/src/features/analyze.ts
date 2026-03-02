@@ -3,6 +3,12 @@ import { flash } from '../ui/flash';
 import { renderResults, renderVirtual } from '../ui/virtualScroll';
 import { loadSessions } from './sessions';
 
+let _onAnalysisComplete: (() => void) | null = null;
+
+export function registerAnalysisCompleteHandler(fn: () => void): void {
+  _onAnalysisComplete = fn;
+}
+
 export function initAnalyzeForm(): void {
   const form = document.getElementById('analyze-form');
   if (!form) return;
@@ -15,7 +21,6 @@ export function initAnalyzeForm(): void {
     if (!fileInput.files?.[0]) { flash('Please select an SRT file.', 'warning'); return; }
 
     state.currentFilename = fileInput.files[0].name;
-    state.currentSrtText = await fileInput.files[0].text();
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
@@ -31,7 +36,9 @@ export function initAnalyzeForm(): void {
       const data = await res.json();
       if (!res.ok) { flash(data.detail || 'Analysis failed.', 'danger'); return; }
       state.activeSessionId = null;
+      state.parsedSubtitles = data.subtitles ?? [];
       renderResults(data.results, data.total_tokens);
+      if (_onAnalysisComplete) _onAnalysisComplete();
       if (IS_LOGGED_IN) loadSessions();
     } catch (err) {
       flash('Network error: ' + (err as Error).message, 'danger');

@@ -56,11 +56,16 @@ async def analyze_srt(
             ignore_set.add(entry.word)
 
     try:
-        results, total_unique, total_tokens = analyze(content, language, ignore_set)
+        results, total_unique, total_tokens, subtitles = analyze(content, language, ignore_set)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         logger.exception("Analysis error: %s", exc)
         raise HTTPException(status_code=500, detail="Analysis failed.")
 
-    return AnalyzeResponse(results=results, total_unique=total_unique, total_tokens=total_tokens)
+    return AnalyzeResponse(
+        results=results,
+        total_unique=total_unique,
+        total_tokens=total_tokens,
+        subtitles=subtitles,
+    )

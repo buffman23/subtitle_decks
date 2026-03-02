@@ -2,6 +2,12 @@ import { state } from '../state';
 import { flash } from '../ui/flash';
 import { renderResults } from '../ui/virtualScroll';
 
+let _onAnalysisComplete: (() => void) | null = null;
+
+export function registerSessionAnalysisCompleteHandler(fn: () => void): void {
+  _onAnalysisComplete = fn;
+}
+
 export async function loadSessions(): Promise<void> {
   if (!IS_LOGGED_IN) return;
   const list = document.getElementById('session-list');
@@ -93,7 +99,7 @@ async function openSession(id: number): Promise<void> {
     localStorage.setItem('subtitleAnalyzer.language', session.language);
   }
   state.currentFilename = session.srt_filename;
-  state.currentSrtText = session.srt_content;
+  state.parsedSubtitles = session.subtitles ?? [];
   state.activeSessionId = id;
 
   // Re-apply current ignore list so additions/removals since save are reflected
@@ -108,6 +114,7 @@ async function openSession(id: number): Promise<void> {
 
   state.allResults = session.results;
   renderResults(session.results, session.results.reduce((a: number, r: { frequency: number }) => a + r.frequency, 0));
+  if (_onAnalysisComplete) _onAnalysisComplete();
   loadSessions();
 }
 
@@ -142,7 +149,7 @@ export function initSessions(): void {
       body: JSON.stringify({
         language: state.currentLanguage,
         srt_filename: state.currentFilename,
-        srt_content: state.currentSrtText,
+        subtitles: state.parsedSubtitles,
         results: state.allResults,
       }),
     });
