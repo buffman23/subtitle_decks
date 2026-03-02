@@ -32,10 +32,10 @@
     {% endif %}
 
     <!-- Main area -->
-    <div id="main-content" class="flex-grow-1 overflow-y-auto p-4">
+    <div id="main-content" class="flex-grow-1 overflow-hidden p-4 d-flex flex-column">
 
       <!-- Upload form -->
-      <div id="upload-section">
+      <div id="upload-section" class="flex-shrink-0">
         <h5>Analyze Subtitles</h5>
         <form id="analyze-form" class="row g-3">
           <div class="col-md-4">
@@ -54,8 +54,8 @@
       </div>
 
       <!-- Results section -->
-      <div id="results-section" class="mt-4 d-none">
-        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+      <div id="results-section" class="mt-4 d-none d-flex flex-column flex-grow-1" style="min-height:0">
+        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap flex-shrink-0">
           <span id="result-summary" class="text-muted"></span>
           <button class="btn btn-sm btn-success" id="btn-save-session">
             <i class="bi bi-floppy"></i> Save session
@@ -87,7 +87,7 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2 results-panels-row">
+        <div class="d-flex gap-2 results-panels-row flex-grow-1" style="min-height:0">
           <!-- Results table -->
           <div class="results-table-wrapper">
             <table class="table table-sm table-hover align-middle text-start" dir="ltr" id="results-table">

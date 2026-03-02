@@ -51,11 +51,8 @@
 }
 
 /* Results table + subtitle panels row */
-.results-panels-row { display: flex; gap: 0.5rem; align-items: flex-start; }
+.results-panels-row { display: flex; gap: 0.5rem; align-items: stretch; }
 .results-panels-row .results-table-wrapper { flex: 0 0 35%; min-width: 180px; }
-
-/* Subtitle column: same height as the results table */
-.subtitle-panels-col { height: 60vh; }
 
 /* Viewports row fills remaining height inside the column */
 .subtitle-viewports-row { flex: 1 1 0; min-height: 0; }
@@ -65,7 +62,6 @@
 
 /* Scrollable results table */
 .results-table-wrapper {
-  max-height: 60vh;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #dee2e6;
