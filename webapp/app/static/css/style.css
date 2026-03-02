@@ -136,6 +136,14 @@
   background-color: #ffe066;
 }
 
+#results-tbody td:nth-child(2) {
+  cursor: pointer;
+}
+
+#results-tbody td:nth-child(2):hover {
+  text-decoration: underline;
+}
+
 #results-tbody tr.selected-row {
   background-color: #e8f0fe;
 }

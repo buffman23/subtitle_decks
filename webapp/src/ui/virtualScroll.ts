@@ -101,7 +101,10 @@ export function renderVirtual(scrollTop: number, containerHeight: number): void 
       <td>${row.frequency}</td>
       <td>${actionBtn}</td>`;
     tr.addEventListener('click', (e) => {
-      if ((e.target as Element).closest('button')) return;
+      const target = e.target as Element;
+      if (target.closest('button')) return;
+      if (target.closest('td') !== tr.children[1]) return;
+      if (window.getSelection()?.toString()) return;
       state.selectedLemma = row.lemma;
       if (_onLemmaSelect) _onLemmaSelect(row.lemma);
       const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement | null;

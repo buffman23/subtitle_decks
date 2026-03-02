@@ -62,6 +62,15 @@ function renderSubtitleViewport(
   }
 }
 
+function scrollIntoViewport(entry: HTMLElement): void {
+  const container = entry.closest('.subtitle-viewport') as HTMLElement | null;
+  if (!container) return;
+  const entryRect = entry.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const target = container.scrollTop + (entryRect.top - containerRect.top) - container.clientHeight / 2 + entry.offsetHeight / 2;
+  container.scrollTo({ top: target, behavior: 'smooth' });
+}
+
 function navigateToOccurrence(idx: number): void {
   document.querySelectorAll('.subtitle-entry.active').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.sub-word.active-word').forEach(el => el.classList.remove('active-word'));
@@ -70,7 +79,7 @@ function navigateToOccurrence(idx: number): void {
 
   const procEntry = document.getElementById(`subtitle-viewport-processed-sub-${subIdx}`);
   procEntry?.classList.add('active');
-  procEntry?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (procEntry) scrollIntoViewport(procEntry);
   procEntry?.querySelectorAll<HTMLElement>(`.sub-word[data-lemma="${CSS.escape(selectedLemma!)}"]`)
     .forEach(el => el.classList.add('active-word'));
 
@@ -82,7 +91,7 @@ function navigateToOccurrence(idx: number): void {
     );
     const natEntry = document.getElementById(`subtitle-viewport-native-sub-${nearest.index}`);
     natEntry?.classList.add('active');
-    natEntry?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (natEntry) scrollIntoViewport(natEntry);
   }
 
   updateNavControls();
@@ -143,10 +152,10 @@ function handleNativeWordClick(entry: HTMLElement): void {
   );
   document.querySelectorAll('.subtitle-entry.active').forEach(el => el.classList.remove('active'));
   entry.classList.add('active');
-  entry.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  scrollIntoViewport(entry);
   const procEntry = document.getElementById(`subtitle-viewport-processed-sub-${nearest.index}`);
   procEntry?.classList.add('active');
-  procEntry?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (procEntry) scrollIntoViewport(procEntry);
 }
 
 export function onAnalysisComplete(): void {
