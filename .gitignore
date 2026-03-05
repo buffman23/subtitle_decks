@@ -34,4 +34,8 @@ Thumbs.db
 webapp/app/static/js/app.js
 webapp/node_modules/
 
+
+
+# Planning items
 todo.md
+.tmp
