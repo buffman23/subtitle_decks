@@ -155,6 +155,7 @@ export function renderResults(results: WordFrequency[], totalTokens: number): vo
   const toggleBtn = document.getElementById('btn-toggle-ignored');
   if (toggleBtn) toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i> Show ignored';
 
+  document.getElementById('upload-section')?.classList.add('d-none');
   document.getElementById('results-section')?.classList.remove('d-none');
 
   const wrapper = document.querySelector('.results-table-wrapper');

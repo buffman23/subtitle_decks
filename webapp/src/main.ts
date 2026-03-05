@@ -24,6 +24,7 @@ if (languageSelect) {
     state.activeSessionId = null;
     state.allResults = [];
     document.getElementById('results-section')?.classList.add('d-none');
+    document.getElementById('upload-section')?.classList.remove('d-none');
     if (IS_LOGGED_IN) loadSessions();
   });
 }

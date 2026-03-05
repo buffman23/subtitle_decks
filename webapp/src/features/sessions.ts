@@ -1,6 +1,7 @@
 import { state } from '../state';
 import { flash } from '../ui/flash';
 import { renderResults } from '../ui/virtualScroll';
+import { resetUpload } from './analyze';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -125,6 +126,7 @@ async function deleteSession(id: number): Promise<void> {
     if (state.activeSessionId === id) {
       state.activeSessionId = null;
       document.getElementById('results-section')?.classList.add('d-none');
+      document.getElementById('upload-section')?.classList.remove('d-none');
     }
     loadSessions();
   } else {
@@ -137,7 +139,8 @@ export function initSessions(): void {
     state.activeSessionId = null;
     state.allResults = [];
     document.getElementById('results-section')?.classList.add('d-none');
-    (document.getElementById('srt-file') as HTMLInputElement).value = '';
+    document.getElementById('upload-section')?.classList.remove('d-none');
+    resetUpload();
     loadSessions();
   });
 

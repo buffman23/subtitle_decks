@@ -9,21 +9,68 @@ export function registerAnalysisCompleteHandler(fn: () => void): void {
   _onAnalysisComplete = fn;
 }
 
+let selectedFile: File | null = null;
+
+function setSelectedFile(file: File | null): void {
+  selectedFile = file;
+  const filename = document.getElementById('drop-zone-filename');
+  const btn = document.getElementById('btn-analyze') as HTMLButtonElement | null;
+  if (file) {
+    if (filename) { filename.textContent = file.name; filename.classList.remove('d-none'); }
+    if (btn) btn.disabled = false;
+  } else {
+    if (filename) { filename.textContent = ''; filename.classList.add('d-none'); }
+    if (btn) btn.disabled = true;
+  }
+}
+
+export function resetUpload(): void {
+  setSelectedFile(null);
+  const fileInput = document.getElementById('srt-file') as HTMLInputElement | null;
+  if (fileInput) fileInput.value = '';
+}
+
 export function initAnalyzeForm(): void {
   const form = document.getElementById('analyze-form');
-  if (!form) return;
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('srt-file') as HTMLInputElement | null;
+
+  if (!form || !dropZone || !fileInput) return;
+
+  // Click on drop zone → open file picker
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  // File picker selection
+  fileInput.addEventListener('change', () => {
+    setSelectedFile(fileInput.files?.[0] ?? null);
+  });
+
+  // Drag events
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer?.files[0] ?? null;
+    if (file && file.name.endsWith('.srt')) {
+      setSelectedFile(file);
+    } else if (file) {
+      flash('Please drop an .srt file.', 'warning');
+    }
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const fileInput = document.getElementById('srt-file') as HTMLInputElement;
+    if (!selectedFile) { flash('Please select an SRT file.', 'warning'); return; }
 
-    if (!fileInput.files?.[0]) { flash('Please select an SRT file.', 'warning'); return; }
-
-    state.currentFilename = fileInput.files[0].name;
+    state.currentFilename = selectedFile.name;
 
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    formData.append('file', selectedFile);
     formData.append('language', state.currentLanguage);
 
     const btn = document.getElementById('btn-analyze') as HTMLButtonElement;

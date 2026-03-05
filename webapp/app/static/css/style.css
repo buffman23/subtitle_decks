@@ -50,6 +50,30 @@
   vertical-align: middle;
 }
 
+/* Drag-and-drop upload zone */
+.drop-zone {
+  border: 2px solid #6c757d;
+  border-radius: 12px;
+  padding: 3rem 4rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  min-width: 320px;
+}
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: #0d6efd;
+  background: #f0f4ff;
+}
+.drop-zone-icon {
+  font-size: 3rem;
+  color: #adb5bd;
+  transition: color 0.15s;
+}
+.drop-zone:hover .drop-zone-icon,
+.drop-zone.drag-over .drop-zone-icon {
+  color: #0d6efd;
+}
+
 /* Results table + subtitle panels row */
 .results-panels-row { display: flex; gap: 0.5rem; align-items: stretch; }
 .results-panels-row .results-table-wrapper { flex: 0 0 35%; min-width: 180px; }
