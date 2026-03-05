@@ -72,6 +72,7 @@ async def create_session(
         language_id=lang_id,
         srt_filename=payload.srt_filename,
         subtitles=[s.model_dump() for s in payload.subtitles],
+        native_subtitles=[s.model_dump() for s in payload.native_subtitles] or None,
         results=[r.model_dump() for r in payload.results],
         created_at=datetime.utcnow(),
     )

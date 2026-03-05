@@ -12,6 +12,7 @@ def run(engine: Engine) -> None:
         _migrate_ignore_list_language(conn)
         _migrate_sessions_language(conn)
         _migrate_sessions_subtitles(conn)
+        _migrate_sessions_native_subtitles(conn)
 
 
 # ---------------------------------------------------------------------------
@@ -100,3 +101,10 @@ def _migrate_sessions_subtitles(conn) -> None:
     """))
     conn.execute(text("DROP TABLE analysis_sessions"))
     conn.execute(text("ALTER TABLE analysis_sessions_new RENAME TO analysis_sessions"))
+
+
+def _migrate_sessions_native_subtitles(conn) -> None:
+    """Add native_subtitles JSON column to analysis_sessions."""
+    cols = _table_columns(conn, "analysis_sessions")
+    if "native_subtitles" not in cols:
+        conn.execute(text("ALTER TABLE analysis_sessions ADD COLUMN native_subtitles JSON"))

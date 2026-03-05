@@ -59,14 +59,15 @@ class SessionDetail(BaseModel):
     language: str
     srt_filename: str
     subtitles: list[SubtitleEntry] = []
+    native_subtitles: list[SubtitleEntry] = []
     results: list[WordFrequency]
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
-    @field_validator('subtitles', mode='before')
+    @field_validator('subtitles', 'native_subtitles', mode='before')
     @classmethod
-    def coerce_subtitles(cls, v):
+    def coerce_list(cls, v):
         return v or []
 
 
@@ -74,6 +75,7 @@ class SessionCreateRequest(BaseModel):
     language: str
     srt_filename: str
     subtitles: list[SubtitleEntry]
+    native_subtitles: list[SubtitleEntry] = []
     results: list[WordFrequency]
 
 

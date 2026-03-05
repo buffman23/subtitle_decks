@@ -158,6 +158,15 @@ function handleNativeWordClick(entry: HTMLElement): void {
   if (procEntry) scrollIntoViewport(procEntry);
 }
 
+export function getNativeSubtitles(): SubtitleEntry[] {
+  return nativeSubtitles;
+}
+
+export function restoreNativeSubtitles(subs: SubtitleEntry[]): void {
+  nativeSubtitles = subs;
+  renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', false, false);
+}
+
 export function onAnalysisComplete(): void {
   buildLemmaIndex();
   renderSubtitleViewport(state.parsedSubtitles, 'subtitle-viewport-processed', true, true);

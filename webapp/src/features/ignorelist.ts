@@ -3,9 +3,16 @@ import { flash } from '../ui/flash';
 import { updateSummary, renderVirtual } from '../ui/virtualScroll';
 import { loadSessions } from './sessions';
 
+function showLoginModal(): void {
+  const loginModal = document.getElementById('login-modal');
+  const heading = loginModal?.querySelector('h6');
+  if (heading) heading.textContent = 'Sign in to manage your ignore list';
+  new bootstrap.Modal(loginModal as HTMLElement).show();
+}
+
 export async function addToIgnoreList(word: string, _btn: HTMLButtonElement): Promise<void> {
   if (!IS_LOGGED_IN) {
-    new bootstrap.Modal(document.getElementById('login-modal') as HTMLElement).show();
+    showLoginModal();
     return;
   }
   const res = await fetch('/api/ignorelist/add', {
@@ -28,7 +35,7 @@ export async function addToIgnoreList(word: string, _btn: HTMLButtonElement): Pr
 
 export async function removeFromIgnoreList(word: string, _btn: HTMLButtonElement): Promise<void> {
   if (!IS_LOGGED_IN) {
-    new bootstrap.Modal(document.getElementById('login-modal') as HTMLElement).show();
+    showLoginModal();
     return;
   }
   const res = await fetch('/api/ignorelist/remove', {
@@ -55,7 +62,7 @@ export function initIgnoreList(): void {
 
   document.getElementById('btn-fab-upload-ignorelist')?.addEventListener('click', () => {
     if (!IS_LOGGED_IN) {
-      new bootstrap.Modal(document.getElementById('login-modal') as HTMLElement).show();
+      showLoginModal();
       return;
     }
     fileInput?.click();

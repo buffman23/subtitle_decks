@@ -54,6 +54,7 @@ class AnalysisSession(Base):
     language_id: Mapped[int] = mapped_column(Integer, ForeignKey("languages.id"))
     srt_filename: Mapped[str] = mapped_column(String)
     subtitles: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    native_subtitles: Mapped[list | None] = mapped_column(JSON, nullable=True)
     results: Mapped[list] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
