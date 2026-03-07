@@ -42,7 +42,7 @@ export function scrollTableToLemma(lemma: string): void {
   if (vi === -1) return;
   const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement | null;
   if (!wrapper) return;
-  wrapper.scrollTop = vi * ROW_HEIGHT;
+  wrapper.scrollTop = Math.max(0, vi * ROW_HEIGHT - wrapper.clientHeight / 2 + ROW_HEIGHT / 2);
   renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
 }
 

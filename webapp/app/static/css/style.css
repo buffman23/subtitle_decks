@@ -165,7 +165,9 @@
 }
 
 #results-tbody tr.selected-row {
-  background-color: #e8f0fe;
+  --bs-table-bg: #fff8e1;
+  --bs-table-hover-bg: #fff8e1;
+  border-left: 3px solid #ffc107;
 }
 
 .subtitle-lemma-display {

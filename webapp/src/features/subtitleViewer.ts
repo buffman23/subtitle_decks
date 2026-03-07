@@ -71,7 +71,7 @@ function scrollIntoViewport(entry: HTMLElement): void {
   container.scrollTo({ top: target, behavior: 'smooth' });
 }
 
-function navigateToOccurrence(idx: number): void {
+function navigateToOccurrence(idx: number, scrollProcessed = true): void {
   document.querySelectorAll('.subtitle-entry.active').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.sub-word.active-word').forEach(el => el.classList.remove('active-word'));
 
@@ -79,7 +79,7 @@ function navigateToOccurrence(idx: number): void {
 
   const procEntry = document.getElementById(`subtitle-viewport-processed-sub-${subIdx}`);
   procEntry?.classList.add('active');
-  if (procEntry) scrollIntoViewport(procEntry);
+  if (scrollProcessed && procEntry) scrollIntoViewport(procEntry);
   procEntry?.querySelectorAll<HTMLElement>(`.sub-word[data-lemma="${CSS.escape(selectedLemma!)}"]`)
     .forEach(el => el.classList.add('active-word'));
 
@@ -135,10 +135,25 @@ function ensureLemmaVisible(lemma: string): void {
   }
 }
 
-function handleProcessedWordClick(lemma: string): void {
+function handleProcessedWordClick(lemma: string, span: HTMLElement): void {
   ensureLemmaVisible(lemma);
   scrollTableToLemma(lemma);
-  selectLemma(lemma);
+  selectedLemma = lemma;
+  state.selectedLemma = lemma;
+  occurrenceList = lemmaToSubtitles.get(lemma) ?? [];
+  // Start at the occurrence that was clicked, not always the first one
+  currentOccurrenceIdx = 0;
+  const entry = span.closest<HTMLElement>('.subtitle-entry');
+  if (entry) {
+    const subIdx = parseInt(entry.id.split('-').pop()!, 10);
+    if (!isNaN(subIdx)) {
+      const occIdx = occurrenceList.indexOf(subIdx);
+      if (occIdx !== -1) currentOccurrenceIdx = occIdx;
+    }
+  }
+  updateNavControls();
+  // Don't scroll the processed panel — the user just clicked a word there, it's already visible
+  if (occurrenceList.length > 0) navigateToOccurrence(currentOccurrenceIdx, false);
 }
 
 function handleNativeWordClick(entry: HTMLElement): void {
@@ -196,7 +211,7 @@ export function initSubtitleViewer(): void {
 
   document.getElementById('subtitle-viewport-processed')?.addEventListener('click', e => {
     const span = (e.target as Element).closest<HTMLElement>('.sub-word[data-lemma]');
-    if (span?.dataset['lemma']) handleProcessedWordClick(span.dataset['lemma']);
+    if (span?.dataset['lemma']) handleProcessedWordClick(span.dataset['lemma'], span);
   });
 
   document.getElementById('subtitle-viewport-native')?.addEventListener('click', e => {
