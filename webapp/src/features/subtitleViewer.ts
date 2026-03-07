@@ -152,8 +152,7 @@ function handleProcessedWordClick(lemma: string, span: HTMLElement): void {
     }
   }
   updateNavControls();
-  // Don't scroll the processed panel — the user just clicked a word there, it's already visible
-  if (occurrenceList.length > 0) navigateToOccurrence(currentOccurrenceIdx, false);
+  if (occurrenceList.length > 0) navigateToOccurrence(currentOccurrenceIdx);
 }
 
 function handleNativeWordClick(entry: HTMLElement): void {
