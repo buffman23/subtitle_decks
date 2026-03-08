@@ -117,9 +117,8 @@ async function openSession(id: number): Promise<void> {
   state.allResults = session.results;
   renderResults(session.results, session.results.reduce((a: number, r: { frequency: number }) => a + r.frequency, 0));
   if (_onAnalysisComplete) _onAnalysisComplete();
-  if (Array.isArray(session.native_subtitles) && session.native_subtitles.length > 0) {
-    restoreNativeSubtitles(session.native_subtitles);
-  }
+  restoreNativeSubtitles(Array.isArray(session.native_subtitles) && session.native_subtitles.length > 0
+    ? session.native_subtitles : []);
   loadSessions();
 }
 
