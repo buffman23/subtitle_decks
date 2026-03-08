@@ -1,7 +1,7 @@
 import type { SubtitleEntry, SubtitleSegment } from '../types';
 import { state, buildVisibleIndices } from '../state';
 import { escapeHtml, scrollTableToLemma, renderVirtual } from '../ui/virtualScroll';
-import { showWordTooltip, hideWordTooltip } from '../ui/wordTooltip';
+import { showWordTooltip, hideWordTooltip, isWordTooltipAnchor } from '../ui/wordTooltip';
 
 // Module-level state
 let nativeSubtitles: SubtitleEntry[] = [];
@@ -136,7 +136,7 @@ function ensureLemmaVisible(lemma: string): void {
   }
 }
 
-function handleProcessedWordClick(lemma: string, span: HTMLElement): void {
+function handleProcessedWordClick(lemma: string, span: HTMLElement, tooltipWasOpen = false): void {
   const alreadyActive = span.classList.contains('active-word');
   ensureLemmaVisible(lemma);
   scrollTableToLemma(lemma);
@@ -156,8 +156,9 @@ function handleProcessedWordClick(lemma: string, span: HTMLElement): void {
   updateNavControls();
   if (occurrenceList.length > 0) navigateToOccurrence(currentOccurrenceIdx);
 
-  // Show analysis tooltip only on second click (when word was already active)
-  if (alreadyActive) {
+  // Show analysis tooltip only on second click (when word was already active);
+  // hide it if the tooltip was already open on this span (toggle behaviour)
+  if (alreadyActive && !tooltipWasOpen) {
     const segStart = parseInt(span.dataset['segStart'] ?? '', 10);
     const subEntry = span.closest<HTMLElement>('.subtitle-entry');
     if (subEntry && !isNaN(segStart)) {
@@ -237,7 +238,10 @@ export function initSubtitleViewer(): void {
 
   document.getElementById('subtitle-viewport-processed')?.addEventListener('click', e => {
     const span = (e.target as Element).closest<HTMLElement>('.sub-word[data-lemma]');
-    if (span?.dataset['lemma']) handleProcessedWordClick(span.dataset['lemma'], span);
+    if (span?.dataset['lemma']) {
+      const tooltipWasAnchoredHere = isWordTooltipAnchor(span);
+      handleProcessedWordClick(span.dataset['lemma'], span, tooltipWasAnchoredHere);
+    }
   });
 
   document.getElementById('subtitle-viewport-native')?.addEventListener('click', e => {

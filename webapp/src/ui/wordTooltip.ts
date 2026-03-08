@@ -95,6 +95,7 @@ const MORPH_FIELDS    = ['pos', 'per', 'gen', 'num', 'asp', 'mod', 'vox', 'stt',
 const CLITIC_FIELDS   = ['prc0', 'prc1', 'prc2', 'prc3', 'enc0', 'enc1', 'enc2'];
 
 let tooltipEl: HTMLElement | null = null;
+let anchorEl: HTMLElement | null = null;
 
 export function initWordTooltip(): void {
   tooltipEl = document.createElement('div');
@@ -105,6 +106,8 @@ export function initWordTooltip(): void {
 
   document.addEventListener('click', e => {
     if (tooltipEl && !tooltipEl.contains(e.target as Node)) {
+      // Let sub-word click handlers manage the tooltip themselves
+      if ((e.target as Element).closest?.('.sub-word[data-lemma]')) return;
       hideWordTooltip();
     }
   }, true);
@@ -112,9 +115,19 @@ export function initWordTooltip(): void {
 
 export function hideWordTooltip(): void {
   if (tooltipEl) tooltipEl.style.display = 'none';
+  anchorEl = null;
 }
 
-export function showWordTooltip(analysis: WordAnalysis, anchorEl: HTMLElement, token?: string): void {
+export function isWordTooltipVisible(): boolean {
+  return !!tooltipEl && tooltipEl.style.display !== 'none';
+}
+
+export function isWordTooltipAnchor(el: HTMLElement): boolean {
+  return isWordTooltipVisible() && anchorEl === el;
+}
+
+export function showWordTooltip(analysis: WordAnalysis, anchor: HTMLElement, token?: string): void {
+  anchorEl = anchor;
   if (!tooltipEl) return;
 
   const sections: Array<{ label: string; fields: string[] }> = [
@@ -159,17 +172,17 @@ export function showWordTooltip(analysis: WordAnalysis, anchorEl: HTMLElement, t
   tooltipEl.style.top = '0';
   tooltipEl.style.left = '0';
 
-  const anchor = anchorEl.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
   const tip = tooltipEl.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
   const GAP = 6;
-  let top = anchor.bottom + GAP;
-  let left = anchor.left;
+  let top = anchorRect.bottom + GAP;
+  let left = anchorRect.left;
 
   // Flip above if clipped at bottom
-  if (top + tip.height > vh) top = anchor.top - tip.height - GAP;
+  if (top + tip.height > vh) top = anchorRect.top - tip.height - GAP;
   // Shift left if clipped at right
   if (left + tip.width > vw) left = vw - tip.width - GAP;
   if (left < 0) left = GAP;
