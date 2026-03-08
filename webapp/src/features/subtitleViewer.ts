@@ -164,7 +164,10 @@ function handleProcessedWordClick(lemma: string, span: HTMLElement): void {
       const subIdx = parseInt(subEntry.id.split('-').pop()!, 10);
       const sub = !isNaN(subIdx) ? state.parsedSubtitles.find(s => s.index === subIdx) : null;
       const seg = sub?.segments.find(s => s.start === segStart);
-      if (seg?.analysis) showWordTooltip(seg.analysis, span);
+      if (seg?.analysis) {
+        const token = sub ? sub.text.slice(seg.start, seg.start + seg.length) : undefined;
+        showWordTooltip(seg.analysis, span, token);
+      }
     }
   } else {
     hideWordTooltip();

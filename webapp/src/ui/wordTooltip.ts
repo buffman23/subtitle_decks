@@ -34,7 +34,7 @@ export function hideWordTooltip(): void {
   if (tooltipEl) tooltipEl.style.display = 'none';
 }
 
-export function showWordTooltip(analysis: WordAnalysis, anchorEl: HTMLElement): void {
+export function showWordTooltip(analysis: WordAnalysis, anchorEl: HTMLElement, token?: string): void {
   if (!tooltipEl) return;
 
   const sections: Array<{ label: string; fields: string[] }> = [
@@ -55,7 +55,7 @@ export function showWordTooltip(analysis: WordAnalysis, anchorEl: HTMLElement): 
     bodyHtml += '</dl>';
   }
 
-  const title = ana['lex'] ?? '';
+  const title = token ?? ana['lex'] ?? '';
   tooltipEl.innerHTML = `
     <div class="word-tooltip-header">
       <span class="word-tooltip-title" dir="rtl">${escapeHtml(title)}</span>
