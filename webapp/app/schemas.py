@@ -12,6 +12,7 @@ class SubtitleSegment(BaseModel):
     lemma: str
     start: int
     length: int
+    analysis: dict | None = None
 
 
 class SubtitleEntry(BaseModel):

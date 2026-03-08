@@ -5,6 +5,7 @@ import { initSessions, loadSessions, checkPendingSession, registerSessionAnalysi
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
 import { initSubtitleViewer, selectLemma, onAnalysisComplete } from './features/subtitleViewer';
+import { initWordTooltip } from './ui/wordTooltip';
 import { state } from './state';
 
 /* ── Language select with localStorage persistence ── */
@@ -42,6 +43,7 @@ initSessions();
 initIgnoreList();
 initCsvExport();
 initSubtitleViewer();
+initWordTooltip();
 
 applyColWidths();
 initColResize();

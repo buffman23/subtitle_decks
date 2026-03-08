@@ -27,7 +27,7 @@ def analyze(
     for sub in subtitle_objects:
         token_sentences.append(processor.tokenize(sub.text))
 
-    flat_lemmas = processor.lemmatize(token_sentences)
+    flat_lemmas = processor.lemmatize(token_sentences)  # list[tuple[str, dict|None]]
 
     # Build per-subtitle segment lists with character offsets
     subtitles = []
@@ -37,11 +37,14 @@ def analyze(
         offset += len(tokens)
         segments = []
         pos = 0
-        for token, lemma in zip(tokens, sub_lemmas):
+        for token, (lemma, analysis) in zip(tokens, sub_lemmas):
             idx = sub.text.find(token, pos)
             if idx == -1:
                 continue
-            segments.append({"lemma": lemma, "start": idx, "length": len(token)})
+            seg: dict = {"lemma": lemma, "start": idx, "length": len(token)}
+            if analysis:
+                seg["analysis"] = analysis
+            segments.append(seg)
             pos = idx + len(token)
         subtitles.append({
             "index": sub.index,
@@ -52,7 +55,7 @@ def analyze(
             "segments": segments,
         })
 
-    counter = Counter(flat_lemmas)
+    counter = Counter(lemma for lemma, _ in flat_lemmas)
     total_tokens = sum(counter.values())
     total_unique = len(counter)
 

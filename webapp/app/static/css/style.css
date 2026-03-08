@@ -231,3 +231,78 @@
 .col-resize-handle.resizing {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* Word analysis tooltip */
+.word-tooltip {
+  position: fixed;
+  z-index: 1080;
+  width: 260px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  font-size: 0.82rem;
+  overflow: hidden;
+}
+
+.word-tooltip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #343a40;
+  color: #fff;
+  padding: 6px 10px;
+}
+
+.word-tooltip-title {
+  font-family: "Amiri", "Scheherazade New", serif;
+  font-size: 1rem;
+  flex: 1;
+  text-align: right;
+}
+
+.word-tooltip-close {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 8px;
+}
+.word-tooltip-close:hover { color: #fff; }
+
+.word-tooltip-body {
+  padding: 8px 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.word-tooltip-section-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6c757d;
+  letter-spacing: 0.04em;
+  margin: 8px 0 2px;
+}
+.word-tooltip-section-label:first-child { margin-top: 0; }
+
+.word-tooltip-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 8px;
+  row-gap: 1px;
+  margin: 0;
+}
+
+.word-tooltip-dl dt {
+  color: #6c757d;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.word-tooltip-dl dd {
+  margin: 0;
+  word-break: break-word;
+}

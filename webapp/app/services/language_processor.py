@@ -17,8 +17,9 @@ class LanguageProcessor(ABC):
         """Tokenize a single subtitle string into words."""
 
     @abstractmethod
-    def lemmatize(self, token_sentences: list[list[str]]) -> list[str]:
+    def lemmatize(self, token_sentences: list[list[str]]) -> list[tuple[str, dict | None]]:
         """
-        Take sentence-batched tokens and return a flat list of lemmas.
+        Take sentence-batched tokens and return a flat list of (lemma, analysis) pairs.
+        analysis is None on fallback/backoff.
         Each inner list is one sentence/subtitle worth of tokens.
         """

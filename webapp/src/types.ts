@@ -1,6 +1,19 @@
 export interface WordFrequency { lemma: string; frequency: number; ignored: boolean; }
 
-export interface SubtitleSegment { lemma: string; start: number; length: number; }
+export interface WordAnalysis {
+  // Lexical
+  lex?: string; root?: string; gloss?: string; diac?: string;
+  bw?: string; caphi?: string; pattern?: string;
+  // Morphology
+  pos?: string; per?: string; gen?: string; num?: string; asp?: string;
+  mod?: string; vox?: string; stt?: string; cas?: string;
+  form_gen?: string; form_num?: string;
+  // Clitics
+  prc0?: string; prc1?: string; prc2?: string; prc3?: string;
+  enc0?: string; enc1?: string; enc2?: string;
+}
+
+export interface SubtitleSegment { lemma: string; start: number; length: number; analysis?: WordAnalysis | null; }
 export interface SubtitleEntry {
   index: number;
   start_time: string;

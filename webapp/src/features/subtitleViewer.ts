@@ -1,6 +1,7 @@
 import type { SubtitleEntry, SubtitleSegment } from '../types';
 import { state, buildVisibleIndices } from '../state';
 import { escapeHtml, scrollTableToLemma, renderVirtual } from '../ui/virtualScroll';
+import { showWordTooltip, hideWordTooltip } from '../ui/wordTooltip';
 
 // Module-level state
 let nativeSubtitles: SubtitleEntry[] = [];
@@ -30,7 +31,7 @@ function renderProcessedText(text: string, segments: SubtitleSegment[]): string 
   for (const seg of sorted) {
     if (seg.start > pos) result += escapeHtml(text.slice(pos, seg.start));
     const surface = text.slice(seg.start, seg.start + seg.length);
-    result += `<span class="sub-word" data-lemma="${escapeHtml(seg.lemma)}">${escapeHtml(surface)}</span>`;
+    result += `<span class="sub-word" data-lemma="${escapeHtml(seg.lemma)}" data-seg-start="${seg.start}">${escapeHtml(surface)}</span>`;
     pos = seg.start + seg.length;
   }
   if (pos < text.length) result += escapeHtml(text.slice(pos));
@@ -136,6 +137,7 @@ function ensureLemmaVisible(lemma: string): void {
 }
 
 function handleProcessedWordClick(lemma: string, span: HTMLElement): void {
+  const alreadyActive = span.classList.contains('active-word');
   ensureLemmaVisible(lemma);
   scrollTableToLemma(lemma);
   selectedLemma = lemma;
@@ -153,6 +155,20 @@ function handleProcessedWordClick(lemma: string, span: HTMLElement): void {
   }
   updateNavControls();
   if (occurrenceList.length > 0) navigateToOccurrence(currentOccurrenceIdx);
+
+  // Show analysis tooltip only on second click (when word was already active)
+  if (alreadyActive) {
+    const segStart = parseInt(span.dataset['segStart'] ?? '', 10);
+    const subEntry = span.closest<HTMLElement>('.subtitle-entry');
+    if (subEntry && !isNaN(segStart)) {
+      const subIdx = parseInt(subEntry.id.split('-').pop()!, 10);
+      const sub = !isNaN(subIdx) ? state.parsedSubtitles.find(s => s.index === subIdx) : null;
+      const seg = sub?.segments.find(s => s.start === segStart);
+      if (seg?.analysis) showWordTooltip(seg.analysis, span);
+    }
+  } else {
+    hideWordTooltip();
+  }
 }
 
 function handleNativeWordClick(entry: HTMLElement): void {
@@ -182,6 +198,7 @@ export function restoreNativeSubtitles(subs: SubtitleEntry[]): void {
 }
 
 export function onAnalysisComplete(): void {
+  hideWordTooltip();
   buildLemmaIndex();
   renderSubtitleViewport(state.parsedSubtitles, 'subtitle-viewport-processed', true, true);
   // Reset nav controls

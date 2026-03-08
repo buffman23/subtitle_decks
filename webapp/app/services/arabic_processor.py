@@ -6,6 +6,16 @@ from app.services.language_processor import LanguageProcessor
 logger = logging.getLogger(__name__)
 
 _ARABIC_RE = re.compile(r"[\u0621-\u064A\u064B-\u065F\u0671-\u06D3\u06D5]+")
+
+_LEXICAL_FIELDS = ["lex", "root", "gloss", "diac", "bw", "caphi", "pattern"]
+_MORPH_FIELDS   = ["pos", "per", "gen", "num", "asp", "mod", "vox", "stt", "cas", "form_gen", "form_num"]
+_CLITIC_FIELDS  = ["prc0", "prc1", "prc2", "prc3", "enc0", "enc1", "enc2"]
+_EMPTY_VALUES: set = {"na", None, "", -99.0}
+
+
+def _extract_analysis(ana: dict) -> dict:
+    return {k: ana.get(k) for k in _LEXICAL_FIELDS + _MORPH_FIELDS + _CLITIC_FIELDS
+            if ana.get(k) not in _EMPTY_VALUES}
 _CHUNK_TOKENS   = 200  # total window size fed to BERT
 _CONTEXT_TOKENS = 50   # context padding on each side
 _BATCH_TOKENS   = _CHUNK_TOKENS - 2 * _CONTEXT_TOKENS  # 100, max payload per call
@@ -46,10 +56,10 @@ class ArabicProcessor(LanguageProcessor):
             tokens = text.split()
         return [tok for tok in tokens if _ARABIC_RE.fullmatch(tok)]
 
-    def lemmatize(self, token_sentences: list[list[str]]) -> list[str]:
+    def lemmatize(self, token_sentences: list[list[str]]) -> list[tuple[str, dict | None]]:
         disambiguator = self._get_disambiguator()
         if disambiguator is None:
-            return [tok for sentence in token_sentences for tok in sentence]
+            return [(tok, None) for sentence in token_sentences for tok in sentence]
 
         # Build flat token list + per-subtitle index ranges
         flat_tokens: list[str] = []
@@ -81,7 +91,7 @@ class ArabicProcessor(LanguageProcessor):
         if current_batch:
             batches.append(current_batch)
 
-        lemmas_map: dict[int, list[str]] = {}  # subtitle idx → lemma list
+        lemmas_map: dict[int, list[tuple[str, dict | None]]] = {}  # subtitle idx → (lemma, analysis) list
         backoff_count = 0
 
         for batch in batches:
@@ -96,7 +106,7 @@ class ArabicProcessor(LanguageProcessor):
                 for sub_idx in batch:
                     s, e = ranges[sub_idx]
                     local_start = offset + (s - batch_start)
-                    sub_lemmas = []
+                    sub_lemmas: list[tuple[str, dict | None]] = []
                     for i in range(e - s):
                         token = flat_tokens[s + i]
                         disambig = disambiguations[local_start + i]
@@ -104,23 +114,23 @@ class ArabicProcessor(LanguageProcessor):
                             ana = disambig.analyses[0].analysis
                             if ana.get("source") == "backoff":
                                 backoff_count += 1
-                                sub_lemmas.append(token)
+                                sub_lemmas.append((token, None))
                             else:
-                                sub_lemmas.append(ana.get("lex") or token)
+                                sub_lemmas.append((ana.get("lex") or token, _extract_analysis(ana)))
                         else:
-                            sub_lemmas.append(token)
+                            sub_lemmas.append((token, None))
                     lemmas_map[sub_idx] = sub_lemmas
             except Exception as exc:
                 logger.debug("Disambiguation failed for batch at %d: %s", batch_start, exc)
                 for sub_idx in batch:
                     s, e = ranges[sub_idx]
-                    lemmas_map[sub_idx] = flat_tokens[s:e]
+                    lemmas_map[sub_idx] = [(tok, None) for tok in flat_tokens[s:e]]
 
         if backoff_count:
             logger.debug("Backoff fallback used for %d/%d tokens", backoff_count, total)
 
         # Reassemble in original subtitle order
-        result: list[str] = []
+        result: list[tuple[str, dict | None]] = []
         for idx in range(len(ranges)):
             if idx in lemmas_map:
                 result.extend(lemmas_map[idx])
