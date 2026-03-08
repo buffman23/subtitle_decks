@@ -84,6 +84,25 @@ const FEATURE_VALUE_LABELS: Record<string, Record<string, string>> = {
     ma_rel: 'Relative ma', mA_rel: 'Relative mA', man_rel: 'Relative man',
     ma_sub: 'Subordinating ma', mA_sub: 'Subordinating mA',
   },
+  enc1: {
+    '0': 'None', na: 'N/A',
+    '1s_iobj': '1st person singular indirect object', '1s_poss': '1st person singular possessive', '1s_pron': '1st person singular pronoun',
+    '1p_iobj': '1st person plural indirect object', '1p_poss': '1st person plural possessive', '1p_pron': '1st person plural pronoun',
+    '2d_iobj': '2nd person dual indirect object', '2d_poss': '2nd person dual possessive', '2d_pron': '2nd person dual pronoun',
+    '2fs_iobj': '2nd person feminine singular indirect object', '2fs_poss': '2nd person feminine singular possessive', '2fs_pron': '2nd person feminine singular pronoun',
+    '2fp_iobj': '2nd person feminine plural indirect object', '2fp_poss': '2nd person feminine plural possessive', '2fp_pron': '2nd person feminine plural pronoun',
+    '2ms_iobj': '2nd person masculine singular indirect object', '2ms_poss': '2nd person masculine singular possessive', '2ms_pron': '2nd person masculine singular pronoun',
+    '2mp_iobj': '2nd person masculine plural indirect object', '2mp_poss': '2nd person masculine plural possessive', '2mp_pron': '2nd person masculine plural pronoun',
+    '3d_iobj': '3rd person dual indirect object', '3d_poss': '3rd person dual possessive', '3d_pron': '3rd person dual pronoun',
+    '3fs_iobj': '3rd person feminine singular indirect object', '3fs_poss': '3rd person feminine singular possessive', '3fs_pron': '3rd person feminine singular pronoun',
+    '3fp_iobj': '3rd person feminine plural indirect object', '3fp_poss': '3rd person feminine plural possessive', '3fp_pron': '3rd person feminine plural pronoun',
+    '3ms_iobj': '3rd person masculine singular indirect object', '3ms_poss': '3rd person masculine singular possessive', '3ms_pron': '3rd person masculine singular pronoun',
+    '3mp_iobj': '3rd person masculine plural indirect object', '3mp_poss': '3rd person masculine plural possessive', '3mp_pron': '3rd person masculine plural pronoun',
+    Ah_voc: 'Vocative Ah', lA_neg: 'Negative lA',
+    ma_interrog: 'Interrogative ma', mA_interrog: 'Interrogative mA', man_interrog: 'Interrogative man',
+    ma_rel: 'Relative ma', mA_rel: 'Relative mA', man_rel: 'Relative man',
+    ma_sub: 'Subordinating ma', mA_sub: 'Subordinating mA',
+  },
 };
 
 function expandValue(field: string, raw: string): string {
