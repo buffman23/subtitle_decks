@@ -32,11 +32,8 @@ cd webapp
 # Install dependencies (first time only)
 npm install
 
-# Compile once
+# Recompile on save
 npm run build
-
-# Watch mode (recompile on save)
-npm run build:watch
 
 # Type-check without emitting
 npm run typecheck
