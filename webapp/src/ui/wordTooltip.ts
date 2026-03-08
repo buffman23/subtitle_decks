@@ -50,7 +50,8 @@ export function showWordTooltip(analysis: WordAnalysis, anchorEl: HTMLElement, t
     if (!entries.length) continue;
     bodyHtml += `<p class="word-tooltip-section-label">${label}</p><dl class="word-tooltip-dl">`;
     for (const f of entries) {
-      bodyHtml += `<dt>${FIELD_LABELS[f] ?? f}</dt><dd>${escapeHtml(String(ana[f]))}</dd>`;
+      const val = f === 'gloss' ? String(ana[f]).replace(/_\[CALIMA\]/g, '') : String(ana[f]);
+      bodyHtml += `<dt>${FIELD_LABELS[f] ?? f}</dt><dd>${escapeHtml(val)}</dd>`;
     }
     bodyHtml += '</dl>';
   }
