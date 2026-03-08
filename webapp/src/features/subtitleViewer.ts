@@ -222,6 +222,13 @@ export function initSubtitleViewer(): void {
     file.text().then(text => {
       nativeSubtitles = parseSrt(text);
       renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', false, false);
+      if (state.activeSessionId !== null) {
+        fetch(`/api/sessions/${state.activeSessionId}/native-subtitles`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ native_subtitles: nativeSubtitles }),
+        });
+      }
     });
   });
 

@@ -82,3 +82,7 @@ class SessionCreateRequest(BaseModel):
 
 class SessionRenameRequest(BaseModel):
     name: str
+
+
+class SessionNativeSubtitlesRequest(BaseModel):
+    native_subtitles: list[SubtitleEntry]

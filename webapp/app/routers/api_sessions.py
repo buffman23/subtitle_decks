@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user, resolve_language_id
 from app.models import AnalysisSession
-from app.schemas import SessionCreateRequest, SessionDetail, SessionOut, SessionRenameRequest
+from app.schemas import SessionCreateRequest, SessionDetail, SessionNativeSubtitlesRequest, SessionOut, SessionRenameRequest
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
@@ -106,6 +106,22 @@ async def rename_session(
     db.commit()
     db.refresh(session)
     return session
+
+
+@router.put("/{session_id}/native-subtitles", status_code=204)
+async def update_native_subtitles(
+    session_id: int,
+    payload: SessionNativeSubtitlesRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _require_user(request, db)
+    session = db.get(AnalysisSession, session_id)
+    if session is None or session.user_id != user.id:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    session.native_subtitles = [s.model_dump() for s in payload.native_subtitles] or None
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.delete("/{session_id}", status_code=204)
