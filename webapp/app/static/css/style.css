@@ -92,8 +92,20 @@
 /* Viewports row fills remaining height inside the column */
 .subtitle-viewports-row { flex: 1 1 0; min-height: 0; }
 
-/* Each viewport's label+scroll wrapper must also shrink */
-.subtitle-viewports-row > * { min-height: 0; }
+/* Force the two viewport columns to share width equally regardless of content,
+   so the Subtitles title bar can't be widened by a long selected lemma. */
+.subtitle-viewports-row > * { flex: 1 1 0; min-width: 0; min-height: 0; }
+
+/* Title bar: clip overflowing content instead of letting it spill outside the column */
+.subtitle-viewports-row > * > .bg-dark { overflow: hidden; }
+
+/* Selected-lemma readout: allow shrinking and ellipsis when column is narrow */
+#selected-lemma-display {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Scrollable results table */
 .results-table-wrapper {
