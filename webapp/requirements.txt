@@ -9,5 +9,6 @@ itsdangerous
 srt
 camel-tools
 stanza
+calamancy
 python-dotenv
 pydantic-settings
