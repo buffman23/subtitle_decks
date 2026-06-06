@@ -1,6 +1,7 @@
 from app.services.language_processor import LanguageProcessor
 from app.services.arabic_processor import ArabicMSAProcessor, ArabicEGYProcessor
 from app.services.english_processor import EnglishProcessor
+from app.services.german_processor import GermanProcessor
 
 # Each entry: code -> {"class": ProcessorClass, "name": display_name}
 # The id assigned to each language in the DB is its 1-based position in this dict.
@@ -8,6 +9,7 @@ _REGISTRY: dict[str, dict] = {
     "ar-msa": {"class": ArabicMSAProcessor, "name": "Arabic – Modern Standard (MSA)"},
     "ar-egy": {"class": ArabicEGYProcessor, "name": "Arabic – Egyptian (EGY)"},
     "en": {"class": EnglishProcessor, "name": "English (EN)"},
+    "de": {"class": GermanProcessor, "name": "German (DE)"},
     # Add new processors here, e.g.:
     # "fr": {"class": FrenchProcessor, "name": "French"},
 }
