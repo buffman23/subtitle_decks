@@ -9,17 +9,11 @@
   font-family: "Scheherazade New", serif;
 }
 
-/* Sidebar resize handle */
+/* Sidebar resize handle — invisible, only cursor changes */
 #sidebar-resize-handle {
   width: 6px;
   flex-shrink: 0;
   cursor: col-resize;
-  background: linear-gradient(to right, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px, transparent 4px);
-  transition: background 0.1s;
-}
-#sidebar-resize-handle:hover,
-#sidebar-resize-handle.resizing {
-  background: rgba(13, 110, 253, 0.25);
 }
 
 /* Sidebar session items */
@@ -36,10 +30,6 @@
 }
 .session-item:hover {
   background: #e9ecef;
-}
-.session-item .session-name {
-  flex: 1 1 0;
-  min-width: 0;
 }
 .session-item.active {
   background: #0d6efd22;

@@ -33,9 +33,11 @@ export async function loadSessions(): Promise<void> {
       item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
       item.dataset['id'] = String(s.id);
       item.innerHTML = `
-        <span class="text-truncate session-name" title="${s.name}">${s.name}</span>
-        <span class="badge bg-secondary fw-normal ms-1 flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
-        <div class="d-flex ms-auto">
+        <div class="d-flex align-items-center gap-1 flex-grow-1 min-width-0">
+          <span class="text-truncate session-name" title="${s.name}">${s.name}</span>
+          <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
+        </div>
+        <div class="d-flex flex-shrink-0">
           <button class="btn btn-sm btn-link text-secondary btn-rename" title="Rename">
             <i class="bi bi-pencil"></i>
           </button>
