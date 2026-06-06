@@ -42,11 +42,29 @@ function renderNativeText(text: string): string {
   return escapeHtml(text);
 }
 
+type DetectedLanguage = 'arabic' | 'latin' | 'unknown';
+
+function detectLanguage(subtitles: SubtitleEntry[]): DetectedLanguage {
+  let ltr = 0, rtl = 0;
+  for (const sub of subtitles.slice(0, 20)) {
+    for (const ch of sub.text) {
+      if (/[a-zA-Z]/.test(ch)) ltr++;
+      else if (/[ا-ى]/.test(ch)) rtl++;
+    }
+  }
+  if (rtl > ltr) return 'arabic';
+  if (ltr > rtl) return 'latin';
+  return 'unknown';
+}
+
 function renderSubtitleViewport(
-  subtitles: SubtitleEntry[], containerId: string, isRtl: boolean, isProcessed: boolean
+  subtitles: SubtitleEntry[], containerId: string, lang: DetectedLanguage, isProcessed: boolean
 ): void {
   const container = document.getElementById(containerId);
   if (!container) return;
+  container.classList.remove('lang-arabic', 'lang-latin', 'lang-unknown');
+  container.classList.add(`lang-${lang}`);
+  const isRtl = lang === 'arabic';
   container.innerHTML = '';
   for (const sub of subtitles) {
     const div = document.createElement('div');
@@ -198,13 +216,17 @@ export function getNativeSubtitles(): SubtitleEntry[] {
 
 export function restoreNativeSubtitles(subs: SubtitleEntry[]): void {
   nativeSubtitles = subs;
-  renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', false, false);
+  renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', detectLanguage(subs), false);
 }
 
 export function onAnalysisComplete(): void {
   hideWordTooltip();
   buildLemmaIndex();
-  renderSubtitleViewport(state.parsedSubtitles, 'subtitle-viewport-processed', true, true);
+  const lang = detectLanguage(state.parsedSubtitles);
+  const table = document.getElementById('results-table');
+  table?.classList.remove('lang-arabic', 'lang-latin', 'lang-unknown');
+  table?.classList.add(`lang-${lang}`);
+  renderSubtitleViewport(state.parsedSubtitles, 'subtitle-viewport-processed', lang, true);
   // Reset nav controls
   selectedLemma = null;
   state.selectedLemma = null;
@@ -222,7 +244,7 @@ export function initSubtitleViewer(): void {
     if (!file) return;
     file.text().then(text => {
       nativeSubtitles = parseSrt(text);
-      renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', false, false);
+      renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', detectLanguage(nativeSubtitles), false);
       if (state.activeSessionId !== null) {
         fetch(`/api/sessions/${state.activeSessionId}/native-subtitles`, {
           method: 'PUT',

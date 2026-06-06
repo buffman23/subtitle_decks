@@ -1,7 +1,11 @@
-/* RTL support for Arabic text in results */
+/* Word column sizing */
 #results-tbody td:nth-child(2) {
-  direction: rtl;
   font-size: 1.1rem;
+}
+
+/* RTL language: direction + Arabic font in word column */
+#results-table.lang-arabic #results-tbody td:nth-child(2) {
+  direction: rtl;
   font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
 }
 
@@ -130,9 +134,11 @@
 }
 
 #subtitle-viewport-processed .sub-text {
-  direction: rtl;
-  font-family: "Amiri", "Scheherazade New", serif;
   font-size: 1rem;
+}
+
+.lang-arabic .sub-text {
+  font-family: "Amiri", "Scheherazade New", serif;
 }
 
 .sub-word {
