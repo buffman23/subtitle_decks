@@ -86,7 +86,27 @@ export function initAnalyzeForm(): void {
       state.parsedSubtitles = data.subtitles ?? [];
       renderResults(data.results, data.total_tokens);
       if (_onAnalysisComplete) _onAnalysisComplete();
-      if (IS_LOGGED_IN) loadSessions();
+      if (IS_LOGGED_IN) {
+        try {
+          const saveRes = await fetch('/api/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              language: state.currentLanguage,
+              srt_filename: state.currentFilename,
+              subtitles: data.subtitles ?? [],
+              native_subtitles: [],
+              results: data.results,
+            }),
+          });
+          if (saveRes.ok) {
+            const saved = await saveRes.json();
+            state.activeSessionId = saved.id;
+            flash('Session saved!');
+          }
+        } catch (_) { /* non-critical */ }
+        loadSessions();
+      }
     } catch (err) {
       flash('Network error: ' + (err as Error).message, 'danger');
     } finally {

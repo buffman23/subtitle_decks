@@ -2,7 +2,7 @@ import { state } from '../state';
 import { flash } from '../ui/flash';
 import { renderResults } from '../ui/virtualScroll';
 import { resetUpload } from './analyze';
-import { getNativeSubtitles, restoreNativeSubtitles } from './subtitleViewer';
+import { restoreNativeSubtitles } from './subtitleViewer';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -143,36 +143,6 @@ async function deleteSession(id: number): Promise<void> {
   }
 }
 
-export async function checkPendingSession(): Promise<void> {
-  const raw = sessionStorage.getItem('pendingSession');
-  if (raw) {
-    sessionStorage.removeItem('pendingSession');
-    try {
-      const { results, subtitles, totalTokens, language, filename, nativeSubtitles } = JSON.parse(raw);
-      state.currentLanguage = language;
-      state.currentFilename = filename;
-      state.parsedSubtitles = subtitles;
-      state.allResults = results;
-      renderResults(results, totalTokens);
-      if (_onAnalysisComplete) _onAnalysisComplete();
-      if (Array.isArray(nativeSubtitles) && nativeSubtitles.length > 0) {
-        restoreNativeSubtitles(nativeSubtitles);
-      }
-      const res = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language, srt_filename: filename, subtitles, native_subtitles: nativeSubtitles ?? [], results }),
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        state.activeSessionId = saved.id;
-        flash('Session saved!');
-      }
-    } catch (_) { /* corrupt storage — silently discard */ }
-  }
-  loadSessions();
-}
-
 export function initSessions(): void {
   document.getElementById('btn-new-session')?.addEventListener('click', () => {
     state.activeSessionId = null;
@@ -181,46 +151,5 @@ export function initSessions(): void {
     document.getElementById('upload-section')?.classList.remove('d-none');
     resetUpload();
     loadSessions();
-  });
-
-  document.getElementById('btn-save-session')?.addEventListener('click', async () => {
-    if (!IS_LOGGED_IN) {
-      try {
-        sessionStorage.setItem('pendingSession', JSON.stringify({
-          results: state.allResults,
-          subtitles: state.parsedSubtitles,
-          totalTokens: state.totalTokensCached,
-          language: state.currentLanguage,
-          filename: state.currentFilename,
-          nativeSubtitles: getNativeSubtitles(),
-        }));
-      } catch (_) { /* sessionStorage unavailable — ignore */ }
-      const loginModal = document.getElementById('login-modal');
-      const heading = loginModal?.querySelector('h6');
-      if (heading) heading.textContent = 'Sign in to save your session';
-      const modal = (window as any).bootstrap?.Modal.getOrCreateInstance(loginModal);
-      modal?.show();
-      return;
-    }
-    if (!state.allResults.length) return;
-    const res = await fetch('/api/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: state.currentLanguage,
-        srt_filename: state.currentFilename,
-        subtitles: state.parsedSubtitles,
-        native_subtitles: getNativeSubtitles(),
-        results: state.allResults,
-      }),
-    });
-    if (res.ok) {
-      const saved = await res.json();
-      state.activeSessionId = saved.id;
-      flash('Session saved!');
-      loadSessions();
-    } else {
-      flash('Failed to save session.', 'danger');
-    }
   });
 }
