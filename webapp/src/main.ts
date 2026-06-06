@@ -1,7 +1,7 @@
 import { applyColWidths, initColResize, applySidebarWidth, initSidebarResize } from './ui/colResize';
 import { renderVirtual, registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler } from './ui/virtualScroll';
 import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler } from './features/analyze';
-import { initSessions, loadSessions, registerSessionAnalysisCompleteHandler } from './features/sessions';
+import { initSessions, loadSessions, checkPendingSession, registerSessionAnalysisCompleteHandler } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
 import { initSubtitleViewer, selectLemma, onAnalysisComplete } from './features/subtitleViewer';
@@ -55,5 +55,5 @@ document.querySelector('.results-table-wrapper')?.addEventListener('scroll', fun
   renderVirtual(this.scrollTop, this.clientHeight);
 });
 
-/* ── Load sessions on startup ── */
-if (IS_LOGGED_IN) loadSessions();
+/* ── Load sessions on startup (also restores + saves any pending session left by an anonymous user who just signed in) ── */
+if (IS_LOGGED_IN) checkPendingSession();

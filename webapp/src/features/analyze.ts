@@ -1,7 +1,7 @@
 import { state, buildVisibleIndices } from '../state';
 import { flash } from '../ui/flash';
 import { renderResults, renderVirtual } from '../ui/virtualScroll';
-import { loadSessions } from './sessions';
+import { loadSessions, stashPendingSession } from './sessions';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -106,6 +106,9 @@ export function initAnalyzeForm(): void {
           }
         } catch (_) { /* non-critical */ }
         loadSessions();
+      } else {
+        // Stash the analysis so it gets persisted automatically when the user signs in.
+        stashPendingSession();
       }
     } catch (err) {
       flash('Network error: ' + (err as Error).message, 'danger');
