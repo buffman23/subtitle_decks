@@ -6,7 +6,7 @@
 /* RTL language: direction + Arabic font in word column */
 #results-table.lang-arabic #results-tbody td:nth-child(2) {
   direction: rtl;
-  font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+  font-family: "Scheherazade New", serif;
 }
 
 /* Sidebar session items */
@@ -138,7 +138,7 @@
 }
 
 .lang-arabic .sub-text {
-  font-family: "Amiri", "Scheherazade New", serif;
+  font-family: "Scheherazade New", serif;
 }
 
 .sub-word {
@@ -177,7 +177,7 @@
 }
 
 .subtitle-lemma-display {
-  font-family: "Amiri", "Scheherazade New", serif;
+  font-family: "Scheherazade New", serif;
   font-size: 1.05rem;
   min-width: 4ch;
 }
@@ -261,7 +261,7 @@
 }
 
 .word-tooltip-title {
-  font-family: "Amiri", "Scheherazade New", serif;
+  font-family: "Scheherazade New", serif;
   font-size: 1rem;
   flex: 1;
   text-align: right;
