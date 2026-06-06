@@ -7,7 +7,7 @@
   <div class="d-flex flex-grow-1 overflow-hidden">
 
     <!-- Session Sidebar -->
-    <div id="sidebar" class="bg-light border-end d-flex flex-column" style="width:240px;min-width:200px;overflow-y:auto;">
+    <div id="sidebar" class="bg-light border-end d-flex flex-column" style="width:240px;min-width:160px;overflow-y:auto;flex-shrink:0;">
       <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
         <strong>Sessions</strong>
         <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
@@ -20,6 +20,7 @@
         {% endif %}
       </div>
     </div>
+    <div id="sidebar-resize-handle"></div>
 
     <!-- Main area -->
     <div id="main-content" class="flex-grow-1 overflow-hidden p-4 d-flex flex-column">

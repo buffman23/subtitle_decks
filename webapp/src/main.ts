@@ -1,4 +1,4 @@
-import { applyColWidths, initColResize } from './ui/colResize';
+import { applyColWidths, initColResize, applySidebarWidth, initSidebarResize } from './ui/colResize';
 import { renderVirtual, registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler } from './ui/virtualScroll';
 import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler } from './features/analyze';
 import { initSessions, loadSessions, registerSessionAnalysisCompleteHandler } from './features/sessions';
@@ -47,6 +47,8 @@ initWordTooltip();
 
 applyColWidths();
 initColResize();
+applySidebarWidth();
+initSidebarResize();
 
 /* ── Virtual scroll listener ── */
 document.querySelector('.results-table-wrapper')?.addEventListener('scroll', function (this: HTMLElement) {
