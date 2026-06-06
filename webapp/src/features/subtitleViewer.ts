@@ -222,6 +222,7 @@ export function restoreNativeSubtitles(subs: SubtitleEntry[]): void {
 export function onAnalysisComplete(): void {
   hideWordTooltip();
   buildLemmaIndex();
+  restoreNativeSubtitles([]);
   const lang = detectLanguage(state.parsedSubtitles);
   const table = document.getElementById('results-table');
   table?.classList.remove('lang-arabic', 'lang-latin', 'lang-unknown');
