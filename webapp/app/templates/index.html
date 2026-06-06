@@ -6,13 +6,16 @@
 
   <div class="d-flex flex-grow-1 overflow-hidden">
 
-    <!-- Session Sidebar -->
-    <div id="sidebar" class="bg-light border-end d-flex flex-column" style="width:240px;min-width:160px;overflow-y:auto;flex-shrink:0;">
+    <!-- Session Sidebar (acts as an offcanvas drawer below 768px, normal column above) -->
+    <div id="sidebar" class="offcanvas-md offcanvas-start bg-light border-end" tabindex="-1" aria-labelledby="sidebar-label">
       <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-        <strong>Sessions</strong>
-        <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
-          <i class="bi bi-plus-lg"></i>
-        </button>
+        <strong id="sidebar-label">Sessions</strong>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+          <button type="button" class="btn-close d-md-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
+        </div>
       </div>
       <div id="session-list" class="flex-grow-1 overflow-y-auto p-2">
         {% if user %}
@@ -26,6 +29,12 @@
 
     <!-- Main area -->
     <div id="main-content" class="flex-grow-1 overflow-hidden p-4 d-flex flex-column">
+
+      <!-- Mobile-only sessions drawer toggler -->
+      <button class="btn btn-sm btn-outline-secondary d-md-none align-self-start mb-2" type="button"
+              data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+        <i class="bi bi-list"></i> Sessions
+      </button>
 
       <!-- Upload form -->
       <div id="upload-section" class="flex-grow-1 d-flex align-items-center justify-content-center">
@@ -61,14 +70,14 @@
         <div class="d-flex align-items-center gap-3 mb-3 flex-wrap flex-shrink-0">
           <span id="result-summary" class="text-muted"></span>
 <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
-            <i class="bi bi-filetype-csv"></i> Download CSV
+            <i class="bi bi-filetype-csv"></i> <span class="btn-label">Download CSV</span>
           </button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-ignored">
-            <i class="bi bi-eye-slash"></i> Show ignored
+            <i class="bi bi-eye-slash"></i> <span class="btn-label">Show ignored</span>
           </button>
           <div class="dropdown">
             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-list"></i> Ignore list
+              <i class="bi bi-list"></i> <span class="btn-label">Ignore list</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
               {% if user %}

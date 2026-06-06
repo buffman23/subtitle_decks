@@ -127,7 +127,7 @@ export function initToggleIgnored(): void {
     wrapper.scrollTop = 0;
     renderVirtual(0, wrapper.clientHeight);
     this.innerHTML = state.showingIgnored
-      ? '<i class="bi bi-eye"></i> Hide ignored'
-      : '<i class="bi bi-eye-slash"></i> Show ignored';
+      ? '<i class="bi bi-eye"></i> <span class="btn-label">Hide ignored</span>'
+      : '<i class="bi bi-eye-slash"></i> <span class="btn-label">Show ignored</span>';
   });
 }

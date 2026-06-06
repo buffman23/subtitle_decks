@@ -331,3 +331,52 @@
   margin: 0;
   word-break: break-word;
 }
+
+/* ---------- Responsive: mobile (< 768px) ---------- */
+@media (max-width: 767.98px) {
+  /* The manual resize handle is meaningless when the sidebar is an offcanvas drawer */
+  #sidebar-resize-handle { display: none; }
+
+  /* Bootstrap's offcanvas-md uses var(--bs-offcanvas-width) below the breakpoint */
+  #sidebar.offcanvas-md { --bs-offcanvas-width: 280px; }
+
+  /* Stack results table above the subtitle viewers */
+  .results-panels-row { flex-direction: column; }
+  .results-panels-row .results-table-wrapper {
+    flex: 0 0 40vh;
+    min-height: 200px;
+    width: 100%;
+  }
+
+  /* Stack the two subtitle viewers vertically too */
+  .subtitle-viewports-row { flex-direction: column; }
+  .subtitle-viewports-row > * { min-height: 220px; }
+
+  /* Column-resize handles are unusable on touch — hide them */
+  .col-resize-handle { display: none; }
+
+  #main-content { padding: 1rem !important; }
+
+  .drop-zone {
+    min-width: 0;
+    padding: 2rem 1.5rem;
+    width: 100%;
+    max-width: 360px;
+  }
+}
+
+/* Sidebar layout: flex column at all widths; fixed dimensions only at md+ */
+#sidebar { display: flex; flex-direction: column; }
+@media (min-width: 768px) {
+  #sidebar {
+    width: 240px;
+    min-width: 160px;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+}
+
+/* ---------- Responsive: icons-only toolbar (< 576px) ---------- */
+@media (max-width: 575.98px) {
+  .btn-label { display: none; }
+}
