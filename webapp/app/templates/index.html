@@ -4,16 +4,6 @@
 {% block content %}
 <div class="d-flex flex-column" style="height: calc(100vh - 56px);">
 
-  <!-- Language bar -->
-  <div class="border-bottom bg-light px-4 py-2 d-flex align-items-center gap-2 flex-shrink-0">
-    <label class="form-label mb-0 fw-semibold small text-muted" for="language-select">Language</label>
-    <select class="form-select form-select-sm w-auto" id="language-select" name="language">
-      {% for lang in languages %}
-      <option value="{{ lang.code }}">{{ lang.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
   <div class="d-flex flex-grow-1 overflow-hidden">
 
     <!-- Session Sidebar -->
@@ -44,6 +34,14 @@
             <div id="drop-zone-filename" class="mt-2 text-primary small d-none"></div>
           </div>
           <input type="file" id="srt-file" name="file" accept=".srt" class="d-none">
+          <div class="mt-3 d-flex align-items-center justify-content-center gap-2">
+            <label class="form-label mb-0 small text-muted" for="language-select">Language</label>
+            <select class="form-select form-select-sm w-auto" id="language-select" name="language">
+              {% for lang in languages %}
+              <option value="{{ lang.code }}">{{ lang.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
           <div class="mt-3">
             <button type="submit" class="btn btn-primary" id="btn-analyze" disabled>
               <i class="bi bi-play-fill"></i> Analyze
