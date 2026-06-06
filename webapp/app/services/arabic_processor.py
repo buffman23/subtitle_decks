@@ -1,7 +1,7 @@
 import re
 import logging
 
-from app.services.language_processor import LanguageProcessor
+from app.services.language_processor import LanguageProcessor, LemmaResult
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,10 @@ class ArabicProcessor(LanguageProcessor):
             tokens = text.split()
         return [tok for tok in tokens if _ARABIC_RE.fullmatch(tok)]
 
-    def lemmatize(self, token_sentences: list[list[str]]) -> list[tuple[str, dict | None]]:
+    def lemmatize(self, token_sentences: list[list[str]]) -> list[LemmaResult]:
         disambiguator = self._get_disambiguator()
         if disambiguator is None:
-            return [(tok, None) for sentence in token_sentences for tok in sentence]
+            return [LemmaResult(tok) for sentence in token_sentences for tok in sentence]
 
         # Build flat token list + per-subtitle index ranges
         flat_tokens: list[str] = []
@@ -91,7 +91,7 @@ class ArabicProcessor(LanguageProcessor):
         if current_batch:
             batches.append(current_batch)
 
-        lemmas_map: dict[int, list[tuple[str, dict | None]]] = {}  # subtitle idx → (lemma, analysis) list
+        lemmas_map: dict[int, list[LemmaResult]] = {}
         backoff_count = 0
 
         for batch in batches:
@@ -106,7 +106,7 @@ class ArabicProcessor(LanguageProcessor):
                 for sub_idx in batch:
                     s, e = ranges[sub_idx]
                     local_start = offset + (s - batch_start)
-                    sub_lemmas: list[tuple[str, dict | None]] = []
+                    sub_lemmas: list[LemmaResult] = []
                     for i in range(e - s):
                         token = flat_tokens[s + i]
                         disambig = disambiguations[local_start + i]
@@ -114,23 +114,23 @@ class ArabicProcessor(LanguageProcessor):
                             ana = disambig.analyses[0].analysis
                             if ana.get("source") == "backoff":
                                 backoff_count += 1
-                                sub_lemmas.append((token, None))
+                                sub_lemmas.append(LemmaResult(token))
                             else:
-                                sub_lemmas.append((ana.get("lex") or token, _extract_analysis(ana)))
+                                sub_lemmas.append(LemmaResult(ana.get("lex") or token, _extract_analysis(ana)))
                         else:
-                            sub_lemmas.append((token, None))
+                            sub_lemmas.append(LemmaResult(token))
                     lemmas_map[sub_idx] = sub_lemmas
             except Exception as exc:
                 logger.debug("Disambiguation failed for batch at %d: %s", batch_start, exc)
                 for sub_idx in batch:
                     s, e = ranges[sub_idx]
-                    lemmas_map[sub_idx] = [(tok, None) for tok in flat_tokens[s:e]]
+                    lemmas_map[sub_idx] = [LemmaResult(tok) for tok in flat_tokens[s:e]]
 
         if backoff_count:
             logger.debug("Backoff fallback used for %d/%d tokens", backoff_count, total)
 
         # Reassemble in original subtitle order
-        result: list[tuple[str, dict | None]] = []
+        result: list[LemmaResult] = []
         for idx in range(len(ranges)):
             if idx in lemmas_map:
                 result.extend(lemmas_map[idx])

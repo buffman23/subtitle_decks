@@ -1,4 +1,19 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class LemmaResult:
+    """
+    One token's lemmatization result.
+
+    analysis is processor-specific metadata. For example, Arabic processors
+    return selected CAMeL Tools fields, while other languages may return POS
+    tags, morphology, confidence scores, or no analysis at all.
+    """
+
+    lemma: str
+    analysis: dict | None = None
 
 
 class LanguageProcessor(ABC):
@@ -17,9 +32,9 @@ class LanguageProcessor(ABC):
         """Tokenize a single subtitle string into words."""
 
     @abstractmethod
-    def lemmatize(self, token_sentences: list[list[str]]) -> list[tuple[str, dict | None]]:
+    def lemmatize(self, token_sentences: list[list[str]]) -> list[LemmaResult]:
         """
-        Take sentence-batched tokens and return a flat list of (lemma, analysis) pairs.
+        Take sentence-batched tokens and return a flat list of lemma results.
         analysis is None on fallback/backoff.
         Each inner list is one sentence/subtitle worth of tokens.
         """
