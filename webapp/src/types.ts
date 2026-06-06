@@ -7,7 +7,7 @@ export interface WordAnalysis {
   // Morphology
   pos?: string; per?: string; gen?: string; num?: string; asp?: string;
   mod?: string; vox?: string; stt?: string; cas?: string;
-  form_gen?: string; form_num?: string;
+  form_gen?: string; form_num?: string; xpos?: string; feats?: string;
   // Clitics
   prc0?: string; prc1?: string; prc2?: string; prc3?: string;
   enc0?: string; enc1?: string; enc2?: string;

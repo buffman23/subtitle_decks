@@ -18,6 +18,7 @@ webapp/app.db
 
 # camel_tools model data (large ML files, stored separately)
 camel_tools/
+stanza_resources/
 
 # Claude Code
 .claude/

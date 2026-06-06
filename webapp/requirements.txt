@@ -8,5 +8,6 @@ httpx
 itsdangerous
 srt
 camel-tools
+stanza
 python-dotenv
 pydantic-settings

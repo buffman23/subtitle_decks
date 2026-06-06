@@ -6,6 +6,7 @@ const FIELD_LABELS: Record<string, string> = {
   pos: 'POS', per: 'Person', gen: 'Gender', num: 'Number',
   asp: 'Aspect', mod: 'Mood', vox: 'Voice', stt: 'State', cas: 'Case',
   form_gen: 'Form gender', form_num: 'Form number',
+  xpos: 'Language-specific POS', feats: 'Features',
   prc0: 'Proclitic 0', prc1: 'Proclitic 1', prc2: 'Proclitic 2', prc3: 'Proclitic 3',
   enc0: 'Enclitic 0', enc1: 'Enclitic 1', enc2: 'Enclitic 2',
 };
@@ -110,7 +111,7 @@ function expandValue(field: string, raw: string): string {
 }
 
 const LEXICAL_FIELDS  = ['lex', 'root', 'gloss', 'diac', 'bw', 'caphi', 'pattern'];
-const MORPH_FIELDS    = ['pos', 'per', 'gen', 'num', 'asp', 'mod', 'vox', 'stt', 'cas', 'form_gen', 'form_num'];
+const MORPH_FIELDS    = ['pos', 'xpos', 'feats', 'per', 'gen', 'num', 'asp', 'mod', 'vox', 'stt', 'cas', 'form_gen', 'form_num'];
 const CLITIC_FIELDS   = ['prc0', 'prc1', 'prc2', 'prc3', 'enc0', 'enc1', 'enc2'];
 
 let tooltipEl: HTMLElement | null = null;
@@ -174,7 +175,7 @@ export function showWordTooltip(analysis: WordAnalysis, anchor: HTMLElement, tok
   const title = token ?? ana['lex'] ?? '';
   tooltipEl.innerHTML = `
     <div class="word-tooltip-header">
-      <span class="word-tooltip-title" dir="rtl">${escapeHtml(title)}</span>
+      <span class="word-tooltip-title" dir="auto">${escapeHtml(title)}</span>
       <button class="word-tooltip-close" aria-label="Close">&times;</button>
     </div>
     <div class="word-tooltip-body">${bodyHtml}</div>`;
