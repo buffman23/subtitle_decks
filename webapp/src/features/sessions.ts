@@ -10,12 +10,17 @@ export function registerSessionAnalysisCompleteHandler(fn: () => void): void {
   _onAnalysisComplete = fn;
 }
 
+function langAbbr(code: string): string {
+  const parts = code.split('-');
+  return parts[parts.length - 1].toUpperCase();
+}
+
 export async function loadSessions(): Promise<void> {
   if (!IS_LOGGED_IN) return;
   const list = document.getElementById('session-list');
   if (!list) return;
   try {
-    const res = await fetch(`/api/sessions?language=${encodeURIComponent(state.currentLanguage)}`);
+    const res = await fetch('/api/sessions');
     if (!res.ok) return;
     const sessions = await res.json();
     if (sessions.length === 0) {
@@ -23,13 +28,14 @@ export async function loadSessions(): Promise<void> {
       return;
     }
     list.innerHTML = '';
-    sessions.forEach((s: { id: number; name: string }) => {
+    sessions.forEach((s: { id: number; name: string; language: string }) => {
       const item = document.createElement('div');
       item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
       item.dataset['id'] = String(s.id);
       item.innerHTML = `
-        <span class="text-truncate session-name" style="max-width:120px" title="${s.name}">${s.name}</span>
-        <div class="d-flex">
+        <span class="text-truncate session-name" style="max-width:100px" title="${s.name}">${s.name}</span>
+        <span class="badge bg-secondary fw-normal ms-1 flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
+        <div class="d-flex ms-auto">
           <button class="btn btn-sm btn-link text-secondary btn-rename" title="Rename">
             <i class="bi bi-pencil"></i>
           </button>
