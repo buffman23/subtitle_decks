@@ -26,7 +26,7 @@ class EnglishProcessor(LanguageProcessor):
 
     @property
     def language_name(self) -> str:
-        return "English"
+        return "English (EN)"
 
     def tokenize(self, text: str) -> list[str]:
         return [match.group(0) for match in _ENGLISH_WORD_RE.finditer(text)]

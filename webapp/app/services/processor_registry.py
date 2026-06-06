@@ -7,7 +7,7 @@ from app.services.english_processor import EnglishProcessor
 _REGISTRY: dict[str, dict] = {
     "ar-msa": {"class": ArabicMSAProcessor, "name": "Arabic – Modern Standard (MSA)"},
     "ar-egy": {"class": ArabicEGYProcessor, "name": "Arabic – Egyptian (EGY)"},
-    "en": {"class": EnglishProcessor, "name": "English"},
+    "en": {"class": EnglishProcessor, "name": "English (EN)"},
     # Add new processors here, e.g.:
     # "fr": {"class": FrenchProcessor, "name": "French"},
 }
