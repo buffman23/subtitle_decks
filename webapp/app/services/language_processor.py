@@ -38,3 +38,17 @@ class LanguageProcessor(ABC):
         analysis is None on fallback/backoff.
         Each inner list is one sentence/subtitle worth of tokens.
         """
+
+    # --- Model lifecycle (for admin load/unload + status) -------------------
+
+    @abstractmethod
+    def is_loaded(self) -> bool:
+        """True if this processor's model is currently resident in memory."""
+
+    @abstractmethod
+    def load(self) -> None:
+        """Load the model into memory (no-op if already loaded)."""
+
+    @abstractmethod
+    def unload(self) -> None:
+        """Release the model from memory (no-op if not loaded)."""

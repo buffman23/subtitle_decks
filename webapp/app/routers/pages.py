@@ -1,29 +1,12 @@
-import os
-import time
-
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
 from app.services.processor_registry import get_available_languages
+from app.templating import templates
 
 router = APIRouter(tags=["pages"])
-templates = Jinja2Templates(directory="app/templates")
-
-
-def asset_url(path: str) -> str:
-    """Static asset URL with an mtime cache-buster so browsers refetch on change."""
-    rel = path.lstrip("/")
-    try:
-        version = int(os.path.getmtime(os.path.join("app/static", rel)))
-    except OSError:
-        version = int(time.time())
-    return f"/static/{rel}?v={version}"
-
-
-templates.env.globals["asset_url"] = asset_url
 
 
 @router.get("/", response_class=HTMLResponse)

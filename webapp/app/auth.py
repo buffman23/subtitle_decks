@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.config import settings, admin_emails
 from app.database import SessionLocal
 from app.models import User
 
@@ -60,6 +60,10 @@ async def auth_google_callback(request: Request, db: Session = Depends(_get_db))
         db.add(user)
     else:
         user.picture = picture
+
+    # Bootstrap admins from ADMIN_EMAILS (auto-grant only; never auto-demote).
+    if email.lower() in admin_emails():
+        user.is_admin = True
 
     db.commit()
     db.refresh(user)

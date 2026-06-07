@@ -1,0 +1,36 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h3 class="mb-4">Language Models</h3>
+<p class="text-muted">Loading a model can take a while (Arabic BERT especially). Unloading frees memory.</p>
+<div class="table-responsive">
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th>Language</th>
+        <th>Code</th>
+        <th class="text-center">Status</th>
+        <th class="text-end">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in models %}
+      <tr data-model-code="{{ m.code }}">
+        <td>{{ m.name }}</td>
+        <td><code>{{ m.code }}</code></td>
+        <td class="text-center">
+          <span class="badge model-status {{ 'text-bg-success' if m.status == 'loaded' else 'text-bg-secondary' }}">
+            {{ m.status }}
+          </span>
+        </td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-toggle-model {{ 'btn-outline-secondary' if m.status == 'loaded' else 'btn-outline-success' }}"
+                  data-action="{{ 'unload' if m.status == 'loaded' else 'load' }}">
+            {{ 'Unload' if m.status == 'loaded' else 'Load' }}
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

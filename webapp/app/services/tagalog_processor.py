@@ -49,6 +49,18 @@ class TagalogProcessor(LanguageProcessor):
             self.__class__.preload_pipeline()
         return self.__class__._pipeline
 
+    def is_loaded(self) -> bool:
+        return bool(self.__class__._pipeline)
+
+    def load(self) -> None:
+        self.__class__.preload_pipeline()
+
+    def unload(self) -> None:
+        self.__class__._pipeline = None
+        import gc
+        gc.collect()
+        logger.info("Calamancy Tagalog pipeline unloaded")
+
     def lemmatize(self, token_sentences: list[list[str]]) -> list[LemmaResult]:
         pipeline = self._get_pipeline()
         if not pipeline:

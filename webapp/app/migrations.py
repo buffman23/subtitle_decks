@@ -14,6 +14,8 @@ def run(engine: Engine) -> None:
         _migrate_sessions_subtitles(conn)
         _migrate_sessions_native_subtitles(conn)
         _migrate_users_picture(conn)
+        _migrate_users_is_admin(conn)
+        _migrate_users_created_at(conn)
 
 
 # ---------------------------------------------------------------------------
@@ -116,3 +118,15 @@ def _migrate_users_picture(conn) -> None:
     cols = _table_columns(conn, "users")
     if "picture" not in cols:
         conn.execute(text("ALTER TABLE users ADD COLUMN picture VARCHAR"))
+
+
+def _migrate_users_is_admin(conn) -> None:
+    """Add is_admin column to users."""
+    if "is_admin" not in _table_columns(conn, "users"):
+        conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+
+
+def _migrate_users_created_at(conn) -> None:
+    """Add created_at column to users (NULL for pre-existing rows)."""
+    if "created_at" not in _table_columns(conn, "users"):
+        conn.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))

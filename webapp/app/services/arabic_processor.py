@@ -48,6 +48,24 @@ class ArabicProcessor(LanguageProcessor):
             self.__class__.preload_disambiguator()
         return self.__class__._disambiguators.get(self._model_name)
 
+    def is_loaded(self) -> bool:
+        return self.__class__._disambiguators.get(self._model_name) is not None
+
+    def load(self) -> None:
+        self.__class__.preload_disambiguator()
+
+    def unload(self) -> None:
+        self.__class__._disambiguators.pop(self._model_name, None)
+        import gc
+        gc.collect()
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
+        logger.info("BERTUnfactoredDisambiguator unloaded: %s", self._model_name)
+
     def tokenize(self, text: str) -> list[str]:
         try:
             from camel_tools.tokenizers.word import simple_word_tokenize

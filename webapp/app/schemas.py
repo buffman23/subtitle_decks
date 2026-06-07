@@ -86,3 +86,7 @@ class SessionRenameRequest(BaseModel):
 
 class SessionNativeSubtitlesRequest(BaseModel):
     native_subtitles: list[SubtitleEntry]
+
+
+class AdminToggleRequest(BaseModel):
+    is_admin: bool

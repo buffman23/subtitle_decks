@@ -1,6 +1,6 @@
 from typing import Generator
 
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -25,6 +25,14 @@ def get_current_user(request: Request, db: Session = None) -> User | None:
     if not user_id or db is None:
         return None
     return db.get(User, user_id)
+
+
+def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    """Dependency for admin-only JSON endpoints: 403 unless the user is an admin."""
+    user = get_current_user(request, db)
+    if user is None or not user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    return user
 
 
 def resolve_language_id(code: str, db: Session) -> int:

@@ -1,0 +1,54 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h3 class="mb-4">Accounts <span class="text-muted fs-6">({{ accounts|length }})</span></h3>
+<div class="table-responsive">
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Email</th>
+        <th class="text-center">Admin</th>
+        <th class="text-center">Sessions</th>
+        <th>Account age</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in accounts %}
+      {% set acct = a.user %}
+      {% set is_self = acct.id == user.id %}
+      <tr data-user-id="{{ acct.id }}">
+        <td style="width:48px">
+          {% if acct.picture %}
+            <img src="{{ acct.picture }}" alt="" referrerpolicy="no-referrer" class="rounded-circle" width="36" height="36">
+          {% else %}
+            <i class="bi bi-person-circle fs-3 text-secondary"></i>
+          {% endif %}
+        </td>
+        <td>{{ acct.email }}{% if is_self %} <span class="text-muted small">(you)</span>{% endif %}</td>
+        <td class="text-center">
+          <span class="badge admin-badge {{ 'text-bg-success' if acct.is_admin else 'text-bg-secondary' }}">
+            {{ 'Admin' if acct.is_admin else 'User' }}
+          </span>
+        </td>
+        <td class="text-center">{{ a.session_count }}</td>
+        <td>{{ humanize_age(acct.created_at) }}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-secondary btn-toggle-admin"
+                  data-make-admin="{{ 'false' if acct.is_admin else 'true' }}"
+                  data-email="{{ acct.email }}"
+                  {{ 'disabled' if is_self }}>
+            {{ 'Remove admin' if acct.is_admin else 'Make admin' }}
+          </button>
+          <button class="btn btn-sm btn-outline-danger btn-delete-account"
+                  data-email="{{ acct.email }}"
+                  {{ 'disabled' if is_self }}>
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
