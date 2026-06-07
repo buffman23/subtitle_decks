@@ -19,6 +19,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
+    picture: Mapped[str | None] = mapped_column(String, nullable=True)
 
     ignore_list_entries: Mapped[list["IgnoreListEntry"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

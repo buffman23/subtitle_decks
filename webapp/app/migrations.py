@@ -13,6 +13,7 @@ def run(engine: Engine) -> None:
         _migrate_sessions_language(conn)
         _migrate_sessions_subtitles(conn)
         _migrate_sessions_native_subtitles(conn)
+        _migrate_users_picture(conn)
 
 
 # ---------------------------------------------------------------------------
@@ -108,3 +109,10 @@ def _migrate_sessions_native_subtitles(conn) -> None:
     cols = _table_columns(conn, "analysis_sessions")
     if "native_subtitles" not in cols:
         conn.execute(text("ALTER TABLE analysis_sessions ADD COLUMN native_subtitles JSON"))
+
+
+def _migrate_users_picture(conn) -> None:
+    """Add picture column to users."""
+    cols = _table_columns(conn, "users")
+    if "picture" not in cols:
+        conn.execute(text("ALTER TABLE users ADD COLUMN picture VARCHAR"))

@@ -172,5 +172,5 @@
 <script>
   const IS_LOGGED_IN = {{ 'true' if user else 'false' }};
 </script>
-<script src="/static/js/app.js"></script>
+<script src="{{ asset_url('js/app.js') }}"></script>
 {% endblock %}

@@ -19,7 +19,7 @@ oauth.register(
     client_id=settings.GOOGLE_CLIENT_ID,
     client_secret=settings.GOOGLE_CLIENT_SECRET,
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-    client_kwargs={"scope": "email"},
+    client_kwargs={"scope": "openid email profile"},
 )
 
 
@@ -50,13 +50,16 @@ async def auth_google_callback(request: Request, db: Session = Depends(_get_db))
     )
     user_info = resp.json()
     email = user_info.get("email")
+    picture = user_info.get("picture")
     if not email:
         return RedirectResponse("/")
 
     user = db.query(User).filter(User.email == email).first()
     if user is None:
-        user = User(email=email)
+        user = User(email=email, picture=picture)
         db.add(user)
+    else:
+        user.picture = picture
 
     db.commit()
     db.refresh(user)
