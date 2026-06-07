@@ -9,6 +9,7 @@
         <th>Email</th>
         <th class="text-center">Admin</th>
         <th class="text-center">Sessions</th>
+        <th class="text-end">Storage</th>
         <th>Account age</th>
         <th class="text-end">Actions</th>
       </tr>
@@ -32,6 +33,7 @@
           </span>
         </td>
         <td class="text-center">{{ a.session_count }}</td>
+        <td class="text-end">{{ humanize_bytes(a.storage_bytes) }}</td>
         <td>{{ humanize_age(acct.created_at) }}</td>
         <td class="text-end">
           <button class="btn btn-sm btn-outline-secondary btn-toggle-admin"

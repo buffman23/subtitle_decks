@@ -41,7 +41,27 @@ async def admin_accounts(request: Request, db: Session = Depends(get_db)):
         .group_by(AnalysisSession.user_id)
         .all()
     )
-    accounts = [{"user": u, "session_count": counts.get(u.id, 0)} for u in users]
+    # Approximate storage as the serialized length of each session's JSON blobs.
+    storage = dict(
+        db.query(
+            AnalysisSession.user_id,
+            func.sum(
+                func.coalesce(func.length(AnalysisSession.subtitles), 0)
+                + func.coalesce(func.length(AnalysisSession.native_subtitles), 0)
+                + func.coalesce(func.length(AnalysisSession.results), 0)
+            ),
+        )
+        .group_by(AnalysisSession.user_id)
+        .all()
+    )
+    accounts = [
+        {
+            "user": u,
+            "session_count": counts.get(u.id, 0),
+            "storage_bytes": storage.get(u.id, 0) or 0,
+        }
+        for u in users
+    ]
     return templates.TemplateResponse(
         request,
         "admin/accounts.html",

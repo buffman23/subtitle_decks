@@ -34,5 +34,16 @@ def humanize_age(dt: datetime | None) -> str:
     return f"{years} year{'s' if years != 1 else ''}"
 
 
+def humanize_bytes(num: int | None) -> str:
+    """Render a byte count in human units, e.g. '0 B', '4.2 KB', '1.3 MB'."""
+    size = float(num or 0)
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            precision = 0 if unit == "B" else 1
+            return f"{size:.{precision}f} {unit}"
+        size /= 1024
+
+
 templates.env.globals["asset_url"] = asset_url
 templates.env.globals["humanize_age"] = humanize_age
+templates.env.globals["humanize_bytes"] = humanize_bytes
