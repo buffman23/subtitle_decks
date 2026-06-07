@@ -7,10 +7,32 @@ from app.dependencies import get_db, get_current_user, resolve_language_id
 from app.models import IgnoreListEntry
 from app.schemas import AnalyzeResponse
 from app.services.frequency_analyzer import analyze
+from app.services.processor_registry import get_processor
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["analysis"])
+
+
+@router.get("/models/{code}/status")
+async def model_status(code: str):
+    """Report whether the language model is already loaded in memory."""
+    try:
+        processor = get_processor(code)
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Unknown language: {code!r}")
+    return {"code": code, "loaded": processor.is_loaded()}
+
+
+@router.post("/models/{code}/load")
+async def ensure_model_loaded(code: str):
+    """Load the language model on demand (analysis lazy-loads it anyway)."""
+    try:
+        processor = get_processor(code)
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Unknown language: {code!r}")
+    processor.load()
+    return {"code": code, "loaded": processor.is_loaded()}
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)

@@ -75,10 +75,26 @@ export function initAnalyzeForm(): void {
 
     const btn = document.getElementById('btn-analyze') as HTMLButtonElement;
     const spinner = document.getElementById('analyze-spinner');
+    const statusText = document.getElementById('analyze-status-text');
+    const setStatus = (msg: string): void => { if (statusText) statusText.textContent = msg; };
     btn.disabled = true;
+    setStatus('Analyzing…');
     spinner?.classList.remove('d-none');
 
     try {
+      // If the language model isn't loaded yet, surface a "Loading model…"
+      // message while it loads, then switch to "Analyzing…". The analyze
+      // endpoint lazy-loads anyway, so a failure here is non-critical.
+      try {
+        const code = encodeURIComponent(state.currentLanguage);
+        const statusRes = await fetch(`/api/models/${code}/status`);
+        if (statusRes.ok && !(await statusRes.json()).loaded) {
+          setStatus('Loading model…');
+          await fetch(`/api/models/${code}/load`, { method: 'POST' });
+          setStatus('Analyzing…');
+        }
+      } catch (_) { /* non-critical; analyze will lazy-load if needed */ }
+
       const res = await fetch('/api/analyze', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) { flash(data.detail || 'Analysis failed.', 'danger'); return; }
