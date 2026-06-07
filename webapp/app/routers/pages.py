@@ -15,8 +15,9 @@ async def index(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     languages = get_available_languages()
     return templates.TemplateResponse(
+        request,
         "index.html",
-        {"request": request, "user": user, "languages": languages},
+        {"user": user, "languages": languages},
     )
 
 
@@ -24,14 +25,16 @@ async def index(request: Request, db: Session = Depends(get_db)):
 async def about(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     return templates.TemplateResponse(
+        request,
         "about.html",
-        {"request": request, "user": user},
+        {"user": user},
     )
 
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse(
+        request,
         "login.html",
-        {"request": request, "user": None},
+        {"user": None},
     )
