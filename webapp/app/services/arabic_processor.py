@@ -159,8 +159,3 @@ class ArabicEGYProcessor(ArabicProcessor):
     @property
     def language_name(self) -> str:
         return "Arabic – Egyptian (EGY)"
-
-
-def preload_all():
-    ArabicMSAProcessor.preload_disambiguator()
-    ArabicEGYProcessor.preload_disambiguator()
