@@ -1,0 +1,89 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h3 class="mb-4">Website Metrics</h3>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small text-uppercase">Total users</div>
+        <div class="display-6">{{ metrics.total_users }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small text-uppercase">Total analyses</div>
+        <div class="display-6">{{ metrics.total_analyses }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small text-uppercase">Active (7d)</div>
+        <div class="display-6">{{ metrics.active_7 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="text-muted small text-uppercase">Active (30d)</div>
+        <div class="display-6">{{ metrics.active_30 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-xl-8">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Activity (last 30 days)</h5>
+        <canvas id="activityChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Analyses by language</h5>
+        <canvas id="languageChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Top users</h5>
+    {% if top_users %}
+    <table class="table table-sm mb-0 align-middle">
+      <thead>
+        <tr><th>#</th><th>Email</th><th class="text-end">Analyses</th></tr>
+      </thead>
+      <tbody>
+        {% for u in top_users %}
+        <tr>
+          <td class="text-muted">{{ loop.index }}</td>
+          <td>{{ u.email }}</td>
+          <td class="text-end">{{ u.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted mb-0">No analyses yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script type="application/json" id="metrics-data">{{ chart_data | tojson }}</script>
+{% endblock %}
+
+{% block admin_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ asset_url('js/metrics.js') }}"></script>
+{% endblock %}

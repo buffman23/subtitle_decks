@@ -1,10 +1,12 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
-from app.models import AnalysisSession, User
+from app.models import AnalysisSession, LanguageRow, User
 from app.services.processor_registry import get_available_languages, get_processor
 from app.templating import templates
 
@@ -65,4 +67,94 @@ async def admin_models(request: Request, db: Session = Depends(get_db)):
         request,
         "admin/models.html",
         {"user": user, "active": "models", "models": models},
+    )
+
+
+@router.get("/metrics", response_class=HTMLResponse)
+async def admin_metrics(request: Request, db: Session = Depends(get_db)):
+    user = _admin_or_redirect(request, db)
+    if user is None:
+        return RedirectResponse("/")
+
+    now = datetime.utcnow()
+    cutoff_7 = now - timedelta(days=7)
+    cutoff_30 = now - timedelta(days=30)
+
+    total_users = db.query(func.count(User.id)).scalar() or 0
+    total_analyses = db.query(func.count(AnalysisSession.id)).scalar() or 0
+    active_7 = (
+        db.query(func.count(func.distinct(AnalysisSession.user_id)))
+        .filter(AnalysisSession.created_at >= cutoff_7)
+        .scalar()
+        or 0
+    )
+    active_30 = (
+        db.query(func.count(func.distinct(AnalysisSession.user_id)))
+        .filter(AnalysisSession.created_at >= cutoff_30)
+        .scalar()
+        or 0
+    )
+    metrics = {
+        "total_users": total_users,
+        "total_analyses": total_analyses,
+        "active_7": active_7,
+        "active_30": active_30,
+    }
+
+    # Per-day series for the last 30 days (zero-filled so gaps render as 0).
+    day_keys = [(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(29, -1, -1)]
+
+    def _per_day(ts_column) -> dict[str, int]:
+        rows = (
+            db.query(func.date(ts_column), func.count())
+            .filter(ts_column >= cutoff_30)
+            .group_by(func.date(ts_column))
+            .all()
+        )
+        return {str(day): count for day, count in rows if day is not None}
+
+    analyses_by_day = _per_day(AnalysisSession.created_at)
+    signups_by_day = _per_day(User.created_at)
+
+    # Per-language analysis counts.
+    lang_rows = (
+        db.query(LanguageRow.code, func.count(AnalysisSession.id))
+        .join(AnalysisSession, AnalysisSession.language_id == LanguageRow.id)
+        .group_by(LanguageRow.code)
+        .order_by(func.count(AnalysisSession.id).desc())
+        .all()
+    )
+
+    # Top users by analysis count.
+    top_users = (
+        db.query(User.email, func.count(AnalysisSession.id).label("cnt"))
+        .join(AnalysisSession, AnalysisSession.user_id == User.id)
+        .group_by(User.id)
+        .order_by(func.count(AnalysisSession.id).desc())
+        .limit(10)
+        .all()
+    )
+
+    chart_data = {
+        "activity": {
+            "labels": day_keys,
+            "analyses": [analyses_by_day.get(d, 0) for d in day_keys],
+            "signups": [signups_by_day.get(d, 0) for d in day_keys],
+        },
+        "languages": {
+            "labels": [code for code, _ in lang_rows],
+            "counts": [count for _, count in lang_rows],
+        },
+    }
+
+    return templates.TemplateResponse(
+        request,
+        "admin/metrics.html",
+        {
+            "user": user,
+            "active": "metrics",
+            "metrics": metrics,
+            "chart_data": chart_data,
+            "top_users": [{"email": email, "count": count} for email, count in top_users],
+        },
     )
