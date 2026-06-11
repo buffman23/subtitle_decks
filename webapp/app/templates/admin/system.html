@@ -1,0 +1,76 @@
+{% extends "admin/layout.html" %}
+
+{# Progress-bar colour by utilisation: green < 70, amber < 90, red otherwise. #}
+{% macro bar_class(pct) -%}
+{{ 'bg-success' if pct < 70 else ('bg-warning' if pct < 90 else 'bg-danger') }}
+{%- endmacro %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="mb-0">System <span class="text-muted fs-6">host server</span></h3>
+  <a href="/admin/system" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+  </a>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- CPU -->
+  <div class="col-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <h5 class="card-title mb-0"><i class="bi bi-cpu me-2"></i>CPU</h5>
+          <span class="fs-4 fw-semibold">{{ stats.cpu.percent }}%</span>
+        </div>
+        <div class="progress mb-2" style="height:.6rem">
+          <div class="progress-bar {{ bar_class(stats.cpu.percent) }}" style="width: {{ stats.cpu.percent }}%"></div>
+        </div>
+        <div class="text-muted small">
+          {{ stats.cpu.cores }} vCPU{% if stats.cpu.physical_cores and stats.cpu.physical_cores != stats.cpu.cores %} ({{ stats.cpu.physical_cores }} physical){% endif %}
+          {% if stats.cpu.load[0] is not none %}
+          <br>load: {{ "%.2f"|format(stats.cpu.load[0]) }}, {{ "%.2f"|format(stats.cpu.load[1]) }}, {{ "%.2f"|format(stats.cpu.load[2]) }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Memory -->
+  <div class="col-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <h5 class="card-title mb-0"><i class="bi bi-memory me-2"></i>Memory</h5>
+          <span class="fs-4 fw-semibold">{{ stats.memory.percent }}%</span>
+        </div>
+        <div class="progress mb-2" style="height:.6rem">
+          <div class="progress-bar {{ bar_class(stats.memory.percent) }}" style="width: {{ stats.memory.percent }}%"></div>
+        </div>
+        <div class="text-muted small">
+          {{ humanize_bytes(stats.memory.used) }} used of {{ humanize_bytes(stats.memory.total) }}
+          <br>{{ humanize_bytes(stats.memory.available) }} available
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disk -->
+  <div class="col-12 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <h5 class="card-title mb-0"><i class="bi bi-hdd me-2"></i>Storage</h5>
+          <span class="fs-4 fw-semibold">{{ stats.disk.percent }}%</span>
+        </div>
+        <div class="progress mb-2" style="height:.6rem">
+          <div class="progress-bar {{ bar_class(stats.disk.percent) }}" style="width: {{ stats.disk.percent }}%"></div>
+        </div>
+        <div class="text-muted small">
+          {{ humanize_bytes(stats.disk.used) }} used of {{ humanize_bytes(stats.disk.total) }}
+          <br>{{ humanize_bytes(stats.disk.free) }} free
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.models import AnalysisSession, LanguageRow, User
 from app.services.processor_registry import get_available_languages, get_processor
+from app.services.system_stats import get_system_stats
 from app.templating import templates
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -87,6 +88,21 @@ async def admin_models(request: Request, db: Session = Depends(get_db)):
         request,
         "admin/models.html",
         {"user": user, "active": "models", "models": models},
+    )
+
+
+@router.get("/system", response_class=HTMLResponse)
+def admin_system(request: Request, db: Session = Depends(get_db)):
+    # Sync route: the CPU sample and directory walk block briefly, so let
+    # FastAPI run this in its threadpool instead of the event loop.
+    user = _admin_or_redirect(request, db)
+    if user is None:
+        return RedirectResponse("/")
+
+    return templates.TemplateResponse(
+        request,
+        "admin/system.html",
+        {"user": user, "active": "system", "stats": get_system_stats()},
     )
 
 

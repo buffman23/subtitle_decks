@@ -12,3 +12,4 @@ stanza
 calamancy
 python-dotenv
 pydantic-settings
+psutil
