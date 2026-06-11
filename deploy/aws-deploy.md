@@ -15,9 +15,10 @@ is the runbook for that deployment, plus notes on alternatives.
 | Restart policy | `unless-stopped` (survives reboots) |
 | Database | SQLite on a **named volume** `subtitle-decks-data` → `/app/data` (persists across redeploys) |
 | Models | camel_tools data (~1.8 GB) on a **named volume** `subtitle-decks-models` → `/opt/camel_tools_data` (read-only), downloaded once — not baked into the image |
-| HTTPS | ⚠️ **not yet configured** — see "Enabling HTTPS" below |
+| Domain | `subtitledecks.com` (+ `www`), set via `DOMAIN=` in the server `.env` |
+| HTTPS | ✅ **live** — Cloudflare (proxied) → Caddy on the instance, using a Cloudflare Origin Certificate. `deploy.sh` installs/configures Caddy automatically; see "HTTPS" below. Container binds to `127.0.0.1:8000` so Caddy owns 443. |
 
-Live (HTTP only for now): http://52.39.205.152 — `GET /healthz` → `{"status":"ok"}`.
+Live: https://subtitledecks.com — `GET /healthz` → `{"status":"ok"}`. (The raw instance IP `52.39.205.152` also answers, but Google login only works over the domain/HTTPS.)
 
 ## What the image contains
 - Python 3.10 runtime, CPU-only PyTorch (no GPU on Lightsail)
@@ -52,17 +53,35 @@ volume. Create the `.env` once before the first deploy — see below.
 
 From the repo root (PowerShell), ship the updated source and rebuild:
 ```powershell
-$key = "$env:USERPROFILE\ls_key.pem"
-# 1. Package webapp/ (excluding heavy/local-only dirs)
-tar -czf "$env:TEMP\webapp.tgz" -C webapp `
+$key  = "$env:USERPROFILE\ls_key.pem"
+$repo = "C:\Users\ryanc\Desktop\Arabic\subtitle_decks"   # adjust to your clone
+$tgz  = "$env:TEMP\webapp.tgz"
+# 1. Package webapp/ (excluding heavy/local-only dirs).
+#    Use an ABSOLUTE -C path: the tool shell keeps its cwd between commands, so a
+#    prior `cd webapp` (e.g. for `npm run build`) makes a relative `-C webapp` fail.
+Remove-Item $tgz -ErrorAction SilentlyContinue           # never ship a leftover archive
+tar -czf $tgz -C "$repo\webapp" `
   --exclude=node_modules --exclude=__pycache__ --exclude=app.db `
   --exclude=.venv --exclude=.env .
+if (-not $?) { throw "tar failed — aborting before scp" } # else scp ships stale code (see note)
+# Optional sanity check: confirm your edited files are in the archive
+# tar -tzf $tgz | Select-String 'app/templates/index.html'
 # 2. Copy up and extract
-scp -i $key "$env:TEMP\webapp.tgz" ubuntu@52.39.205.152:/home/ubuntu/webapp.tgz
+scp -i $key $tgz ubuntu@52.39.205.152:/home/ubuntu/webapp.tgz
 ssh -i $key ubuntu@52.39.205.152 'tar -xzf ~/webapp.tgz -C ~/subtitle_decks/webapp && rm ~/webapp.tgz'
 # 3. Rebuild + restart (cached layers make this fast unless requirements changed)
 ssh -i $key ubuntu@52.39.205.152 'bash ~/deploy.sh'
+# 4. Verify the new code is actually SERVED, not just that the container is "Up".
+#    Health, plus confirm an edited asset round-trips (bump the ?v= cache-buster
+#    in base.html when you change static files, or Cloudflare/browser may cache them):
+Invoke-WebRequest https://subtitledecks.com/healthz -UseBasicParsing | ForEach-Object Content
 ```
+> ⚠️ **Stale-tarball trap.** If `tar` fails (most commonly the relative-`-C`
+> chdir issue above) but you don't stop, the next `scp` will happily upload an
+> **old `webapp.tgz` left in `$env:TEMP` from a previous deploy** — silently
+> shipping stale code. The `Remove-Item` + `if (-not $?) { throw }` guards above
+> prevent this; keep them. When in doubt, `tar -tzf $tgz` and eyeball the files.
+>
 > Run `deploy.sh` **as `ubuntu`, not `sudo bash`** — it uses `sudo docker`
 > internally, but the outer process must stay `ubuntu` so `$HOME` resolves to
 > `/home/ubuntu`. The script already handles Docker via `sudo`.
@@ -88,7 +107,16 @@ image (`.env` is in `.dockerignore`) nor written by any script in the repo.
 
 ---
 
-## ⚠️ Enabling HTTPS (required before Google login works)
+## HTTPS
+> **Already set up and automated.** HTTPS is live at https://subtitledecks.com:
+> Cloudflare proxies the site and connects to the instance over TLS in **Full
+> (strict)** mode, and `deploy.sh` installs Caddy + writes the Caddyfile on every
+> run, terminating TLS with the **Cloudflare Origin Certificate** at
+> `/etc/caddy/cf-origin.pem` / `.key`. You only need the manual steps below when
+> standing up a **new** instance — and note the live setup uses a Cloudflare
+> origin cert (placed by hand once at those paths), *not* the Let's Encrypt flow
+> the original notes below describe.
+
 Google OAuth rejects non-`localhost` `http://` redirect URIs, so **login is
 broken until HTTPS is set up.** With a domain pointed at `52.39.205.152`:
 
