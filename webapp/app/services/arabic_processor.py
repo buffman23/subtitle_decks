@@ -35,8 +35,13 @@ class ArabicProcessor(LanguageProcessor):
             return
         try:
             from camel_tools.disambig.bert import BERTUnfactoredDisambiguator
-            cls._disambiguators[model] = BERTUnfactoredDisambiguator.pretrained(model, use_gpu=True)
-            logger.info("BERTUnfactoredDisambiguator loaded: %s", model)
+            try:
+                import torch
+                use_gpu = torch.cuda.is_available()
+            except Exception:
+                use_gpu = False
+            cls._disambiguators[model] = BERTUnfactoredDisambiguator.pretrained(model, use_gpu=use_gpu)
+            logger.info("BERTUnfactoredDisambiguator loaded: %s (gpu=%s)", model, use_gpu)
         except Exception as exc:
             logger.warning(
                 "Could not load BERTUnfactoredDisambiguator (%s): %s — falling back to raw tokens.", model, exc

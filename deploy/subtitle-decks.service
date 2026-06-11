@@ -1,0 +1,30 @@
+[Unit]
+Description=Subtitle Decks (FastAPI / uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+# --- adjust these to your server ---
+# The user to run as (create a dedicated non-root user, e.g. `adduser appuser`)
+User=appuser
+Group=appuser
+# Repo location on the server and the webapp/ subdir as working dir
+WorkingDirectory=/opt/subtitle_decks/webapp
+# camel_tools models path (same var your CLAUDE.md references)
+Environment=CAMELTOOLS_DATA=/opt/subtitle_decks/cameltools_data
+
+# Bind to loopback only — Caddy proxies to it. --proxy-headers makes FastAPI
+# trust X-Forwarded-Proto so OAuth redirect_uri is built as https://
+ExecStart=/opt/subtitle_decks/.venv/bin/python -m uvicorn app.main:app \
+    --host 127.0.0.1 --port 8000 \
+    --proxy-headers --forwarded-allow-ips="127.0.0.1"
+
+Restart=on-failure
+RestartSec=3
+
+# Light hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

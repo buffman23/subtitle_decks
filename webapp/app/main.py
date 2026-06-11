@@ -25,9 +25,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Arabic Subtitle Frequency Analyzer", lifespan=lifespan)
 
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    https_only=settings.SESSION_COOKIE_SECURE,
+    same_site="lax",
+)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/healthz", include_in_schema=False)
+def healthz():
+    """Unauthenticated liveness probe for load balancers / App Runner."""
+    return {"status": "ok"}
 
 app.include_router(pages_router)
 app.include_router(auth_router)

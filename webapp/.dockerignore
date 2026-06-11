@@ -1,0 +1,27 @@
+# Keep the build context small & reproducible.
+# Python virtualenv (rebuilt inside the image)
+../.venv
+.venv
+# Node deps (reinstalled in the frontend build stage)
+node_modules
+# Local 5 GB camel_tools data lives at repo root and is NOT used — the image
+# downloads only the 4 packages it needs. Make sure it never sneaks in:
+../camel_tools
+camel_tools
+# Local SQLite DB — never bake real data into an image
+app.db
+*.db
+# Secrets — provide these as runtime env vars instead
+.env
+# Build artifacts / caches
+app/static/js/app.js
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+# Editor / tooling noise
+.git
+.gitignore
+.playwright-mcp
+*.log
