@@ -1,15 +1,21 @@
-fastapi
-uvicorn[standard]
-jinja2
-python-multipart
-sqlalchemy
-authlib
-httpx
-itsdangerous
-srt
-camel-tools
-stanza
-calamancy
-python-dotenv
-pydantic-settings
-psutil
+fastapi==0.134.0
+uvicorn[standard]==0.41.0
+jinja2==3.1.6
+python-multipart==0.0.22
+sqlalchemy==2.0.47
+authlib==1.6.8
+httpx==0.28.1
+itsdangerous==2.2.0
+srt==3.5.3
+camel-tools==1.5.7
+stanza==1.12.2
+calamancy==0.2.2
+python-dotenv==1.2.1
+pydantic-settings==2.13.1
+psutil==7.2.2
+
+# Transitive anchors pinned to stop pip's resolver from backtracking through
+# dozens of versions: camel-tools (transformers<4.44) vs calamancy/spacy-transformers
+# tug-of-war. These two values are the set pip converges on anyway.
+transformers==4.36.2
+tokenizers==0.15.2
