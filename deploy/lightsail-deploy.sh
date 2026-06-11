@@ -30,16 +30,36 @@ echo "[deploy] domain: $DOMAIN"
 echo "[deploy] building image (this downloads PyTorch + ~1GB models)..."
 sudo docker build -t subtitle-decks .
 
+# --- ensure camel_tools models on a persistent volume (downloaded once) ---
+# The image no longer bakes in the ~1.8GB of models. They live on the named
+# volume 'subtitle-decks-models' so image rebuilds never re-download them.
+# Run as root (a fresh volume is root-owned) using the just-built image's
+# camel_tools. camel_data is idempotent: on later deploys the already-present
+# packages are skipped in seconds, so this is safe to run every time.
+echo "[deploy] ensuring camel_tools models on volume (one-time ~1.8GB download)..."
+sudo docker volume create subtitle-decks-models >/dev/null
+sudo docker run --rm --user root \
+  -v subtitle-decks-models:/opt/camel_tools_data \
+  -e CAMELTOOLS_DATA=/opt/camel_tools_data \
+  subtitle-decks \
+  sh -c '
+    for p in disambig-bert-unfactored-msa disambig-bert-unfactored-egy morphology-db-msa-r13 morphology-db-egy-r13; do
+      python -m camel_tools.cli.camel_data -i "$p" || exit 1
+    done
+  '
+
 # --- (re)start container ---
 echo "[deploy] (re)starting container..."
 sudo docker rm -f subtitle-decks 2>/dev/null || true
 sudo docker volume create subtitle-decks-data >/dev/null
 # Bind to loopback only — Caddy (on the host) terminates TLS and proxies in.
+# Models are mounted read-only from the volume populated above.
 sudo docker run -d \
   --name subtitle-decks \
   --restart unless-stopped \
   --env-file .env \
   -v subtitle-decks-data:/app/data \
+  -v subtitle-decks-models:/opt/camel_tools_data:ro \
   -p 127.0.0.1:8000:8000 \
   subtitle-decks
 

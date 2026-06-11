@@ -7,29 +7,31 @@ is the runbook for that deployment, plus notes on alternatives.
 ## Current deployment (Lightsail instance)
 | | |
 |---|---|
-| Host | `ubuntu@35.87.7.42` (Lightsail instance, us-west-2) |
+| Host | `ubuntu@52.39.205.152` (Lightsail instance, us-west-2) |
 | OS | Ubuntu 24.04 LTS, x86_64, 2 vCPU / 8 GB RAM / 160 GB SSD |
 | SSH key | `LightsailDefaultKey-us-west-2.pem` (repo root, gitignored — local only) |
 | App dir on server | `~/subtitle_decks/webapp` |
 | Runtime | Docker container `subtitle-decks`, host port **80 → 8000** |
 | Restart policy | `unless-stopped` (survives reboots) |
 | Database | SQLite on a **named volume** `subtitle-decks-data` → `/app/data` (persists across redeploys) |
+| Models | camel_tools data (~1.8 GB) on a **named volume** `subtitle-decks-models` → `/opt/camel_tools_data` (read-only), downloaded once — not baked into the image |
 | HTTPS | ⚠️ **not yet configured** — see "Enabling HTTPS" below |
 
-Live (HTTP only for now): http://35.87.7.42 — `GET /healthz` → `{"status":"ok"}`.
+Live (HTTP only for now): http://52.39.205.152 — `GET /healthz` → `{"status":"ok"}`.
 
 ## What the image contains
 - Python 3.10 runtime, CPU-only PyTorch (no GPU on Lightsail)
 - Compiled TypeScript frontend (built in a Node stage)
-- Only the camel_tools data this app uses (~1 GB): BERT disambiguators for
-  MSA + Egyptian and their morphology DBs — **not** the full 5 GB local set
 - Served by `uvicorn` on port **8000** with `--proxy-headers` (so that, once
   behind a TLS proxy, the OAuth `redirect_uri` is built as `https://`)
 
-> **Image size:** several GB (PyTorch + transformers + 1 GB models) — normal for
-> an NLP service. `stanza` and `calamancy` in `requirements.txt` aren't used by
-> the Arabic pipeline yet — drop them to shave ~1 GB if you don't need them for
-> upcoming languages.
+The camel_tools models (~1.8 GB: BERT disambiguators for MSA + Egyptian and
+their morphology DBs — **not** the full 5 GB local set) are **not** in the image.
+`deploy.sh` downloads them once onto the `subtitle-decks-models` volume and mounts
+it read-only at `/opt/camel_tools_data`. Keeping them off the image means a
+requirements/code change no longer triggers a 1.8 GB re-download on rebuild, and
+the image is ~1.8 GB smaller. The download step is idempotent — later deploys skip
+the already-present packages in seconds.
 
 ---
 
@@ -39,7 +41,7 @@ On Windows the key needs locked-down ACLs or OpenSSH refuses it:
 $key = "$env:USERPROFILE\ls_key.pem"
 Copy-Item .\LightsailDefaultKey-us-west-2.pem $key -Force
 icacls $key /inheritance:r; icacls $key /grant:r "$($env:USERNAME):(R)"
-ssh -i $key ubuntu@35.87.7.42
+ssh -i $key ubuntu@52.39.205.152
 ```
 
 ## Redeploying after code changes
@@ -56,10 +58,10 @@ tar -czf "$env:TEMP\webapp.tgz" -C webapp `
   --exclude=node_modules --exclude=__pycache__ --exclude=app.db `
   --exclude=.venv --exclude=.env .
 # 2. Copy up and extract
-scp -i $key "$env:TEMP\webapp.tgz" ubuntu@35.87.7.42:/home/ubuntu/webapp.tgz
-ssh -i $key ubuntu@35.87.7.42 'tar -xzf ~/webapp.tgz -C ~/subtitle_decks/webapp && rm ~/webapp.tgz'
+scp -i $key "$env:TEMP\webapp.tgz" ubuntu@52.39.205.152:/home/ubuntu/webapp.tgz
+ssh -i $key ubuntu@52.39.205.152 'tar -xzf ~/webapp.tgz -C ~/subtitle_decks/webapp && rm ~/webapp.tgz'
 # 3. Rebuild + restart (cached layers make this fast unless requirements changed)
-ssh -i $key ubuntu@35.87.7.42 'bash ~/deploy.sh'
+ssh -i $key ubuntu@52.39.205.152 'bash ~/deploy.sh'
 ```
 > Run `deploy.sh` **as `ubuntu`, not `sudo bash`** — it uses `sudo docker`
 > internally, but the outer process must stay `ubuntu` so `$HOME` resolves to
@@ -88,9 +90,9 @@ image (`.env` is in `.dockerignore`) nor written by any script in the repo.
 
 ## ⚠️ Enabling HTTPS (required before Google login works)
 Google OAuth rejects non-`localhost` `http://` redirect URIs, so **login is
-broken until HTTPS is set up.** With a domain pointed at `35.87.7.42`:
+broken until HTTPS is set up.** With a domain pointed at `52.39.205.152`:
 
-1. **DNS:** add an A record `yourdomain.com → 35.87.7.42`.
+1. **DNS:** add an A record `yourdomain.com → 52.39.205.152`.
 2. **Firewall:** in the Lightsail console → instance → *Networking*, open **443**
    (80 and 22 are open by default; 443 is not).
 3. **Rebind the container to loopback** so Caddy can own 80/443. In `deploy.sh`

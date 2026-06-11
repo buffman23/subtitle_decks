@@ -37,14 +37,11 @@ RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-# Download ONLY the camel_tools data this app uses (~1 GB of the full 5 GB set):
-#   BERT disambiguators for MSA + Egyptian, plus their morphology databases.
-# (camel_data won't create CAMELTOOLS_DATA itself, so make it first.)
-RUN mkdir -p "$CAMELTOOLS_DATA" \
- && python -m camel_tools.cli.camel_data -i disambig-bert-unfactored-msa \
- && python -m camel_tools.cli.camel_data -i disambig-bert-unfactored-egy \
- && python -m camel_tools.cli.camel_data -i morphology-db-msa-r13 \
- && python -m camel_tools.cli.camel_data -i morphology-db-egy-r13
+# NOTE: the camel_tools models (~1.8GB) are NOT baked into the image. They are
+# downloaded once onto the persistent named volume 'subtitle-decks-models' and
+# mounted read-only at $CAMELTOOLS_DATA at runtime (see deploy/lightsail-deploy.sh).
+# Keeping them out of the image means a requirements/code change no longer busts
+# the cache for a 1.8GB re-download, and the image stays ~1.8GB smaller.
 
 # Application code + the compiled frontend bundle from stage 1
 COPY app ./app
