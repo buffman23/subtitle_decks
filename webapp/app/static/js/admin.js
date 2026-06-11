@@ -79,6 +79,8 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
+  // (model auto-unload is a checkbox — handled by the change listener below)
+
   // --- Load / unload model ---
   if (target.classList.contains("btn-toggle-model")) {
     const row = target.closest("tr");
@@ -111,5 +113,29 @@ document.addEventListener("click", async (e) => {
       target.disabled = false;
     }
     return;
+  }
+});
+
+// --- Toggle a model's auto-unload-after-analysis setting ---
+document.addEventListener("change", async (e) => {
+  const input = e.target.closest(".model-autounload");
+  if (!input) return;
+  const row = input.closest("tr");
+  const code = row.dataset.modelCode;
+  input.disabled = true;
+  try {
+    const data = await postJSON(`/api/admin/models/${code}/auto-unload`, { enabled: input.checked });
+    // RAM isn't measured while auto-unload is on, so reflect that immediately.
+    const ramCell = row.querySelector(".model-ram");
+    if (ramCell) {
+      ramCell.innerHTML = data.ram_bytes
+        ? humanizeBytes(data.ram_bytes)
+        : '<span class="text-muted">—</span>';
+    }
+  } catch (err) {
+    alert(`Could not update auto-unload: ${err.message}`);
+    input.checked = !input.checked; // revert on failure
+  } finally {
+    input.disabled = false;
   }
 });

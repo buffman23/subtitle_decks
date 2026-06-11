@@ -53,14 +53,14 @@ class StanzaProcessor(LanguageProcessor):
 
     def _get_pipeline(self):
         if self.__class__._pipeline is None:
-            self.__class__.preload_pipeline()
+            self._load_measured(self.__class__.preload_pipeline)
         return self.__class__._pipeline
 
     def is_loaded(self) -> bool:
         return bool(self.__class__._pipeline)
 
     def load(self) -> None:
-        self.__class__.preload_pipeline()
+        self._load_measured(self.__class__.preload_pipeline)
 
     def unload(self) -> None:
         self.__class__._pipeline = None

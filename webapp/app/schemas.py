@@ -90,3 +90,7 @@ class SessionNativeSubtitlesRequest(BaseModel):
 
 class AdminToggleRequest(BaseModel):
     is_admin: bool
+
+
+class AutoUnloadRequest(BaseModel):
+    enabled: bool

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, require_admin
 from app.models import User
-from app.schemas import AdminToggleRequest
+from app.schemas import AdminToggleRequest, AutoUnloadRequest
 from app.services.processor_registry import get_processor
 
 logger = logging.getLogger(__name__)
@@ -68,3 +68,21 @@ def _set_model(code: str, load: bool) -> dict:
         processor.unload()
     status = "loaded" if processor.is_loaded() else "unloaded"
     return {"code": code, "status": status, "ram_bytes": processor.ram_bytes()}
+
+
+@router.post("/models/{code}/auto-unload")
+async def set_auto_unload(
+    code: str,
+    payload: AutoUnloadRequest,
+    admin: User = Depends(require_admin),
+):
+    try:
+        processor = get_processor(code)
+    except ValueError:
+        raise HTTPException(status_code=404, detail=f"Unknown language: {code!r}")
+    processor.auto_unload = payload.enabled
+    return {
+        "code": code,
+        "auto_unload": processor.auto_unload,
+        "ram_bytes": processor.ram_bytes(),
+    }

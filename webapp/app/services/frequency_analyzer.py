@@ -29,6 +29,10 @@ def analyze(
 
     flat_lemmas = processor.lemmatize(token_sentences)
 
+    # Free the model's RAM after use when the model is set to auto-unload.
+    if processor.auto_unload:
+        processor.unload()
+
     # Build per-subtitle segment lists with character offsets
     subtitles = []
     offset = 0

@@ -86,6 +86,7 @@ async def admin_models(request: Request, db: Session = Depends(get_db)):
                 "name": lang["name"],
                 "status": "loaded" if loaded else "unloaded",
                 "ram_bytes": processor.ram_bytes(),
+                "auto_unload": processor.auto_unload,
             }
         )
     return templates.TemplateResponse(
