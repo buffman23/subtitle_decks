@@ -79,6 +79,48 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
+  // --- Edit a user's per-account upload limit ---
+  if (target.classList.contains("btn-edit-limit")) {
+    const row = target.closest("tr");
+    const userId = row.dataset.userId;
+    const email = target.dataset.email || "this account";
+    const current = target.dataset.currentKb || "";
+    const input = window.prompt(
+      `Upload limit for ${email}, in KB.\nLeave blank to use the global default.`,
+      current
+    );
+    if (input === null) return; // cancelled
+    const trimmed = input.trim();
+    let body;
+    if (trimmed === "") {
+      body = { max_upload_kb: null };
+    } else {
+      const kb = parseInt(trimmed, 10);
+      if (isNaN(kb) || kb < 1) {
+        alert("Please enter a whole number of KB (at least 1), or leave blank for the default.");
+        return;
+      }
+      body = { max_upload_kb: kb };
+    }
+    target.disabled = true;
+    try {
+      const data = await postJSON(`/api/admin/accounts/${userId}/upload-limit`, body);
+      const label = row.querySelector(".upload-limit");
+      if (data.max_upload_bytes) {
+        label.textContent = humanizeBytes(data.max_upload_bytes);
+        target.dataset.currentKb = Math.round(data.max_upload_bytes / 1024);
+      } else {
+        label.innerHTML = `${humanizeBytes(data.effective_bytes)} <span class="text-muted">(default)</span>`;
+        target.dataset.currentKb = "";
+      }
+    } catch (err) {
+      alert(`Could not update upload limit: ${err.message}`);
+    } finally {
+      target.disabled = false;
+    }
+    return;
+  }
+
   // --- Cancel a queued/running analysis job ---
   if (target.classList.contains("btn-cancel-job")) {
     const jobId = target.dataset.jobId;
@@ -199,6 +241,28 @@ async function renderQueue() {
 if (document.getElementById("queue-tbody")) {
   renderQueue();
   setInterval(renderQueue, 2000);
+}
+
+// --- General settings page: save form -----------------------------------
+const settingsForm = document.getElementById("settings-form");
+if (settingsForm) {
+  settingsForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById("settings-save");
+    const status = document.getElementById("settings-status");
+    const maxUploadKb = parseInt(document.getElementById("max-upload-kb").value, 10);
+    saveBtn.disabled = true;
+    if (status) { status.textContent = ""; status.className = "small"; }
+    try {
+      const data = await postJSON("/api/admin/settings", { max_upload_kb: maxUploadKb });
+      document.getElementById("max-upload-kb").value = data.max_upload_kb;
+      if (status) { status.textContent = "Saved."; status.className = "small text-success"; }
+    } catch (err) {
+      if (status) { status.textContent = `Could not save: ${err.message}`; status.className = "small text-danger"; }
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
 }
 
 // --- Toggle a model's auto-unload-after-analysis setting ---

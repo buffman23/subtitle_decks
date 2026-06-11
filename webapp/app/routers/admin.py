@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
 from app.models import AnalysisSession, LanguageRow, User
+from app.services.app_settings import get_max_upload_bytes
 from app.services.processor_registry import get_available_languages, get_processor
 from app.services.system_stats import get_system_stats
 from app.templating import templates
@@ -66,7 +67,12 @@ async def admin_accounts(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "admin/accounts.html",
-        {"user": user, "active": "accounts", "accounts": accounts},
+        {
+            "user": user,
+            "active": "accounts",
+            "accounts": accounts,
+            "default_upload_kb": get_max_upload_bytes(db) // 1024,
+        },
     )
 
 
@@ -102,6 +108,22 @@ async def admin_queue(request: Request, db: Session = Depends(get_db)):
     if user is None:
         return RedirectResponse("/")
     return templates.TemplateResponse(request, "admin/queue.html", {"user": user, "active": "queue"})
+
+
+@router.get("/settings", response_class=HTMLResponse)
+async def admin_settings(request: Request, db: Session = Depends(get_db)):
+    user = _admin_or_redirect(request, db)
+    if user is None:
+        return RedirectResponse("/")
+    return templates.TemplateResponse(
+        request,
+        "admin/settings.html",
+        {
+            "user": user,
+            "active": "settings",
+            "max_upload_kb": get_max_upload_bytes(db) // 1024,
+        },
+    )
 
 
 @router.get("/system", response_class=HTMLResponse)

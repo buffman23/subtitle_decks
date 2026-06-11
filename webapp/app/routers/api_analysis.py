@@ -7,8 +7,10 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user, resolve_language_id
 from app.models import IgnoreListEntry
 from app.schemas import JobStatusResponse, JobSubmitResponse
+from app.services.app_settings import effective_max_upload_bytes
 from app.services.job_queue import Job, manager, model_lock
 from app.services.processor_registry import get_processor
+from app.templating import humanize_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,16 @@ async def analyze_srt(
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
+    user = get_current_user(request, db)
+
+    max_bytes = effective_max_upload_bytes(db, user)
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File is too large ({humanize_bytes(len(content))}). "
+                   f"The maximum allowed size is {humanize_bytes(max_bytes)}.",
+        )
+
     try:
         processor = get_processor(language)
     except ValueError:
@@ -63,7 +75,6 @@ async def analyze_srt(
     uploaded_words: list[str] = [w.strip() for w in ignore_list_text.splitlines() if w.strip()]
     ignore_set: set[str] = set(uploaded_words)
 
-    user = get_current_user(request, db)
     if user:
         lang_id = resolve_language_id(language, db)
         # Save any uploaded words to the user's DB ignore list

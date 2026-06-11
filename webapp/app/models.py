@@ -14,6 +14,18 @@ class LanguageRow(Base):
     name: Mapped[str] = mapped_column(String)
 
 
+class AppSetting(Base):
+    """Key/value store for general, admin-configurable application settings.
+
+    Values are stored as strings; typed accessors live in
+    app.services.app_settings.
+    """
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String, primary_key=True)
+    value: Mapped[str] = mapped_column(String, nullable=False)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -21,6 +33,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     picture: Mapped[str | None] = mapped_column(String, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="0")
+    # Per-user upload size cap in bytes; NULL means "use the global default".
+    max_upload_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, nullable=True)
 
     ignore_list_entries: Mapped[list["IgnoreListEntry"]] = relationship(

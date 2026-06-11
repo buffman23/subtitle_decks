@@ -10,6 +10,7 @@
         <th class="text-center">Admin</th>
         <th class="text-center">Sessions</th>
         <th class="text-end">Storage</th>
+        <th class="text-end">Upload limit</th>
         <th>Account age</th>
         <th class="text-end">Actions</th>
       </tr>
@@ -34,6 +35,18 @@
         </td>
         <td class="text-center">{{ a.session_count }}</td>
         <td class="text-end">{{ humanize_bytes(a.storage_bytes) }}</td>
+        <td class="text-end">
+          {% set custom = acct.max_upload_bytes %}
+          <span class="upload-limit">
+            {% if custom %}{{ humanize_bytes(custom) }}{% else %}{{ humanize_bytes(default_upload_kb * 1024) }} <span class="text-muted">(default)</span>{% endif %}
+          </span>
+          <button class="btn btn-sm btn-link p-0 ms-1 align-baseline btn-edit-limit"
+                  data-email="{{ acct.email }}"
+                  data-current-kb="{{ (custom // 1024) if custom else '' }}"
+                  title="Edit upload limit">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </td>
         <td>{{ humanize_age(acct.created_at) }}</td>
         <td class="text-end">
           <button class="btn btn-sm btn-outline-secondary btn-toggle-admin"

@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
+from app.services.app_settings import effective_max_upload_bytes
 from app.services.processor_registry import get_available_languages
 from app.templating import templates
 
@@ -16,7 +17,11 @@ async def index(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"user": user, "languages": languages},
+        {
+            "user": user,
+            "languages": languages,
+            "max_upload_bytes": effective_max_upload_bytes(db, user),
+        },
     )
 
 

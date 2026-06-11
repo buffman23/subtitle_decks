@@ -7,7 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, require_admin
 from app.models import User
-from app.schemas import AdminToggleRequest, AutoUnloadRequest, QueueJobOut
+from app.schemas import (
+    AdminToggleRequest,
+    AutoUnloadRequest,
+    GeneralSettingsRequest,
+    QueueJobOut,
+    UserUploadLimitRequest,
+)
+from app.services.app_settings import get_max_upload_bytes, set_max_upload_bytes
 from app.services.job_queue import manager, model_lock
 from app.services.processor_registry import get_processor
 
@@ -47,6 +54,29 @@ async def set_admin(
     target.is_admin = payload.is_admin
     db.commit()
     return {"id": target.id, "is_admin": target.is_admin}
+
+
+@router.post("/accounts/{user_id}/upload-limit")
+async def set_upload_limit(
+    user_id: int,
+    payload: UserUploadLimitRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    target = db.get(User, user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="Account not found.")
+    target.max_upload_bytes = (
+        payload.max_upload_kb * 1024 if payload.max_upload_kb is not None else None
+    )
+    db.commit()
+    return {
+        "id": target.id,
+        "max_upload_bytes": target.max_upload_bytes,
+        "effective_bytes": get_max_upload_bytes(db)
+        if target.max_upload_bytes is None
+        else target.max_upload_bytes,
+    }
 
 
 @router.post("/models/{code}/load")
@@ -114,6 +144,24 @@ async def cancel_queue_job(job_id: str, admin: User = Depends(require_admin)):
         raise HTTPException(status_code=409, detail="Job has already finished.")
     manager.cancel(job)
     return {"id": job.id, "status": job.status}
+
+
+@router.get("/settings")
+async def get_settings(
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return {"max_upload_kb": get_max_upload_bytes(db) // 1024}
+
+
+@router.post("/settings")
+async def update_settings(
+    payload: GeneralSettingsRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    set_max_upload_bytes(db, payload.max_upload_kb * 1024)
+    return {"max_upload_kb": get_max_upload_bytes(db) // 1024}
 
 
 @router.post("/models/{code}/auto-unload")

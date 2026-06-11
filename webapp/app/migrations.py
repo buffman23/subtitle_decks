@@ -16,6 +16,7 @@ def run(engine: Engine) -> None:
         _migrate_users_picture(conn)
         _migrate_users_is_admin(conn)
         _migrate_users_created_at(conn)
+        _migrate_users_max_upload_bytes(conn)
 
 
 # ---------------------------------------------------------------------------
@@ -130,3 +131,9 @@ def _migrate_users_created_at(conn) -> None:
     """Add created_at column to users (NULL for pre-existing rows)."""
     if "created_at" not in _table_columns(conn, "users"):
         conn.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))
+
+
+def _migrate_users_max_upload_bytes(conn) -> None:
+    """Add per-user max_upload_bytes column to users (NULL = use global default)."""
+    if "max_upload_bytes" not in _table_columns(conn, "users"):
+        conn.execute(text("ALTER TABLE users ADD COLUMN max_upload_bytes INTEGER"))

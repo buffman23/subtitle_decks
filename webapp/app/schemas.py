@@ -119,3 +119,27 @@ class AdminToggleRequest(BaseModel):
 
 class AutoUnloadRequest(BaseModel):
     enabled: bool
+
+
+class GeneralSettingsRequest(BaseModel):
+    # Configured by the admin in KB; stored internally as bytes.
+    max_upload_kb: int
+
+    @field_validator("max_upload_kb")
+    @classmethod
+    def positive(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("Maximum upload size must be at least 1 KB.")
+        return v
+
+
+class UserUploadLimitRequest(BaseModel):
+    # Per-user override in KB; None clears the override (use the global default).
+    max_upload_kb: int | None = None
+
+    @field_validator("max_upload_kb")
+    @classmethod
+    def positive(cls, v: int | None) -> int | None:
+        if v is not None and v < 1:
+            raise ValueError("Upload limit must be at least 1 KB.")
+        return v

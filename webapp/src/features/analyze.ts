@@ -13,6 +13,32 @@ let selectedFile: File | null = null;
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** Mirror of the server-side humanize_bytes (B / KB / MB / GB). */
+function humanizeBytes(num: number): string {
+  let size = num || 0;
+  const units = ['B', 'KB', 'MB', 'GB'];
+  for (let i = 0; i < units.length; i++) {
+    if (size < 1024 || i === units.length - 1) {
+      return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+    }
+    size /= 1024;
+  }
+  return `${num} B`;
+}
+
+/** Reject (with a flash) a file that exceeds the configured upload cap. */
+function withinSizeLimit(file: File): boolean {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    flash(
+      `"${file.name}" is too large (${humanizeBytes(file.size)}). ` +
+        `The maximum allowed size is ${humanizeBytes(MAX_UPLOAD_BYTES)}.`,
+      'danger',
+    );
+    return false;
+  }
+  return true;
+}
+
 /** Update the inline spinner's status line from the pending job's state. */
 function updatePendingStatusText(): void {
   const pj = state.pendingJob;
@@ -239,7 +265,13 @@ export function initAnalyzeForm(): void {
 
   // File picker selection
   fileInput.addEventListener('change', () => {
-    setSelectedFile(fileInput.files?.[0] ?? null);
+    const file = fileInput.files?.[0] ?? null;
+    if (file && !withinSizeLimit(file)) {
+      fileInput.value = '';
+      setSelectedFile(null);
+      return;
+    }
+    setSelectedFile(file);
   });
 
   // Drag events
@@ -254,7 +286,7 @@ export function initAnalyzeForm(): void {
     if (state.pendingJob) return;
     const file = e.dataTransfer?.files[0] ?? null;
     if (file && file.name.endsWith('.srt')) {
-      setSelectedFile(file);
+      if (withinSizeLimit(file)) setSelectedFile(file);
     } else if (file) {
       flash('Please drop an .srt file.', 'warning');
     }
