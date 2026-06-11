@@ -1,5 +1,17 @@
 "use strict";
 
+// Mirror of the server-side humanize_bytes (B / KB / MB / GB).
+function humanizeBytes(num) {
+  let size = Number(num) || 0;
+  const units = ["B", "KB", "MB", "GB"];
+  for (let i = 0; i < units.length; i++) {
+    if (size < 1024 || i === units.length - 1) {
+      return size.toFixed(i === 0 ? 0 : 1) + " " + units[i];
+    }
+    size /= 1024;
+  }
+}
+
 async function postJSON(url, body) {
   const res = await fetch(url, {
     method: "POST",
@@ -86,6 +98,12 @@ document.addEventListener("click", async (e) => {
       target.textContent = loaded ? "Unload" : "Load";
       target.classList.toggle("btn-outline-secondary", loaded);
       target.classList.toggle("btn-outline-success", !loaded);
+      const ramCell = row.querySelector(".model-ram");
+      if (ramCell) {
+        ramCell.innerHTML = data.ram_bytes
+          ? humanizeBytes(data.ram_bytes)
+          : '<span class="text-muted">—</span>';
+      }
     } catch (err) {
       alert(`Could not ${action} model: ${err.message}`);
       target.textContent = original;

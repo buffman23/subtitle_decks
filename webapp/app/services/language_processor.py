@@ -52,3 +52,10 @@ class LanguageProcessor(ABC):
     @abstractmethod
     def unload(self) -> None:
         """Release the model from memory (no-op if not loaded)."""
+
+    def ram_bytes(self) -> int | None:
+        """Resident RAM the loaded model occupies, or None if unloaded/unknown.
+
+        Default is None; processors that can measure their footprint override this.
+        """
+        return None

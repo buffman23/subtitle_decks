@@ -9,6 +9,7 @@
         <th>Language</th>
         <th>Code</th>
         <th class="text-center">Status</th>
+        <th class="text-end">RAM</th>
         <th class="text-end">Action</th>
       </tr>
     </thead>
@@ -21,6 +22,9 @@
           <span class="badge model-status {{ 'text-bg-success' if m.status == 'loaded' else 'text-bg-secondary' }}">
             {{ m.status }}
           </span>
+        </td>
+        <td class="text-end model-ram">
+          {% if m.ram_bytes %}{{ humanize_bytes(m.ram_bytes) }}{% else %}<span class="text-muted">—</span>{% endif %}
         </td>
         <td class="text-end">
           <button class="btn btn-sm btn-toggle-model {{ 'btn-outline-secondary' if m.status == 'loaded' else 'btn-outline-success' }}"

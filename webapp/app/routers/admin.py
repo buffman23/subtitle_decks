@@ -76,14 +76,18 @@ async def admin_models(request: Request, db: Session = Depends(get_db)):
     if user is None:
         return RedirectResponse("/")
 
-    models = [
-        {
-            "code": lang["code"],
-            "name": lang["name"],
-            "status": "loaded" if get_processor(lang["code"]).is_loaded() else "unloaded",
-        }
-        for lang in get_available_languages()
-    ]
+    models = []
+    for lang in get_available_languages():
+        processor = get_processor(lang["code"])
+        loaded = processor.is_loaded()
+        models.append(
+            {
+                "code": lang["code"],
+                "name": lang["name"],
+                "status": "loaded" if loaded else "unloaded",
+                "ram_bytes": processor.ram_bytes(),
+            }
+        )
     return templates.TemplateResponse(
         request,
         "admin/models.html",

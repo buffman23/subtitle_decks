@@ -16,6 +16,15 @@ _EMPTY_VALUES: set = {"na", None, "", -99.0}
 def _extract_analysis(ana: dict) -> dict:
     return {k: ana.get(k) for k in _LEXICAL_FIELDS + _MORPH_FIELDS + _CLITIC_FIELDS
             if ana.get(k) not in _EMPTY_VALUES}
+
+
+def _process_rss() -> int:
+    """Current process resident set size in bytes (0 if psutil unavailable)."""
+    try:
+        import psutil
+        return psutil.Process().memory_info().rss
+    except Exception:
+        return 0
 _CHUNK_TOKENS   = 200  # total window size fed to BERT
 _CONTEXT_TOKENS = 50   # context padding on each side
 _BATCH_TOKENS   = _CHUNK_TOKENS - 2 * _CONTEXT_TOKENS  # 100, max payload per call
@@ -26,6 +35,8 @@ class ArabicProcessor(LanguageProcessor):
 
     # Shared cache across all Arabic subclasses: model_name → BERTUnfactoredDisambiguator | None
     _disambiguators: dict[str, object] = {}
+    # Resident RAM (bytes) measured when each model was loaded: model_name → bytes
+    _model_ram: dict[str, int] = {}
     _model_name: str = ""
 
     @classmethod
@@ -40,8 +51,18 @@ class ArabicProcessor(LanguageProcessor):
                 use_gpu = torch.cuda.is_available()
             except Exception:
                 use_gpu = False
+            # Measure resident RAM added by loading this model. The imports above
+            # run first so one-time library cost (torch/transformers) isn't charged
+            # to whichever model loads first. (GPU loads won't register here.)
+            rss_before = _process_rss()
             cls._disambiguators[model] = BERTUnfactoredDisambiguator.pretrained(model, use_gpu=use_gpu)
-            logger.info("BERTUnfactoredDisambiguator loaded: %s (gpu=%s)", model, use_gpu)
+            delta = _process_rss() - rss_before
+            if delta > 0:
+                cls._model_ram[model] = delta
+            logger.info(
+                "BERTUnfactoredDisambiguator loaded: %s (gpu=%s, ~%d MB RAM)",
+                model, use_gpu, delta // (1024 * 1024),
+            )
         except Exception as exc:
             logger.warning(
                 "Could not load BERTUnfactoredDisambiguator (%s): %s — falling back to raw tokens.", model, exc
@@ -55,6 +76,11 @@ class ArabicProcessor(LanguageProcessor):
 
     def is_loaded(self) -> bool:
         return self.__class__._disambiguators.get(self._model_name) is not None
+
+    def ram_bytes(self) -> int | None:
+        if not self.is_loaded():
+            return None
+        return self.__class__._model_ram.get(self._model_name)
 
     def load(self) -> None:
         self.__class__.preload_disambiguator()

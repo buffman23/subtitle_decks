@@ -49,15 +49,15 @@ async def set_admin(
 
 @router.post("/models/{code}/load")
 async def load_model(code: str, admin: User = Depends(require_admin)):
-    return {"code": code, "status": _set_model(code, load=True)}
+    return _set_model(code, load=True)
 
 
 @router.post("/models/{code}/unload")
 async def unload_model(code: str, admin: User = Depends(require_admin)):
-    return {"code": code, "status": _set_model(code, load=False)}
+    return _set_model(code, load=False)
 
 
-def _set_model(code: str, load: bool) -> str:
+def _set_model(code: str, load: bool) -> dict:
     try:
         processor = get_processor(code)
     except ValueError:
@@ -66,4 +66,5 @@ def _set_model(code: str, load: bool) -> str:
         processor.load()
     else:
         processor.unload()
-    return "loaded" if processor.is_loaded() else "unloaded"
+    status = "loaded" if processor.is_loaded() else "unloaded"
+    return {"code": code, "status": status, "ram_bytes": processor.ram_bytes()}
