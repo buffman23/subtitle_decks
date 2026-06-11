@@ -2,9 +2,9 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, ClassVar, Pattern
+from typing import Any, Callable, ClassVar, Pattern
 
-from app.services.language_processor import LanguageProcessor, LemmaResult
+from app.services.language_processor import CancelledAnalysis, LanguageProcessor, LemmaResult
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,13 @@ class StanzaProcessor(LanguageProcessor):
         gc.collect()
         logger.info("Stanza %s pipeline unloaded", self.__class__._lang)
 
-    def lemmatize(self, token_sentences: list[list[str]]) -> list[LemmaResult]:
+    def lemmatize(
+        self,
+        token_sentences: list[list[str]],
+        should_cancel: Callable[[], bool] | None = None,
+    ) -> list[LemmaResult]:
+        if should_cancel is not None and should_cancel():
+            raise CancelledAnalysis()
         pipeline = self._get_pipeline()
         if not pipeline:
             return [LemmaResult(tok.lower()) for sentence in token_sentences for tok in sentence]

@@ -1,7 +1,7 @@
 import { state, buildVisibleIndices } from '../state';
 import { flash } from '../ui/flash';
 import { renderResults, renderVirtual } from '../ui/virtualScroll';
-import { loadSessions, stashPendingSession } from './sessions';
+import { loadSessions, stashPendingSession, renderPending } from './sessions';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -11,13 +11,203 @@ export function registerAnalysisCompleteHandler(fn: () => void): void {
 
 let selectedFile: File | null = null;
 
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Update the inline spinner's status line from the pending job's state. */
+function updatePendingStatusText(): void {
+  const pj = state.pendingJob;
+  const statusText = document.getElementById('analyze-status-text');
+  if (!pj || !statusText) return;
+  statusText.textContent = pj.cancelling
+    ? 'Cancelling…'
+    : pj.status === 'queued'
+      ? (pj.position ? `In queue — position ${pj.position}…` : 'In queue…')
+      : 'Analyzing…';
+}
+
+/** Lock/unlock the file picker and language selector during an analysis. */
+function setUploadControlsDisabled(disabled: boolean): void {
+  const fileInput = document.getElementById('srt-file') as HTMLInputElement | null;
+  const langSelect = document.getElementById('language-select') as HTMLSelectElement | null;
+  if (fileInput) fileInput.disabled = disabled;
+  if (langSelect) langSelect.disabled = disabled;
+  document.getElementById('drop-zone')?.classList.toggle('disabled', disabled);
+}
+
+/** Show the "analyzing" view: the upload pane with its spinner, results hidden. */
+function showAnalyzingView(): void {
+  document.getElementById('results-section')?.classList.add('d-none');
+  document.getElementById('upload-section')?.classList.remove('d-none');
+  document.getElementById('analyze-spinner')?.classList.remove('d-none');
+  const cancelBtn = document.getElementById('btn-cancel-analyze') as HTMLButtonElement | null;
+  if (cancelBtn) { cancelBtn.classList.remove('d-none'); cancelBtn.disabled = false; }
+  const btn = document.getElementById('btn-analyze') as HTMLButtonElement | null;
+  if (btn) btn.disabled = true;
+  setUploadControlsDisabled(true);
+  updatePendingStatusText();
+}
+
+/** Sync the upload controls (button, spinner, cancel, file/language) with pending state. */
+function updateAnalyzeButton(): void {
+  const btn = document.getElementById('btn-analyze') as HTMLButtonElement | null;
+  if (state.pendingJob) {
+    if (btn) btn.disabled = true;
+    setUploadControlsDisabled(true);
+    return;
+  }
+  document.getElementById('analyze-spinner')?.classList.add('d-none');
+  document.getElementById('btn-cancel-analyze')?.classList.add('d-none');
+  setUploadControlsDisabled(false);
+  if (btn) btn.disabled = !selectedFile;
+}
+
+/** Request cancellation of the in-progress analysis. */
+export async function cancelPendingAnalysis(): Promise<void> {
+  const pj = state.pendingJob;
+  if (!pj || pj.cancelling) return;
+  pj.cancelling = true;
+  const cancelBtn = document.getElementById('btn-cancel-analyze') as HTMLButtonElement | null;
+  if (cancelBtn) cancelBtn.disabled = true;
+  updatePendingStatusText();
+  renderPending();
+  try {
+    await fetch(`/api/analyze/jobs/${encodeURIComponent(pj.jobId)}/cancel`, { method: 'POST' });
+    // The poll loop will observe the 'cancelled' status and reset the view.
+  } catch (_) { /* poll loop reflects the real outcome */ }
+}
+
+/**
+ * Re-attach the main view to the in-progress analysis. Called when the user
+ * clicks the pending placeholder in the sessions sidebar after navigating away.
+ */
+export function viewPendingAnalysis(): void {
+  const pj = state.pendingJob;
+  if (!pj) return;
+  state.viewingPending = true;
+  state.activeSessionId = null;
+  // Restore the language context to the in-progress analysis — the user may
+  // have opened a saved session in a different language while it ran, which
+  // changed the picker.
+  state.currentLanguage = pj.language;
+  const picker = document.getElementById('language-select') as HTMLSelectElement | null;
+  if (picker && picker.value !== pj.language) {
+    picker.value = pj.language;
+    localStorage.setItem('subtitleAnalyzer.language', pj.language);
+  }
+  showAnalyzingView();
+  renderPending();
+}
+
+/**
+ * Poll a queued analysis job until it finishes, keeping the pending state and
+ * sidebar placeholder up to date. Returns the analysis result on success, or
+ * null if the job failed or was cancelled (a flash message is shown for those).
+ */
+async function pollJob(jobId: string): Promise<any | null> {
+  while (true) {
+    const res = await fetch(`/api/analyze/jobs/${encodeURIComponent(jobId)}`);
+    if (!res.ok) {
+      flash('Lost track of the analysis job.', 'danger');
+      return null;
+    }
+    const job = await res.json();
+    if (state.pendingJob && state.pendingJob.jobId === jobId) {
+      state.pendingJob.status = job.status;
+      state.pendingJob.position = job.position ?? null;
+    }
+    renderPending();
+    if (state.viewingPending) updatePendingStatusText();
+
+    if (job.status === 'done') return job.result;
+    if (job.status === 'cancelled') { flash('Analysis was cancelled.', 'warning'); return null; }
+    if (job.status === 'failed') { flash(job.error || 'Analysis failed.', 'danger'); return null; }
+    await sleep(1000);
+  }
+}
+
+/**
+ * Run an analysis job to completion in the background. The user may navigate
+ * away (to a saved session) and back via the sidebar placeholder while this
+ * runs; results are only rendered into the main view if they're still watching.
+ */
+async function startAnalysisJob(jobId: string, filename: string, language: string): Promise<void> {
+  state.pendingJob = { jobId, filename, language, status: 'queued', position: null, cancelling: false };
+  state.viewingPending = true;
+  showAnalyzingView();
+  renderPending();
+
+  let result: any = null;
+  try {
+    result = await pollJob(jobId);
+  } catch (err) {
+    flash('Network error: ' + (err as Error).message, 'danger');
+  }
+
+  const wasViewing = state.viewingPending;
+  state.pendingJob = null;
+  state.viewingPending = false;
+
+  if (!result) {
+    // Failed/cancelled/error — message already shown. Leave the upload view in
+    // place (if they were watching) so they can retry.
+    updateAnalyzeButton();
+    renderPending();
+    return;
+  }
+
+  await completeAnalysis(result, filename, language, wasViewing);
+  updateAnalyzeButton();
+  renderPending();
+}
+
+/** Persist the finished analysis and, if still watching, render it. */
+async function completeAnalysis(
+  result: any,
+  filename: string,
+  language: string,
+  wasViewing: boolean,
+): Promise<void> {
+  let savedId: number | null = null;
+  if (IS_LOGGED_IN) {
+    try {
+      const saveRes = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language,
+          srt_filename: filename,
+          subtitles: result.subtitles ?? [],
+          native_subtitles: [],
+          results: result.results,
+        }),
+      });
+      if (saveRes.ok) savedId = (await saveRes.json()).id;
+    } catch (_) { /* non-critical */ }
+  }
+
+  if (wasViewing) {
+    state.currentLanguage = language;
+    state.currentFilename = filename;
+    state.parsedSubtitles = result.subtitles ?? [];
+    state.activeSessionId = savedId;
+    renderResults(result.results, result.total_tokens);
+    if (_onAnalysisComplete) _onAnalysisComplete();
+    if (savedId) flash('Session saved!');
+    else if (!IS_LOGGED_IN) stashPendingSession();
+  } else {
+    flash(`Analysis of "${filename}" is ready.`, 'success');
+  }
+
+  if (IS_LOGGED_IN) loadSessions();
+}
+
 function setSelectedFile(file: File | null): void {
   selectedFile = file;
   const filename = document.getElementById('drop-zone-filename');
   const btn = document.getElementById('btn-analyze') as HTMLButtonElement | null;
   if (file) {
     if (filename) { filename.textContent = file.name; filename.classList.remove('d-none'); }
-    if (btn) btn.disabled = false;
+    if (btn) btn.disabled = !!state.pendingJob;
   } else {
     if (filename) { filename.textContent = ''; filename.classList.add('d-none'); }
     if (btn) btn.disabled = true;
@@ -28,6 +218,8 @@ export function resetUpload(): void {
   setSelectedFile(null);
   const fileInput = document.getElementById('srt-file') as HTMLInputElement | null;
   if (fileInput) fileInput.value = '';
+  // Keep controls locked if an analysis is still running in the background.
+  setUploadControlsDisabled(!!state.pendingJob);
 }
 
 export function initAnalyzeForm(): void {
@@ -37,8 +229,13 @@ export function initAnalyzeForm(): void {
 
   if (!form || !dropZone || !fileInput) return;
 
-  // Click on drop zone → open file picker
-  dropZone.addEventListener('click', () => fileInput.click());
+  // Click on drop zone → open file picker (ignored while an analysis runs)
+  dropZone.addEventListener('click', () => { if (!state.pendingJob) fileInput.click(); });
+
+  // Cancel the in-progress analysis
+  document.getElementById('btn-cancel-analyze')?.addEventListener('click', () => {
+    void cancelPendingAnalysis();
+  });
 
   // File picker selection
   fileInput.addEventListener('change', () => {
@@ -54,6 +251,7 @@ export function initAnalyzeForm(): void {
   dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
+    if (state.pendingJob) return;
     const file = e.dataTransfer?.files[0] ?? null;
     if (file && file.name.endsWith('.srt')) {
       setSelectedFile(file);
@@ -66,71 +264,42 @@ export function initAnalyzeForm(): void {
     e.preventDefault();
 
     if (!selectedFile) { flash('Please select an SRT file.', 'warning'); return; }
+    if (state.pendingJob) {
+      flash('An analysis is already running — please wait for it to finish.', 'warning');
+      viewPendingAnalysis();
+      return;
+    }
 
-    state.currentFilename = selectedFile.name;
+    const filename = selectedFile.name;
+    const language = state.currentLanguage;
+    state.currentFilename = filename;
 
     const formData = new FormData();
     formData.append('file', selectedFile);
-    formData.append('language', state.currentLanguage);
+    formData.append('language', language);
 
     const btn = document.getElementById('btn-analyze') as HTMLButtonElement;
-    const spinner = document.getElementById('analyze-spinner');
-    const statusText = document.getElementById('analyze-status-text');
-    const setStatus = (msg: string): void => { if (statusText) statusText.textContent = msg; };
     btn.disabled = true;
-    setStatus('Analyzing…');
-    spinner?.classList.remove('d-none');
+    showAnalyzingView();
+    const statusText = document.getElementById('analyze-status-text');
+    if (statusText) statusText.textContent = 'Submitting…';
 
     try {
-      // If the language model isn't loaded yet, surface a "Loading model…"
-      // message while it loads, then switch to "Analyzing…". The analyze
-      // endpoint lazy-loads anyway, so a failure here is non-critical.
-      try {
-        const code = encodeURIComponent(state.currentLanguage);
-        const statusRes = await fetch(`/api/models/${code}/status`);
-        if (statusRes.ok && !(await statusRes.json()).loaded) {
-          setStatus('Loading model…');
-          await fetch(`/api/models/${code}/load`, { method: 'POST' });
-          setStatus('Analyzing…');
-        }
-      } catch (_) { /* non-critical; analyze will lazy-load if needed */ }
-
-      const res = await fetch('/api/analyze', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) { flash(data.detail || 'Analysis failed.', 'danger'); return; }
-      state.activeSessionId = null;
-      state.parsedSubtitles = data.subtitles ?? [];
-      renderResults(data.results, data.total_tokens);
-      if (_onAnalysisComplete) _onAnalysisComplete();
-      if (IS_LOGGED_IN) {
-        try {
-          const saveRes = await fetch('/api/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              language: state.currentLanguage,
-              srt_filename: state.currentFilename,
-              subtitles: data.subtitles ?? [],
-              native_subtitles: [],
-              results: data.results,
-            }),
-          });
-          if (saveRes.ok) {
-            const saved = await saveRes.json();
-            state.activeSessionId = saved.id;
-            flash('Session saved!');
-          }
-        } catch (_) { /* non-critical */ }
-        loadSessions();
-      } else {
-        // Stash the analysis so it gets persisted automatically when the user signs in.
-        stashPendingSession();
+      // Submit the analysis as a queued job; the lifecycle (queue position,
+      // polling, completion) is owned by startAnalysisJob so the user can
+      // navigate away and return to it via the sidebar while it runs.
+      const submitRes = await fetch('/api/analyze', { method: 'POST', body: formData });
+      const submitData = await submitRes.json();
+      if (!submitRes.ok) {
+        flash(submitData.detail || 'Analysis failed.', 'danger');
+        updateAnalyzeButton();
+        return;
       }
+      // Intentionally not awaited: let it run in the background.
+      void startAnalysisJob(submitData.job_id, filename, language);
     } catch (err) {
       flash('Network error: ' + (err as Error).message, 'danger');
-    } finally {
-      btn.disabled = false;
-      spinner?.classList.add('d-none');
+      updateAnalyzeButton();
     }
   });
 }

@@ -14,13 +14,22 @@ from app.routers.api_ignorelist import router as ignorelist_router
 from app.routers.api_sessions import router as sessions_router
 from app.routers.admin import router as admin_router
 from app.routers.api_admin import router as admin_api_router
+from app.services.job_queue import manager as job_queue
 
 
+# A single uvicorn worker is intentional: the camel_tools / stanza model caches
+# are process-local, so extra workers would each hold their own copy and
+# multiply RAM. Heavy analysis work is offloaded to a threadpool by the job
+# queue worker (below) instead, keeping the event loop responsive.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_tables()
     run_migrations(engine)
-    yield
+    job_queue.start()
+    try:
+        yield
+    finally:
+        await job_queue.stop()
 
 
 app = FastAPI(title="Arabic Subtitle Frequency Analyzer", lifespan=lifespan)

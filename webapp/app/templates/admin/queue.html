@@ -1,0 +1,24 @@
+{% extends "admin/layout.html" %}
+{% block admin_content %}
+<h3 class="mb-4">Analysis Queue</h3>
+<p class="text-muted">Analyses run one at a time. Queued and running jobs can be cancelled; finished
+jobs stay here as a log until the server restarts.</p>
+<div class="table-responsive">
+  <table class="table align-middle" id="queue-table">
+    <thead>
+      <tr>
+        <th class="text-center">#</th>
+        <th>User</th>
+        <th>Model</th>
+        <th>File</th>
+        <th class="text-center">Status</th>
+        <th>Submitted</th>
+        <th class="text-end">Action</th>
+      </tr>
+    </thead>
+    <tbody id="queue-tbody">
+      <tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

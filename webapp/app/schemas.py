@@ -88,6 +88,31 @@ class SessionNativeSubtitlesRequest(BaseModel):
     native_subtitles: list[SubtitleEntry]
 
 
+class JobSubmitResponse(BaseModel):
+    job_id: str
+    position: int | None = None
+
+
+class JobStatusResponse(BaseModel):
+    status: str  # queued | running | done | failed | cancelled
+    position: int | None = None
+    result: AnalyzeResponse | None = None
+    error: str | None = None
+
+
+class QueueJobOut(BaseModel):
+    id: str
+    user_label: str
+    language_code: str
+    language_name: str
+    filename: str
+    status: str
+    position: int | None = None
+    created_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
 class AdminToggleRequest(BaseModel):
     is_admin: bool
 

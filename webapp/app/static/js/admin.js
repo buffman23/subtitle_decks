@@ -79,6 +79,21 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
+  // --- Cancel a queued/running analysis job ---
+  if (target.classList.contains("btn-cancel-job")) {
+    const jobId = target.dataset.jobId;
+    if (!confirm("Cancel this analysis job?")) return;
+    target.disabled = true;
+    try {
+      await postJSON(`/api/admin/queue/${jobId}/cancel`);
+      await renderQueue();
+    } catch (err) {
+      alert(`Could not cancel job: ${err.message}`);
+      target.disabled = false;
+    }
+    return;
+  }
+
   // (model auto-unload is a checkbox — handled by the change listener below)
 
   // --- Load / unload model ---
@@ -115,6 +130,76 @@ document.addEventListener("click", async (e) => {
     return;
   }
 });
+
+// --- Analysis queue page: poll + render ---------------------------------
+const QUEUE_BADGE = {
+  queued: "text-bg-secondary",
+  running: "text-bg-primary",
+  done: "text-bg-success",
+  failed: "text-bg-danger",
+  cancelled: "text-bg-dark",
+};
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+function formatTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d) ? "—" : d.toLocaleString();
+}
+
+async function renderQueue() {
+  const tbody = document.getElementById("queue-tbody");
+  if (!tbody) return;
+  let jobs;
+  try {
+    const res = await fetch("/api/admin/queue");
+    if (!res.ok) throw new Error(res.statusText);
+    jobs = await res.json();
+  } catch (e) {
+    return; // transient; the next poll will retry
+  }
+  if (!jobs.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="7" class="text-center text-muted py-4">No jobs yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = jobs
+    .map((j) => {
+      const badge = QUEUE_BADGE[j.status] || "text-bg-secondary";
+      const pos =
+        j.status === "queued" && j.position
+          ? j.position
+          : j.status === "running"
+          ? '<i class="bi bi-play-fill"></i>'
+          : '<span class="text-muted">—</span>';
+      const cancellable = j.status === "queued" || j.status === "running";
+      const action = cancellable
+        ? `<button class="btn btn-sm btn-outline-danger btn-cancel-job" data-job-id="${escapeHtml(
+            j.id
+          )}">Cancel</button>`
+        : '<span class="text-muted">—</span>';
+      return `<tr>
+        <td class="text-center">${pos}</td>
+        <td>${escapeHtml(j.user_label)}</td>
+        <td><code>${escapeHtml(j.language_code)}</code></td>
+        <td class="text-truncate" style="max-width: 16rem">${escapeHtml(j.filename)}</td>
+        <td class="text-center"><span class="badge ${badge}">${escapeHtml(j.status)}</span></td>
+        <td>${formatTime(j.created_at)}</td>
+        <td class="text-end">${action}</td>
+      </tr>`;
+    })
+    .join("");
+}
+
+if (document.getElementById("queue-tbody")) {
+  renderQueue();
+  setInterval(renderQueue, 2000);
+}
 
 // --- Toggle a model's auto-unload-after-analysis setting ---
 document.addEventListener("change", async (e) => {

@@ -1,7 +1,7 @@
 import { state } from '../state';
 import { flash } from '../ui/flash';
-import { renderResults } from '../ui/virtualScroll';
-import { resetUpload } from './analyze';
+import { renderResults, escapeHtml } from '../ui/virtualScroll';
+import { resetUpload, viewPendingAnalysis, cancelPendingAnalysis } from './analyze';
 import { getNativeSubtitles, restoreNativeSubtitles } from './subtitleViewer';
 
 let _onAnalysisComplete: (() => void) | null = null;
@@ -15,16 +15,62 @@ function langAbbr(code: string): string {
   return parts[parts.length - 1].toUpperCase();
 }
 
+/**
+ * Render (or remove) the in-progress analysis placeholder at the top of the
+ * sessions sidebar. The name is shown translucent with a spinner so the user
+ * can tell an analysis is still running and click back into it.
+ */
+export function renderPending(): void {
+  const list = document.getElementById('session-list');
+  if (!list) return;
+  let item = document.getElementById('pending-session-item');
+  const pj = state.pendingJob;
+  if (!pj) { item?.remove(); return; }
+
+  if (!item) {
+    item = document.createElement('div');
+    item.id = 'pending-session-item';
+    item.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('.btn-cancel-pending')) {
+        cancelPendingAnalysis();
+      } else {
+        viewPendingAnalysis();
+      }
+    });
+    list.prepend(item);
+  } else if (item !== list.firstChild) {
+    list.prepend(item);
+  }
+
+  const statusLabel = pj.cancelling
+    ? 'Cancelling'
+    : pj.status === 'queued'
+      ? (pj.position ? `In queue · #${pj.position}` : 'In queue')
+      : 'Analyzing';
+  item.className = 'session-item pending-session' + (state.viewingPending ? ' active' : '');
+  item.innerHTML = `
+    <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
+      <span class="spinner-border spinner-border-sm flex-shrink-0 text-secondary" role="status" aria-hidden="true"></span>
+      <span class="text-truncate session-name pending-name" title="${escapeHtml(pj.filename)}">${escapeHtml(pj.filename)}</span>
+      <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(pj.language)}</span>
+    </div>
+    <span class="small text-muted flex-shrink-0 ms-1 pending-status">${statusLabel}</span>
+    <button class="btn btn-sm btn-link text-danger flex-shrink-0 btn-cancel-pending" title="Cancel analysis" ${pj.cancelling ? 'disabled' : ''}>
+      <i class="bi bi-x-lg"></i>
+    </button>`;
+}
+
 export async function loadSessions(): Promise<void> {
-  if (!IS_LOGGED_IN) return;
+  if (!IS_LOGGED_IN) { renderPending(); return; }
   const list = document.getElementById('session-list');
   if (!list) return;
   try {
     const res = await fetch('/api/sessions');
-    if (!res.ok) return;
+    if (!res.ok) { renderPending(); return; }
     const sessions = await res.json();
     if (sessions.length === 0) {
       list.innerHTML = '<div class="text-muted small text-center mt-3">No saved sessions</div>';
+      renderPending();
       return;
     }
     list.innerHTML = '';
@@ -56,8 +102,10 @@ export async function loadSessions(): Promise<void> {
       });
       list.appendChild(item);
     });
+    renderPending();
   } catch (_e) {
     list.innerHTML = '<div class="text-danger small text-center mt-3">Failed to load sessions</div>';
+    renderPending();
   }
 }
 
@@ -100,6 +148,9 @@ function startRename(item: HTMLElement, id: number, currentName: string): void {
 async function openSession(id: number): Promise<void> {
   const res = await fetch(`/api/sessions/${id}`);
   if (!res.ok) { flash('Could not load session.', 'danger'); return; }
+  // Leaving the in-progress analysis: it keeps running in the background and
+  // stays in the sidebar, but its result should no longer hijack this view.
+  state.viewingPending = false;
   const session = await res.json();
   state.currentLanguage = session.language;
   // Sync the global language picker
@@ -197,6 +248,7 @@ export async function checkPendingSession(): Promise<void> {
 export function initSessions(): void {
   document.getElementById('btn-new-session')?.addEventListener('click', () => {
     state.activeSessionId = null;
+    state.viewingPending = false;
     state.allResults = [];
     document.getElementById('results-section')?.classList.add('d-none');
     document.getElementById('upload-section')?.classList.remove('d-none');

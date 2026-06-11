@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Callable
 
 from app.services.subtitle_parser import parse_srt
 from app.services.processor_registry import get_processor
@@ -8,6 +9,7 @@ def analyze(
     srt_content: str | bytes,
     language_code: str,
     ignore_set: set[str] | None = None,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> tuple[list[dict], int, int, list[dict]]:
     """
     Full analysis pipeline.
@@ -27,7 +29,7 @@ def analyze(
     for sub in subtitle_objects:
         token_sentences.append(processor.tokenize(sub.text))
 
-    flat_lemmas = processor.lemmatize(token_sentences)
+    flat_lemmas = processor.lemmatize(token_sentences, should_cancel)
 
     # Free the model's RAM after use when the model is set to auto-unload.
     if processor.auto_unload:

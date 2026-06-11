@@ -96,6 +96,14 @@ async def admin_models(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/queue", response_class=HTMLResponse)
+async def admin_queue(request: Request, db: Session = Depends(get_db)):
+    user = _admin_or_redirect(request, db)
+    if user is None:
+        return RedirectResponse("/")
+    return templates.TemplateResponse(request, "admin/queue.html", {"user": user, "active": "queue"})
+
+
 @router.get("/system", response_class=HTMLResponse)
 def admin_system(request: Request, db: Session = Depends(get_db)):
     # Sync route: the CPU sample and directory walk block briefly, so let

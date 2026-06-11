@@ -3,6 +3,10 @@ from dataclasses import dataclass
 from typing import Callable
 
 
+class CancelledAnalysis(Exception):
+    """Raised inside the analysis pipeline when a job's cancel flag is set."""
+
+
 def _process_rss() -> int:
     """Current process resident set size in bytes (0 if psutil unavailable)."""
     try:
@@ -42,11 +46,19 @@ class LanguageProcessor(ABC):
         """Tokenize a single subtitle string into words."""
 
     @abstractmethod
-    def lemmatize(self, token_sentences: list[list[str]]) -> list[LemmaResult]:
+    def lemmatize(
+        self,
+        token_sentences: list[list[str]],
+        should_cancel: Callable[[], bool] | None = None,
+    ) -> list[LemmaResult]:
         """
         Take sentence-batched tokens and return a flat list of lemma results.
         analysis is None on fallback/backoff.
         Each inner list is one sentence/subtitle worth of tokens.
+
+        should_cancel, if given, is polled periodically; processors that batch
+        their work should raise CancelledAnalysis when it returns True so a
+        running job can be cancelled mid-flight.
         """
 
     # --- Model lifecycle (for admin load/unload + status) -------------------

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
@@ -5,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user, resolve_language_id
 from app.models import IgnoreListEntry
-from app.schemas import AnalyzeResponse
-from app.services.frequency_analyzer import analyze
+from app.schemas import JobStatusResponse, JobSubmitResponse
+from app.services.job_queue import Job, manager, model_lock
 from app.services.processor_registry import get_processor
 
 logger = logging.getLogger(__name__)
@@ -31,11 +32,16 @@ async def ensure_model_loaded(code: str):
         processor = get_processor(code)
     except ValueError:
         raise HTTPException(status_code=404, detail=f"Unknown language: {code!r}")
-    processor.load()
+
+    def _load():
+        with model_lock:
+            processor.load()
+
+    await asyncio.to_thread(_load)
     return {"code": code, "loaded": processor.is_loaded()}
 
 
-@router.post("/analyze", response_model=AnalyzeResponse)
+@router.post("/analyze", status_code=202, response_model=JobSubmitResponse)
 async def analyze_srt(
     request: Request,
     file: UploadFile = File(...),
@@ -43,9 +49,15 @@ async def analyze_srt(
     ignore_list_text: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    """Enqueue an analysis job and return its id; results are polled separately."""
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    try:
+        processor = get_processor(language)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Unknown language: {language!r}")
 
     # Parse plaintext ignore list (newline-separated lemmas)
     uploaded_words: list[str] = [w.strip() for w in ignore_list_text.splitlines() if w.strip()]
@@ -77,17 +89,53 @@ async def analyze_srt(
         ):
             ignore_set.add(entry.word)
 
-    try:
-        results, total_unique, total_tokens, subtitles = analyze(content, language, ignore_set)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        logger.exception("Analysis error: %s", exc)
-        raise HTTPException(status_code=500, detail="Analysis failed.")
+    job = manager.submit(Job(
+        user_id=user.id if user else None,
+        user_label=user.email if user else "Guest",
+        language_code=language,
+        language_name=processor.language_name,
+        filename=file.filename or "subtitles.srt",
+        content=content,
+        ignore_set=ignore_set,
+    ))
+    return JobSubmitResponse(job_id=job.id, position=manager.position_of(job.id))
 
-    return AnalyzeResponse(
-        results=results,
-        total_unique=total_unique,
-        total_tokens=total_tokens,
-        subtitles=subtitles,
+
+@router.get("/analyze/jobs/{job_id}", response_model=JobStatusResponse)
+async def analyze_job_status(job_id: str, request: Request, db: Session = Depends(get_db)):
+    """Poll a job's status; the full result is returned once it's done."""
+    job = manager.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    # A job tied to an account is visible only to its owner or an admin. Guest
+    # jobs (user_id None) are guarded by the unguessable job id itself.
+    if job.user_id is not None:
+        user = get_current_user(request, db)
+        if user is None or (user.id != job.user_id and not user.is_admin):
+            raise HTTPException(status_code=404, detail="Job not found.")
+
+    return JobStatusResponse(
+        status=job.status,
+        position=manager.position_of(job.id),
+        result=job.result if job.status == "done" else None,
+        error=job.error,
     )
+
+
+@router.post("/analyze/jobs/{job_id}/cancel")
+async def cancel_analyze_job(job_id: str, request: Request, db: Session = Depends(get_db)):
+    """Cancel one's own queued or running analysis. Lenient: finishing jobs are
+    a no-op (the poll will report the real outcome)."""
+    job = manager.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    if job.user_id is not None:
+        user = get_current_user(request, db)
+        if user is None or (user.id != job.user_id and not user.is_admin):
+            raise HTTPException(status_code=404, detail="Job not found.")
+
+    if job.status not in ("done", "failed", "cancelled"):
+        manager.cancel(job)
+    return {"id": job.id, "status": job.status}

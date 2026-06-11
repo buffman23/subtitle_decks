@@ -1,7 +1,9 @@
 import re
 import logging
 
-from app.services.language_processor import LanguageProcessor, LemmaResult
+from typing import Callable
+
+from app.services.language_processor import CancelledAnalysis, LanguageProcessor, LemmaResult
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +83,11 @@ class ArabicProcessor(LanguageProcessor):
             tokens = text.split()
         return [tok for tok in tokens if _ARABIC_RE.fullmatch(tok)]
 
-    def lemmatize(self, token_sentences: list[list[str]]) -> list[LemmaResult]:
+    def lemmatize(
+        self,
+        token_sentences: list[list[str]],
+        should_cancel: Callable[[], bool] | None = None,
+    ) -> list[LemmaResult]:
         disambiguator = self._get_disambiguator()
         if disambiguator is None:
             return [LemmaResult(tok) for sentence in token_sentences for tok in sentence]
@@ -120,6 +126,8 @@ class ArabicProcessor(LanguageProcessor):
         backoff_count = 0
 
         for batch in batches:
+            if should_cancel is not None and should_cancel():
+                raise CancelledAnalysis()
             batch_start = ranges[batch[0]][0]
             batch_end   = ranges[batch[-1]][1]
             window_start = max(0, batch_start - _CONTEXT_TOKENS)

@@ -42,6 +42,20 @@
   padding: 0 4px;
   font-size: 0.75rem;
 }
+
+/* In-progress analysis placeholder */
+.pending-session {
+  cursor: pointer;
+}
+.pending-session .pending-name {
+  opacity: 0.55;
+  font-style: italic;
+}
+.pending-session .spinner-border {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-width: 0.15em;
+}
 .session-item:hover .btn-delete,
 .session-item:hover .btn-rename {
   opacity: 1;
@@ -105,6 +119,10 @@
 .drop-zone.drag-over {
   border-color: #0d6efd;
   background: #f0f4ff;
+}
+.drop-zone.disabled {
+  pointer-events: none;
+  opacity: 0.5;
 }
 .drop-zone-icon {
   font-size: 3rem;

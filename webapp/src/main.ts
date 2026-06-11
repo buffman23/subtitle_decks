@@ -23,6 +23,7 @@ if (languageSelect) {
     localStorage.setItem('subtitleAnalyzer.language', languageSelect.value);
     // Clear results — language context has changed
     state.activeSessionId = null;
+    state.viewingPending = false;
     state.allResults = [];
     document.getElementById('results-section')?.classList.add('d-none');
     document.getElementById('upload-section')?.classList.remove('d-none');
