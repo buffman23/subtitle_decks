@@ -153,7 +153,7 @@ export function renderResults(results: WordFrequency[], totalTokens: number): vo
   updateSummary();
 
   const toggleBtn = document.getElementById('btn-toggle-ignored');
-  if (toggleBtn) toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i> Show ignored';
+  if (toggleBtn) toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i> <span class="btn-label">Show ignored</span>';
 
   document.getElementById('upload-section')?.classList.add('d-none');
   document.getElementById('results-section')?.classList.remove('d-none');

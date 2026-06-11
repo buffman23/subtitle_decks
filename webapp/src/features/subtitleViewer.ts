@@ -226,7 +226,7 @@ function ensureLemmaVisible(lemma: string): void {
     state.showingIgnored = true;
     buildVisibleIndices();
     const btn = document.getElementById('btn-toggle-ignored');
-    if (btn) btn.innerHTML = '<i class="bi bi-eye"></i> Hide ignored';
+    if (btn) btn.innerHTML = '<i class="bi bi-eye"></i> <span class="btn-label">Hide ignored</span>';
   }
 }
 

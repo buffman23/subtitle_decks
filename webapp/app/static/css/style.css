@@ -389,17 +389,26 @@
   /* Bootstrap's offcanvas-md uses var(--bs-offcanvas-width) below the breakpoint */
   #sidebar.offcanvas-md { --bs-offcanvas-width: 280px; }
 
+  /* The desktop layout pins everything inside a fixed-height app shell.
+     On a phone the stacked panels can't all fit, so let the main column
+     scroll as a page instead of clipping the bottom panels. */
+  #main-content { overflow-y: auto !important; }
+  #results-section { flex-shrink: 0; }
+
   /* Stack results table above the subtitle viewers */
   .results-panels-row { flex-direction: column; }
   .results-panels-row .results-table-wrapper {
-    flex: 0 0 40vh;
+    flex: 0 0 auto;
+    height: 45vh;
     min-height: 200px;
     width: 100%;
   }
 
-  /* Stack the two subtitle viewers vertically too */
-  .subtitle-viewports-row { flex-direction: column; }
-  .subtitle-viewports-row > * { min-height: 220px; }
+  /* Stack the two subtitle viewers vertically too; each gets a fixed,
+     non-shrinking height so its own scrollbar works and nothing collapses */
+  .subtitle-viewports-row { flex-direction: column; flex: 0 0 auto; }
+  .subtitle-viewports-row > * { flex: 0 0 auto; }
+  .subtitle-viewport { flex: 0 0 auto; height: 45vh; }
 
   /* Column-resize handles are unusable on touch — hide them */
   .col-resize-handle { display: none; }
