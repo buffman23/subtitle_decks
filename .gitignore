@@ -43,4 +43,7 @@ subtitles/
 
 # Planning items
 todo.md
+
+# Playwright MCP artifacts
+.playwright-mcp/
 .tmp
