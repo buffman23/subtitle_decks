@@ -243,8 +243,12 @@ d = os.environ["STANZA_RESOURCES_DIR"]
 marker = os.path.join(d, ".download_complete")
 if not os.path.exists(marker):
     for lang in ("en", "de", "es"):
+        # Only the processors the app actually uses. The default package also
+        # pulls ner/sentiment/constituency/depparse (several GB, unused) — that
+        # bloat made the download outlast the deploy SSH session and left the
+        # app down. stanza resolves the needed deps (pretrain/charlm) itself.
         # NB: stanza.download() uses model_dir (stanza.Pipeline uses dir).
-        stanza.download(lang, model_dir=d, verbose=False)
+        stanza.download(lang, model_dir=d, processors="tokenize,pos,lemma", verbose=False)
     open(marker, "w").close()  # written only after every language succeeds
 '
 
