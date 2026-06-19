@@ -39,7 +39,9 @@ function buildSessionItem(s: SessionListItem): HTMLElement {
     ? `<button class="btn btn-sm btn-link text-secondary btn-rename" title="Rename">
          <i class="bi bi-pencil"></i>
        </button>`
-    : '';
+    : `<span class="btn btn-sm btn-link text-secondary session-owner-info" title="Shared by ${s.owner_email ?? 'someone'}">
+         <i class="bi bi-info-circle"></i>
+       </span>`;
   item.innerHTML = `
     <div class="d-flex align-items-center gap-1 flex-grow-1 min-width-0">
       <span class="text-truncate session-name" title="${title}">${s.name}</span>

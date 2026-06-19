@@ -36,7 +36,8 @@
   font-weight: 600;
 }
 .session-item .btn-delete,
-.session-item .btn-rename {
+.session-item .btn-rename,
+.session-item .session-owner-info {
   opacity: 0;
   transition: opacity 0.15s;
   padding: 0 4px;
@@ -57,7 +58,8 @@
   border-width: 0.15em;
 }
 .session-item:hover .btn-delete,
-.session-item:hover .btn-rename {
+.session-item:hover .btn-rename,
+.session-item:hover .session-owner-info {
   opacity: 1;
 }
 
