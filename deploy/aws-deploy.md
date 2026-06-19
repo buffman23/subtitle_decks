@@ -36,6 +36,66 @@ the already-present packages in seconds.
 
 ---
 
+## Deploying (GitHub Actions — recommended)
+Deploys are one click: **Actions → Deploy → Run workflow**. Pick the ref to ship
+(defaults to `main`; choose an older tag/branch to roll back) and run it. The
+hosted runner SSHes into the instance, fast-forwards the server's git checkout to
+that ref, and runs `deploy/lightsail-deploy.sh`. The full build streams into the
+Actions log.
+
+While the image builds, the app container is **stopped** so the build gets the
+instance's RAM/CPU — so the site is down for the whole build, not just the
+restart. That downtime is covered by a status page: Caddy serves
+`deploy/maintenance/index.html` automatically whenever the app is unreachable
+(`handle_errors`), and the page polls `/deploy/status.json` and reloads into the
+app once the deploy reports `live`. So visitors see "Subtitle Decks is updating"
+with a live phase (building → models → starting-app → back online) instead of an
+error. (This trades the old near-zero-downtime container swap for build
+resources — an intentional choice.)
+
+A failed **build** auto-recovers: an `ERR` trap in the script restarts the
+previous image (the `subtitle-decks` tag still points at the last good build,
+since `docker build` only moves the tag on success) and the status page shows
+"previous version restored". Rolling back a build that succeeds but runs
+unhealthy would need image versioning (a registry) — out of scope here.
+
+### One-time setup for Actions deploys
+1. **Make the server a git checkout** (replaces the tarball flow). On the box,
+   create a read-only key and add its public half as a **Deploy key** on
+   `github.com/buffman23/subtitle_decks` (Settings → Deploy keys, read-only),
+   then:
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/gh_deploy -N ''      # add ~/.ssh/gh_deploy.pub as the deploy key
+   cat >> ~/.ssh/config <<'EOF'
+   Host github.com
+       IdentityFile ~/.ssh/gh_deploy
+       IdentitiesOnly yes
+   EOF
+   # Clone over SSH next to the existing app dir. The current ~/subtitle_decks/webapp
+   # holds your .env (gitignored) — move it aside, clone, then restore .env:
+   mv ~/subtitle_decks ~/subtitle_decks.bak
+   git clone git@github.com:buffman23/subtitle_decks.git ~/subtitle_decks
+   cp ~/subtitle_decks.bak/webapp/.env ~/subtitle_decks/webapp/.env
+   ```
+   `git reset --hard` never touches `webapp/.env` (it's gitignored) or the Docker
+   volumes (SQLite + camel_tools), so data and secrets survive every deploy.
+2. **Runner → server SSH.** Create a keypair for the runner to log in **as
+   `ubuntu`** and add three repo secrets (Settings → Secrets and variables →
+   Actions): `LIGHTSAIL_SSH_KEY` (the private key), `LIGHTSAIL_HOST`
+   (`52.39.205.152` or `subtitledecks.com`), `LIGHTSAIL_USER` (`ubuntu`). Add the
+   public half to `~/.ssh/authorized_keys` on the box. Port 22 is open by default
+   on Lightsail, so GitHub-hosted runners can reach it. *(If you'd rather not
+   expose SSH to GitHub's IP ranges, run a self-hosted runner on the instance
+   instead — then the workflow needs no inbound SSH.)*
+3. **Approval gate (optional).** The workflow runs in a `production`
+   Environment; add required reviewers under Settings → Environments → production
+   to require a click-to-approve before each deploy.
+
+The first Actions run installs Caddy, writes the maintenance-aware Caddyfile, and
+publishes the status page automatically — no extra manual step.
+
+---
+
 ## Connecting to the server
 On Windows the key needs locked-down ACLs or OpenSSH refuses it:
 ```powershell
@@ -45,11 +105,12 @@ icacls $key /inheritance:r; icacls $key /grant:r "$($env:USERNAME):(R)"
 ssh -i $key ubuntu@52.39.205.152
 ```
 
-## Redeploying after code changes
-The deploy is driven by `deploy/lightsail-deploy.sh`, which lives on the server
-as `~/deploy.sh`. It **requires** `webapp/.env` to already exist (it never writes
-secrets itself), builds the image, and restarts the container with the data
-volume. Create the `.env` once before the first deploy — see below.
+## Manual redeploy (fallback / break-glass)
+> Prefer the **GitHub Actions** flow above. Use this only when Actions/GitHub is
+> unavailable. It ships a tarball instead of a git pull and is the source of the
+> stale-tarball trap noted below. It also runs `deploy/lightsail-deploy.sh`,
+> which **requires** `webapp/.env` to already exist (it never writes secrets
+> itself). Create the `.env` once before the first deploy — see below.
 
 From the repo root (PowerShell), ship the updated source and rebuild:
 ```powershell
@@ -70,7 +131,7 @@ if (-not $?) { throw "tar failed — aborting before scp" } # else scp ships sta
 scp -i $key $tgz ubuntu@52.39.205.152:/home/ubuntu/webapp.tgz
 ssh -i $key ubuntu@52.39.205.152 'tar -xzf ~/webapp.tgz -C ~/subtitle_decks/webapp && rm ~/webapp.tgz'
 # 3. Rebuild + restart (cached layers make this fast unless requirements changed)
-ssh -i $key ubuntu@52.39.205.152 'bash ~/deploy.sh'
+ssh -i $key ubuntu@52.39.205.152 'bash ~/subtitle_decks/deploy/lightsail-deploy.sh'
 # 4. Verify the new code is actually SERVED, not just that the container is "Up".
 #    Health, plus confirm an edited asset round-trips (bump the ?v= cache-buster
 #    in base.html when you change static files, or Cloudflare/browser may cache them):

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Subtitle Decks — updating</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #0f172a; color: #e2e8f0; padding: 1.5rem;
+    }
+    .card {
+      max-width: 30rem; width: 100%; text-align: center;
+      background: #1e293b; border: 1px solid #334155; border-radius: 1rem;
+      padding: 2.5rem 2rem; box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 .25rem; font-size: 1.5rem; }
+    .sub { margin: 0 0 1.75rem; color: #94a3b8; font-size: .95rem; }
+    .spinner {
+      width: 2.75rem; height: 2.75rem; margin: 0 auto 1.5rem;
+      border: 4px solid #334155; border-top-color: #38bdf8; border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+    .phase {
+      font-size: 1.05rem; font-weight: 600; min-height: 1.4em;
+    }
+    .hint { margin-top: 1.25rem; font-size: .8rem; color: #64748b; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="spinner" aria-hidden="true"></div>
+    <h1>Subtitle Decks is updating</h1>
+    <p class="sub">A new version is being deployed. This page will refresh
+      automatically when the site is back.</p>
+    <div class="phase" id="phase" role="status" aria-live="polite">Preparing…</div>
+    <p class="hint">Usually a few minutes. You don't need to do anything.</p>
+  </main>
+
+  <script>
+    // Poll the deploy status, which Caddy serves directly (independent of the
+    // app) at /deploy/status.json. When the deploy reports "live", the app
+    // container is back and Caddy is proxying to it again — reload into it.
+    var phaseEl = document.getElementById('phase');
+    async function poll() {
+      try {
+        var res = await fetch('/deploy/status.json', { cache: 'no-store' });
+        if (res.ok) {
+          var s = await res.json();
+          if (s.msg) { phaseEl.textContent = s.msg; }
+          if (s.phase === 'live') {
+            phaseEl.textContent = 'Back online — reloading…';
+            setTimeout(function () { location.reload(); }, 1500);
+            return;
+          }
+        }
+      } catch (e) { /* status file briefly unavailable between writes — ignore */ }
+      setTimeout(poll, 3000);
+    }
+    poll();
+  </script>
+</body>
+</html>

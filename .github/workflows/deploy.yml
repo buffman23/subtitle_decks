@@ -1,0 +1,54 @@
+name: Deploy
+
+# Manual, on-demand production deploy. No auto-deploy on push — you click
+# "Run workflow" in the Actions tab when you're ready (optionally choosing an
+# older branch/tag to roll back to). The runner SSHes into the Lightsail box,
+# fast-forwards the server's git checkout to the chosen ref, and runs the
+# on-server build/restart script (deploy/lightsail-deploy.sh).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch, tag, or commit SHA)"
+        default: main
+        required: true
+
+# Never let two deploys build on the small instance at once.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Wrap in an Environment so a required-reviewer approval gate can be added
+    # later (Settings -> Environments -> production) without editing this file.
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        env:
+          SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          DEPLOY_USER: ${{ secrets.LIGHTSAIL_USER }}
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+
+          # Write the deploy key from the secret.
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Pin the host key so we're not trusting-on-first-use blindly.
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # One SSH session; its stdout/stderr stream straight into this log so
+          # the whole build is visible here. The server resets its checkout to
+          # the requested ref (origin/<ref> for branches, else the bare ref for
+          # tags/SHAs) and runs the deploy script.
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "set -euo pipefail
+             cd ~/subtitle_decks
+             git fetch --all --tags --prune
+             git reset --hard \"origin/${REF}\" 2>/dev/null || git reset --hard \"${REF}\"
+             bash deploy/lightsail-deploy.sh"
