@@ -1,6 +1,6 @@
 import { state } from '../state';
 import { flash } from '../ui/flash';
-import { renderResults, escapeHtml } from '../ui/virtualScroll';
+import { renderResults } from '../ui/virtualScroll';
 import { resetUpload, viewPendingAnalysis, cancelPendingAnalysis } from './analyze';
 import { getNativeSubtitles, restoreNativeSubtitles } from './subtitleViewer';
 
@@ -27,6 +27,10 @@ export function renderPending(): void {
   const pj = state.pendingJob;
   if (!pj) { item?.remove(); return; }
 
+  // Build the static structure only once. On subsequent calls (polling updates
+  // the status every second) we mutate only the text/state of existing nodes —
+  // never the spinner element — so its CSS rotation animation keeps looping
+  // smoothly instead of restarting on each re-render.
   if (!item) {
     item = document.createElement('div');
     item.id = 'pending-session-item';
@@ -37,6 +41,16 @@ export function renderPending(): void {
         viewPendingAnalysis();
       }
     });
+    item.innerHTML = `
+      <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
+        <span class="spinner-border spinner-border-sm flex-shrink-0 text-secondary" role="status" aria-hidden="true"></span>
+        <span class="text-truncate session-name pending-name"></span>
+        <span class="badge bg-secondary fw-normal flex-shrink-0 pending-lang" style="font-size:0.6rem"></span>
+      </div>
+      <span class="small text-muted flex-shrink-0 ms-1 pending-status"></span>
+      <button class="btn btn-sm btn-link text-danger flex-shrink-0 btn-cancel-pending" title="Cancel analysis">
+        <i class="bi bi-x-lg"></i>
+      </button>`;
     list.prepend(item);
   } else if (item !== list.firstChild) {
     list.prepend(item);
@@ -48,16 +62,13 @@ export function renderPending(): void {
       ? (pj.position ? `In queue · #${pj.position}` : 'In queue')
       : 'Analyzing';
   item.className = 'session-item pending-session' + (state.viewingPending ? ' active' : '');
-  item.innerHTML = `
-    <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
-      <span class="spinner-border spinner-border-sm flex-shrink-0 text-secondary" role="status" aria-hidden="true"></span>
-      <span class="text-truncate session-name pending-name" title="${escapeHtml(pj.filename)}">${escapeHtml(pj.filename)}</span>
-      <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(pj.language)}</span>
-    </div>
-    <span class="small text-muted flex-shrink-0 ms-1 pending-status">${statusLabel}</span>
-    <button class="btn btn-sm btn-link text-danger flex-shrink-0 btn-cancel-pending" title="Cancel analysis" ${pj.cancelling ? 'disabled' : ''}>
-      <i class="bi bi-x-lg"></i>
-    </button>`;
+
+  const nameEl = item.querySelector('.pending-name') as HTMLElement;
+  nameEl.textContent = pj.filename;
+  nameEl.title = pj.filename;
+  (item.querySelector('.pending-lang') as HTMLElement).textContent = langAbbr(pj.language);
+  (item.querySelector('.pending-status') as HTMLElement).textContent = statusLabel;
+  (item.querySelector('.btn-cancel-pending') as HTMLButtonElement).disabled = pj.cancelling;
 }
 
 export async function loadSessions(): Promise<void> {
