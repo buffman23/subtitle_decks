@@ -60,7 +60,27 @@ status() {
     | sudo tee "$MAINT_DIR/deploy/status.json" >/dev/null
 }
 
+# Reap leftover containers from our image that aren't the app. The model-download
+# steps below run foreground `docker run` containers; if a deploy's SSH session
+# drops mid-download, the docker CLI dies but dockerd keeps the container running
+# (an orphan). It keeps writing to the model volumes and can corrupt a later
+# deploy's download (this actually happened — a stuck full-package stanza download
+# left a half-written es model). Match on Config.Image so it still catches orphans
+# after a rebuild retags 'subtitle-decks'; never touch the app (named subtitle-decks).
+reap_orphans() {
+  local id img name
+  for id in $(sudo docker ps -aq 2>/dev/null); do
+    img=$(sudo docker inspect -f '{{.Config.Image}}' "$id" 2>/dev/null || echo)
+    name=$(sudo docker inspect -f '{{.Name}}' "$id" 2>/dev/null || echo)
+    if [ "$img" = "subtitle-decks" ] && [ "$name" != "/subtitle-decks" ]; then
+      echo "[deploy] reaping orphan container $name ($id)"
+      sudo docker rm -f "$id" >/dev/null 2>&1 || true
+    fi
+  done
+}
+
 start_container() {
+  reap_orphans
   sudo docker rm -f subtitle-decks 2>/dev/null || true
   sudo docker volume create subtitle-decks-data >/dev/null
   sudo docker volume create subtitle-decks-stanza >/dev/null
@@ -163,6 +183,9 @@ trap 'restore_previous' ERR
 # From here the site shows the maintenance page (Caddy handle_errors above).
 echo "[deploy] stopping app container to free resources for the build..."
 status building "Building the new version…"
+# Reap any orphans from a prior interrupted deploy BEFORE the model-download steps,
+# so a stuck download container can't write to the model volumes alongside ours.
+reap_orphans
 sudo docker rm -f subtitle-decks 2>/dev/null || true
 
 # --- compute build version (baked into the image for the admin page) -------
