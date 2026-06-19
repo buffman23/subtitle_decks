@@ -48,7 +48,17 @@ jobs:
           # tags/SHAs) and runs the deploy script.
           # DEPLOY_REF lets the deploy script label the build with the human ref
           # (branch/tag) chosen here, rather than a detached-HEAD guess.
-          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+          #
+          # Keepalive: the deploy has long silent stretches (image build layers,
+          # model downloads) where nothing streams. Without keepalives an idle
+          # NAT/firewall hop can drop the connection; the runner then sees SSH
+          # fail and reports the deploy as failed, while the orphaned server-side
+          # script keeps running with the app stopped (= site stuck down). Send a
+          # keepalive every 30s and tolerate ~10min of unresponsiveness (e.g. the
+          # box pinned during a build) before giving up.
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
             "set -euo pipefail
              cd ~/subtitle_decks
              git fetch --all --tags --prune
