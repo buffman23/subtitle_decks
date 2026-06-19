@@ -79,8 +79,16 @@ class StanzaProcessor(LanguageProcessor):
         if not pipeline:
             return [LemmaResult(tok.lower()) for sentence in token_sentences for tok in sentence]
 
+        # Drop empty sentences (subtitles that tokenize to nothing, e.g. a music-note
+        # or punctuation-only line). Stanza raises IndexError on an empty pretokenized
+        # sentence, which would otherwise poison lemmatization for the whole batch.
+        # Empty sentences contribute no tokens, so the flat output stays aligned.
+        non_empty = [sentence for sentence in token_sentences if sentence]
+        if not non_empty:
+            return []
+
         try:
-            doc = pipeline(token_sentences)
+            doc = pipeline(non_empty)
         except Exception as exc:
             logger.debug("Stanza %s lemmatization failed: %s", self.__class__._lang, exc)
             return [LemmaResult(tok.lower()) for sentence in token_sentences for tok in sentence]
