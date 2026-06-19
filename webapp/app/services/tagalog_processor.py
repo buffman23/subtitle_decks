@@ -3,7 +3,12 @@ import os
 import re
 from typing import Any, Callable
 
-from app.services.language_processor import CancelledAnalysis, LanguageProcessor, LemmaResult
+from app.services.language_processor import (
+    CancelledAnalysis,
+    LanguageProcessor,
+    LemmaResult,
+    LemmatizationUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +46,7 @@ class TagalogProcessor(LanguageProcessor):
             cls._pipeline = calamancy.load(model_name)
             logger.info("Calamancy Tagalog pipeline loaded: %s", model_name)
         except Exception as exc:
-            logger.warning("Could not load Calamancy Tagalog pipeline: %s; falling back to raw tokens", exc)
+            logger.warning("Could not load Calamancy Tagalog pipeline: %s", exc)
             cls._pipeline = False
 
     def _get_pipeline(self):
@@ -70,7 +75,10 @@ class TagalogProcessor(LanguageProcessor):
             raise CancelledAnalysis()
         pipeline = self._get_pipeline()
         if not pipeline:
-            return [LemmaResult(tok.lower()) for sentence in token_sentences for tok in sentence]
+            raise LemmatizationUnavailable(
+                f"The {self.language_name} language model could not be loaded, so the "
+                f"text cannot be lemmatized. Please try again later or contact an admin."
+            )
 
         try:
             from spacy.tokens import Doc
@@ -92,5 +100,7 @@ class TagalogProcessor(LanguageProcessor):
                     results.append(LemmaResult(lemma, analysis or None))
             return results
         except Exception as exc:
-            logger.debug("Tagalog lemmatization failed: %s", exc)
-            return [LemmaResult(tok.lower()) for sentence in token_sentences for tok in sentence]
+            logger.exception("Tagalog lemmatization failed")
+            raise LemmatizationUnavailable(
+                f"{self.language_name} lemmatization failed while processing the subtitles."
+            ) from exc

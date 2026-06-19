@@ -7,6 +7,16 @@ class CancelledAnalysis(Exception):
     """Raised inside the analysis pipeline when a job's cancel flag is set."""
 
 
+class LemmatizationUnavailable(Exception):
+    """Raised when a processor cannot lemmatize because its model failed to load
+    or a lemmatization call errored.
+
+    The job fails and this message is shown to the user, rather than silently
+    degrading to raw, unlemmatized tokens — that masked model/deploy problems
+    (e.g. missing Stanza models) and quietly produced wrong frequency results.
+    The message should be user-facing (no stack internals)."""
+
+
 def _process_rss() -> int:
     """Current process resident set size in bytes (0 if psutil unavailable)."""
     try:
@@ -53,7 +63,10 @@ class LanguageProcessor(ABC):
     ) -> list[LemmaResult]:
         """
         Take sentence-batched tokens and return a flat list of lemma results.
-        analysis is None on fallback/backoff.
+        analysis is None for individual tokens the model couldn't analyze
+        (e.g. an unknown word / backoff). If the model itself is unavailable or
+        a lemmatization call fails wholesale, raise LemmatizationUnavailable so
+        the job fails loudly rather than returning raw, unlemmatized tokens.
         Each inner list is one sentence/subtitle worth of tokens.
 
         should_cancel, if given, is polled periodically; processors that batch

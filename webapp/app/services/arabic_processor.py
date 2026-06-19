@@ -3,7 +3,12 @@ import logging
 
 from typing import Callable
 
-from app.services.language_processor import CancelledAnalysis, LanguageProcessor, LemmaResult
+from app.services.language_processor import (
+    CancelledAnalysis,
+    LanguageProcessor,
+    LemmaResult,
+    LemmatizationUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +53,7 @@ class ArabicProcessor(LanguageProcessor):
             logger.info("BERTUnfactoredDisambiguator loaded: %s (gpu=%s)", model, use_gpu)
         except Exception as exc:
             logger.warning(
-                "Could not load BERTUnfactoredDisambiguator (%s): %s — falling back to raw tokens.", model, exc
+                "Could not load BERTUnfactoredDisambiguator (%s): %s", model, exc
             )
             cls._disambiguators[model] = None
 
@@ -90,7 +95,10 @@ class ArabicProcessor(LanguageProcessor):
     ) -> list[LemmaResult]:
         disambiguator = self._get_disambiguator()
         if disambiguator is None:
-            return [LemmaResult(tok) for sentence in token_sentences for tok in sentence]
+            raise LemmatizationUnavailable(
+                f"The {self.language_name} language model could not be loaded, so the "
+                f"text cannot be lemmatized. Please try again later or contact an admin."
+            )
 
         # Build flat token list + per-subtitle index ranges
         flat_tokens: list[str] = []
@@ -154,10 +162,10 @@ class ArabicProcessor(LanguageProcessor):
                             sub_lemmas.append(LemmaResult(token))
                     lemmas_map[sub_idx] = sub_lemmas
             except Exception as exc:
-                logger.debug("Disambiguation failed for batch at %d: %s", batch_start, exc)
-                for sub_idx in batch:
-                    s, e = ranges[sub_idx]
-                    lemmas_map[sub_idx] = [LemmaResult(tok) for tok in flat_tokens[s:e]]
+                logger.exception("Disambiguation failed for batch at %d", batch_start)
+                raise LemmatizationUnavailable(
+                    f"{self.language_name} lemmatization failed while processing the subtitles."
+                ) from exc
 
         if backoff_count:
             logger.debug("Backoff fallback used for %d/%d tokens", backoff_count, total)

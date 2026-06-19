@@ -26,7 +26,12 @@ import os
 import re
 from typing import Any, Callable, ClassVar
 
-from app.services.language_processor import CancelledAnalysis, LanguageProcessor, LemmaResult
+from app.services.language_processor import (
+    CancelledAnalysis,
+    LanguageProcessor,
+    LemmaResult,
+    LemmatizationUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +97,7 @@ class JapaneseProcessor(LanguageProcessor):
                 cls._tagger = fugashi.Tagger()
                 logger.info("fugashi/UniDic tagger loaded from installed unidic package")
         except Exception as exc:
-            logger.warning("Could not load fugashi/UniDic: %s; falling back to raw tokens", exc)
+            logger.warning("Could not load fugashi/UniDic: %s", exc)
             cls._tagger = False
 
     def _get_tagger(self):
@@ -123,7 +128,15 @@ class JapaneseProcessor(LanguageProcessor):
 
         tagger = self._get_tagger()
         if tagger is None:
-            return self._fallback_tokenize(text)
+            # Model unavailable: fail loudly rather than silently lemmatizing to raw
+            # tokens. Reset the buffer so this aborted job can't desync the next one.
+            self._pending = []
+            self._consumed = True
+            raise LemmatizationUnavailable(
+                f"The {self.language_name} language model (fugashi/UniDic) could not be "
+                f"loaded, so the text cannot be lemmatized. Please try again later or "
+                f"contact an admin."
+            )
 
         try:
             surfaces: list[str] = []
@@ -174,9 +187,11 @@ class JapaneseProcessor(LanguageProcessor):
             return [LemmaResult(lemma, analysis) for lemma, analysis in pending]
 
         # Buffer desynced from the tokens (shouldn't happen under the single-worker
-        # invariant, but stay graceful): fall back to surface forms as lemmas.
-        logger.debug(
-            "Japanese lemma buffer desync (%d buffered vs %d tokens); using raw tokens",
-            len(pending), total,
+        # invariant). Treat it as a real bug and fail loudly instead of silently
+        # returning raw surface forms as lemmas.
+        logger.error(
+            "Japanese lemma buffer desync (%d buffered vs %d tokens)", len(pending), total
         )
-        return [LemmaResult(tok) for sentence in token_sentences for tok in sentence]
+        raise LemmatizationUnavailable(
+            f"{self.language_name} lemmatization failed while processing the subtitles."
+        )

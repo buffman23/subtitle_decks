@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from app.services.frequency_analyzer import analyze
-from app.services.language_processor import CancelledAnalysis
+from app.services.language_processor import CancelledAnalysis, LemmatizationUnavailable
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +157,12 @@ class JobQueueManager:
                         job.status = "done"
                 except CancelledAnalysis:
                     job.status = "cancelled"
+                except LemmatizationUnavailable as exc:
+                    # Model/lemmatization failure — show the processor's user-facing
+                    # message rather than the generic one (it explains what went wrong).
+                    logger.warning("Analysis job %s failed: %s", job.id, exc)
+                    job.status = "failed"
+                    job.error = str(exc)
                 except Exception as exc:  # noqa: BLE001 — surface to the user
                     logger.exception("Analysis job %s failed: %s", job.id, exc)
                     job.status = "failed"

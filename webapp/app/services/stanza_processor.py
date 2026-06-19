@@ -4,7 +4,12 @@ import re
 from pathlib import Path
 from typing import Any, Callable, ClassVar, Pattern
 
-from app.services.language_processor import CancelledAnalysis, LanguageProcessor, LemmaResult
+from app.services.language_processor import (
+    CancelledAnalysis,
+    LanguageProcessor,
+    LemmaResult,
+    LemmatizationUnavailable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +53,7 @@ class StanzaProcessor(LanguageProcessor):
             )
             logger.info("Stanza %s lemmatization pipeline loaded", cls._lang)
         except Exception as exc:
-            logger.warning("Could not load Stanza %s pipeline: %s; falling back to raw tokens", cls._lang, exc)
+            logger.warning("Could not load Stanza %s pipeline: %s", cls._lang, exc)
             cls._pipeline = False
 
     def _get_pipeline(self):
@@ -77,7 +82,10 @@ class StanzaProcessor(LanguageProcessor):
             raise CancelledAnalysis()
         pipeline = self._get_pipeline()
         if not pipeline:
-            return [LemmaResult(tok.lower()) for sentence in token_sentences for tok in sentence]
+            raise LemmatizationUnavailable(
+                f"The {self.language_name} language model could not be loaded, so the "
+                f"text cannot be lemmatized. Please try again later or contact an admin."
+            )
 
         # Drop empty sentences (subtitles that tokenize to nothing, e.g. a music-note
         # or punctuation-only line). Stanza raises IndexError on an empty pretokenized
@@ -90,8 +98,10 @@ class StanzaProcessor(LanguageProcessor):
         try:
             doc = pipeline(non_empty)
         except Exception as exc:
-            logger.debug("Stanza %s lemmatization failed: %s", self.__class__._lang, exc)
-            return [LemmaResult(tok.lower()) for sentence in token_sentences for tok in sentence]
+            logger.exception("Stanza %s lemmatization failed", self.__class__._lang)
+            raise LemmatizationUnavailable(
+                f"{self.language_name} lemmatization failed while processing the subtitles."
+            ) from exc
 
         results: list[LemmaResult] = []
         for sentence in doc.sentences:
