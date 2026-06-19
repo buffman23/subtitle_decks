@@ -211,17 +211,17 @@ sudo docker run --rm --user root \
 # --- ensure full UniDic dictionary on a persistent volume (downloaded once) -
 # Like the camel_tools models, the ~770MB UniDic dict is kept off the image and
 # lives on the named volume 'subtitle-decks-unidic', mounted read-only at
-# $UNIDIC_DIR. 'python -m unidic download' writes into the package dir, so we copy
-# it onto the volume. Guarded by sys.dic so later deploys skip it in seconds.
+# $UNIDIC_DIR. The image symlinks the pip 'unidic' package's dicdir to that mount
+# point (see Dockerfile), so 'python -m unidic download' writes straight onto the
+# volume and fugashi.Tagger() finds its mecabrc there. Guarded by sys.dic so later
+# deploys skip it in seconds.
 echo "[deploy] ensuring UniDic dictionary on volume (one-time ~770MB download)..."
 status models "Preparing language models…"
 sudo docker volume create subtitle-decks-unidic >/dev/null
 sudo docker run --rm --user root \
   -v subtitle-decks-unidic:/opt/unidic_data \
   subtitle-decks \
-  sh -c '[ -f /opt/unidic_data/sys.dic ] || {
-    python -m unidic download &&
-    cp -a "$(python -c "import unidic; print(unidic.DICDIR)")/." /opt/unidic_data/ ; }'
+  sh -c '[ -f /opt/unidic_data/sys.dic ] || python -m unidic download'
 
 # --- ensure Stanza models on a persistent volume (downloaded once) ----------
 # Same off-the-image rationale as camel_tools/UniDic: the Stanza models for the
@@ -243,7 +243,8 @@ d = os.environ["STANZA_RESOURCES_DIR"]
 marker = os.path.join(d, ".download_complete")
 if not os.path.exists(marker):
     for lang in ("en", "de", "es"):
-        stanza.download(lang, dir=d, verbose=False)
+        # NB: stanza.download() uses model_dir (stanza.Pipeline uses dir).
+        stanza.download(lang, model_dir=d, verbose=False)
     open(marker, "w").close()  # written only after every language succeeds
 '
 

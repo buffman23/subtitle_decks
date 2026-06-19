@@ -46,6 +46,16 @@ RUN pip install -r requirements.txt
 # the image means a requirements/code change no longer busts the cache for a
 # multi-GB re-download, and the image stays much smaller.
 
+# fugashi.Tagger() bootstraps MeCab from the pip 'unidic' package's dicdir (its
+# mecabrc + sys.dic). Since we keep that dict on the $UNIDIC_DIR volume instead of
+# in the image, point the package's dicdir at the mount with a symlink. Without
+# this, fugashi looks for a mecabrc in the (empty) package dir and fails to load,
+# so Japanese silently fell back to raw tokens. The target is created at runtime by
+# the volume mount, so a dangling symlink at build time is expected/fine.
+RUN UD="$(python -c 'import unidic; print(unidic.DICDIR)')" \
+ && rm -rf "$UD" \
+ && ln -s /opt/unidic_data "$UD"
+
 # Application code + the compiled frontend bundle from stage 1
 COPY app ./app
 COPY --from=frontend /build/app/static/js/app.js ./app/static/js/app.js
