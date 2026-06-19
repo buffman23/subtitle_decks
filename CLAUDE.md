@@ -3,7 +3,7 @@
 ## About Subtitle Decks
 Subtitle Decks takes subtitle files as input and outputs a word frequency list that can be used for language study.
 
-- **Languages**: Currently supports MSA and Egyptian Arabic. More languages are planned — keep code interfaces flexible, as each language will likely rely on different lemmatization libraries. New processors go in `webapp/app/services/` and are registered in `processor_registry.py`.
+- **Languages**: Currently supports Arabic (MSA + Egyptian, via camel_tools), English/German/Spanish (via Stanza), Tagalog (via calamancy), and Japanese (via fugashi/UniDic). More languages are planned — keep code interfaces flexible, as each language will likely rely on different lemmatization libraries. New processors go in `webapp/app/services/` and are registered in `processor_registry.py`.
 - **Subtitle formats**: Currently supports `.srt` only. More formats are planned — the parsing layer (`subtitle_parser.py`) should remain decoupled from the rest of the pipeline.
 
 ## Python Environment
@@ -19,6 +19,21 @@ Always use the `.venv` in this directory — never the system Python.
 # Run the webapp
 cd webapp && ../.venv/Scripts/python.exe run.py
 ```
+
+## Versioning
+The app uses semantic versioning `MAJOR.MINOR.PATCH`, surfaced on the admin pages
+(`get_build_info()` in `webapp/app/version.py` → `admin/system.html`, `admin/layout.html`).
+
+- **PATCH is automatic** — derived from `git rev-list --count <baseline>..HEAD`.
+  A bug fix needs no version change; just commit and PATCH rises by one.
+- **MAJOR.MINOR + the baseline commit live in `webapp/VERSION`**, one line:
+  `MAJOR.MINOR <baseline-sha>` (e.g. `0.2 e553b44`).
+
+**When to bump (decide intuitively from the change):**
+- **Feature → bump MINOR.** Edit `webapp/VERSION`: raise the minor *and* set the
+  baseline to the current commit so PATCH restarts at 0 for the new line.
+- **Bug fix → do nothing.** PATCH increments itself on the next commit.
+- **MAJOR** is reserved for a deliberate breaking/milestone release (manual).
 
 ## camel_tools Data
 The camel_tools models are stored at the path in the `CAMELTOOLS_DATA` environment variable. No need to re-download them.

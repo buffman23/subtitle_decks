@@ -46,9 +46,11 @@ jobs:
           # the whole build is visible here. The server resets its checkout to
           # the requested ref (origin/<ref> for branches, else the bare ref for
           # tags/SHAs) and runs the deploy script.
+          # DEPLOY_REF lets the deploy script label the build with the human ref
+          # (branch/tag) chosen here, rather than a detached-HEAD guess.
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" \
             "set -euo pipefail
              cd ~/subtitle_decks
              git fetch --all --tags --prune
              git reset --hard \"origin/${REF}\" 2>/dev/null || git reset --hard \"${REF}\"
-             bash deploy/lightsail-deploy.sh"
+             DEPLOY_REF=\"${REF}\" bash deploy/lightsail-deploy.sh"

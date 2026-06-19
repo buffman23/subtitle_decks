@@ -26,7 +26,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    CAMELTOOLS_DATA=/opt/camel_tools_data
+    CAMELTOOLS_DATA=/opt/camel_tools_data \
+    UNIDIC_DIR=/opt/unidic_data
 
 WORKDIR /app
 
@@ -37,15 +38,28 @@ RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-# NOTE: the camel_tools models (~1.8GB) are NOT baked into the image. They are
-# downloaded once onto the persistent named volume 'subtitle-decks-models' and
-# mounted read-only at $CAMELTOOLS_DATA at runtime (see deploy/lightsail-deploy.sh).
-# Keeping them out of the image means a requirements/code change no longer busts
-# the cache for a 1.8GB re-download, and the image stays ~1.8GB smaller.
+# NOTE: large language data is NOT baked into the image. The camel_tools models
+# (~1.8GB) and the full UniDic dictionary (~770MB) are each downloaded once onto a
+# persistent named volume and mounted read-only at runtime ($CAMELTOOLS_DATA and
+# $UNIDIC_DIR respectively — see deploy/lightsail-deploy.sh). Keeping them out of
+# the image means a requirements/code change no longer busts the cache for a
+# multi-GB re-download, and the image stays much smaller.
 
 # Application code + the compiled frontend bundle from stage 1
 COPY app ./app
 COPY --from=frontend /build/app/static/js/app.js ./app/static/js/app.js
+
+# Build provenance, baked in by deploy/lightsail-deploy.sh (the running container
+# has no .git, so this is how the admin page knows which build is live). Placed
+# after the heavy pip layers so version churn doesn't bust their cache.
+ARG APP_VERSION=dev
+ARG GIT_SHA=unknown
+ARG GIT_REF=unknown
+ARG BUILD_TIME=unknown
+ENV APP_VERSION=$APP_VERSION \
+    GIT_SHA=$GIT_SHA \
+    GIT_REF=$GIT_REF \
+    BUILD_TIME=$BUILD_TIME
 
 # Run as a non-root user. Pre-create the data dir owned by appuser so that a
 # named volume mounted at /app/data inherits appuser ownership (SQLite needs

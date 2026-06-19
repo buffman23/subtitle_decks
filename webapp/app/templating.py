@@ -5,6 +5,8 @@ from datetime import datetime
 
 from fastapi.templating import Jinja2Templates
 
+from app.version import get_build_info
+
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -47,3 +49,4 @@ def humanize_bytes(num: int | None) -> str:
 templates.env.globals["asset_url"] = asset_url
 templates.env.globals["humanize_age"] = humanize_age
 templates.env.globals["humanize_bytes"] = humanize_bytes
+templates.env.globals["build_info"] = get_build_info()

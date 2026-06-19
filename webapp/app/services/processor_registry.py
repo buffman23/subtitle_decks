@@ -4,6 +4,7 @@ from app.services.english_processor import EnglishProcessor
 from app.services.german_processor import GermanProcessor
 from app.services.spanish_processor import SpanishProcessor
 from app.services.tagalog_processor import TagalogProcessor
+from app.services.japanese_processor import JapaneseProcessor
 
 # Each entry: code -> {"class": ProcessorClass, "name": display_name}
 # The id assigned to each language in the DB is its 1-based position in this dict.
@@ -14,6 +15,7 @@ _REGISTRY: dict[str, dict] = {
     "de": {"class": GermanProcessor, "name": "German (DE)"},
     "es": {"class": SpanishProcessor, "name": "Spanish (ES)"},
     "tl": {"class": TagalogProcessor, "name": "Tagalog (TL)"},
+    "ja": {"class": JapaneseProcessor, "name": "Japanese (JA)"},
     # Add new processors here, e.g.:
     # "fr": {"class": FrenchProcessor, "name": "French"},
 }

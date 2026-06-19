@@ -42,6 +42,9 @@
           </a>
         </li>
       </ul>
+      <div class="px-3 mt-3 pt-2 border-top text-muted small" title="built {{ build_info.build_time }} · ref {{ build_info.ref }}">
+        v{{ build_info.version }} &middot; <code>{{ build_info.sha }}</code>
+      </div>
     </nav>
     <main class="col py-4 px-4">
       {% block admin_content %}{% endblock %}

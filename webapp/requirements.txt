@@ -10,6 +10,9 @@ srt==3.5.3
 camel-tools==1.5.7
 stanza==1.12.2
 calamancy==0.2.2
+fugashi==1.5.2
+unidic==1.1.0      # full UniDic loader; the ~770MB dict is fetched separately
+                   # (python -m unidic download) and mounted from a volume in prod
 python-dotenv==1.2.1
 pydantic-settings==2.13.1
 psutil==7.2.2
@@ -19,3 +22,7 @@ psutil==7.2.2
 # tug-of-war. These two values are the set pip converges on anyway.
 transformers==4.36.2
 tokenizers==0.15.2
+
+# unidic caps wasabi<1.0.0 while spacy/calamancy allow <1.2.0; 0.10.1 is the
+# value that satisfies both. Pin it so the resolver doesn't thrash.
+wasabi==0.10.1

@@ -71,6 +71,7 @@ start_container() {
     --env-file .env \
     -v subtitle-decks-data:/app/data \
     -v subtitle-decks-models:/opt/camel_tools_data:ro \
+    -v subtitle-decks-unidic:/opt/unidic_data:ro \
     -p 127.0.0.1:8000:8000 \
     subtitle-decks
 }
@@ -162,9 +163,30 @@ echo "[deploy] stopping app container to free resources for the build..."
 status building "Building the new version…"
 sudo docker rm -f subtitle-decks 2>/dev/null || true
 
+# --- compute build version (baked into the image for the admin page) -------
+# VERSION holds "MAJOR.MINOR <baseline-commit-or-tag>"; the patch is the number
+# of commits since that baseline, so the admin page shows a number that rises per
+# commit and drops on a rollback. The container has no .git, so we resolve it here.
+read -r BASE BASELINE < VERSION || BASE=0.0
+BASE="${BASE:-0.0}"
+if [ -n "${BASELINE:-}" ]; then
+  PATCH="$(git rev-list --count "$BASELINE"..HEAD 2>/dev/null || echo 0)"
+else
+  PATCH="$(git rev-list --count HEAD 2>/dev/null || echo 0)"
+fi
+APP_VERSION="$BASE.$PATCH"
+GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+GIT_REF="${DEPLOY_REF:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)}"
+BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
 # --- build image -----------------------------------------------------------
-echo "[deploy] building image (this downloads PyTorch + deps)..."
-sudo docker build -t subtitle-decks .
+echo "[deploy] building image v$APP_VERSION ($GIT_SHA, ref $GIT_REF) — this downloads PyTorch + deps..."
+sudo docker build \
+  --build-arg APP_VERSION="$APP_VERSION" \
+  --build-arg GIT_SHA="$GIT_SHA" \
+  --build-arg GIT_REF="$GIT_REF" \
+  --build-arg BUILD_TIME="$BUILD_TIME" \
+  -t subtitle-decks .
 
 # --- ensure camel_tools models on a persistent volume (downloaded once) ----
 # The image no longer bakes in the ~1.8GB of models. They live on the named
@@ -183,6 +205,21 @@ sudo docker run --rm --user root \
       python -m camel_tools.cli.camel_data -i "$p" || exit 1
     done
   '
+
+# --- ensure full UniDic dictionary on a persistent volume (downloaded once) -
+# Like the camel_tools models, the ~770MB UniDic dict is kept off the image and
+# lives on the named volume 'subtitle-decks-unidic', mounted read-only at
+# $UNIDIC_DIR. 'python -m unidic download' writes into the package dir, so we copy
+# it onto the volume. Guarded by sys.dic so later deploys skip it in seconds.
+echo "[deploy] ensuring UniDic dictionary on volume (one-time ~770MB download)..."
+status models "Preparing language models…"
+sudo docker volume create subtitle-decks-unidic >/dev/null
+sudo docker run --rm --user root \
+  -v subtitle-decks-unidic:/opt/unidic_data \
+  subtitle-decks \
+  sh -c '[ -f /opt/unidic_data/sys.dic ] || {
+    python -m unidic download &&
+    cp -a "$(python -c "import unidic; print(unidic.DICDIR)")/." /opt/unidic_data/ ; }'
 
 # --- (re)start container ---------------------------------------------------
 echo "[deploy] starting new container..."

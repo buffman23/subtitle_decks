@@ -14,7 +14,7 @@ is the runbook for that deployment, plus notes on alternatives.
 | Runtime | Docker container `subtitle-decks`, host port **80 → 8000** |
 | Restart policy | `unless-stopped` (survives reboots) |
 | Database | SQLite on a **named volume** `subtitle-decks-data` → `/app/data` (persists across redeploys) |
-| Models | camel_tools data (~1.8 GB) on a **named volume** `subtitle-decks-models` → `/opt/camel_tools_data` (read-only), downloaded once — not baked into the image |
+| Models | camel_tools data (~1.8 GB) on a **named volume** `subtitle-decks-models` → `/opt/camel_tools_data` (read-only), plus the full UniDic dict (~770 MB) on `subtitle-decks-unidic` → `/opt/unidic_data` (read-only). Both downloaded once — not baked into the image |
 | Domain | `subtitledecks.com` (+ `www`), set via `DOMAIN=` in the server `.env` |
 | HTTPS | ✅ **live** — Cloudflare (proxied) → Caddy on the instance, using a Cloudflare Origin Certificate. `deploy.sh` installs/configures Caddy automatically; see "HTTPS" below. Container binds to `127.0.0.1:8000` so Caddy owns 443. |
 
@@ -33,6 +33,11 @@ it read-only at `/opt/camel_tools_data`. Keeping them off the image means a
 requirements/code change no longer triggers a 1.8 GB re-download on rebuild, and
 the image is ~1.8 GB smaller. The download step is idempotent — later deploys skip
 the already-present packages in seconds.
+
+The full UniDic dictionary (~770 MB) used by the Japanese processor is handled the
+same way: `deploy.sh` runs `python -m unidic download` once onto the
+`subtitle-decks-unidic` volume and mounts it read-only at `/opt/unidic_data` (the
+container reads `UNIDIC_DIR` to find it). Same idempotent, off-the-image rationale.
 
 ---
 
