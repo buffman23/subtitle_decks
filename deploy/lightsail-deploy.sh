@@ -63,6 +63,7 @@ status() {
 start_container() {
   sudo docker rm -f subtitle-decks 2>/dev/null || true
   sudo docker volume create subtitle-decks-data >/dev/null
+  sudo docker volume create subtitle-decks-stanza >/dev/null
   # Bind to loopback only — Caddy (on the host) terminates TLS and proxies in.
   # Models are mounted read-only from the persistent volume.
   sudo docker run -d \
@@ -72,6 +73,7 @@ start_container() {
     -v subtitle-decks-data:/app/data \
     -v subtitle-decks-models:/opt/camel_tools_data:ro \
     -v subtitle-decks-unidic:/opt/unidic_data:ro \
+    -v subtitle-decks-stanza:/opt/stanza_data:ro \
     -p 127.0.0.1:8000:8000 \
     subtitle-decks
 }
@@ -220,6 +222,30 @@ sudo docker run --rm --user root \
   sh -c '[ -f /opt/unidic_data/sys.dic ] || {
     python -m unidic download &&
     cp -a "$(python -c "import unidic; print(unidic.DICDIR)")/." /opt/unidic_data/ ; }'
+
+# --- ensure Stanza models on a persistent volume (downloaded once) ----------
+# Same off-the-image rationale as camel_tools/UniDic: the Stanza models for the
+# Stanza-backed processors (English, German, Spanish) live on the named volume
+# 'subtitle-decks-stanza', mounted read-only at $STANZA_RESOURCES_DIR. Without
+# this the in-container default dir resolves to an unwritable '/stanza_resources'
+# and every Stanza language silently falls back to raw, unlemmatized tokens.
+# Guarded by a .download_complete marker so later deploys skip it in seconds.
+echo "[deploy] ensuring Stanza models on volume (one-time download)..."
+status models "Preparing language models…"
+sudo docker volume create subtitle-decks-stanza >/dev/null
+sudo docker run --rm --user root \
+  -v subtitle-decks-stanza:/opt/stanza_data \
+  -e STANZA_RESOURCES_DIR=/opt/stanza_data \
+  subtitle-decks \
+  python -c '
+import os, stanza
+d = os.environ["STANZA_RESOURCES_DIR"]
+marker = os.path.join(d, ".download_complete")
+if not os.path.exists(marker):
+    for lang in ("en", "de", "es"):
+        stanza.download(lang, dir=d, verbose=False)
+    open(marker, "w").close()  # written only after every language succeeds
+'
 
 # --- (re)start container ---------------------------------------------------
 echo "[deploy] starting new container..."
