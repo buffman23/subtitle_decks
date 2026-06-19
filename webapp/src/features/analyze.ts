@@ -2,6 +2,7 @@ import { state, buildVisibleIndices } from '../state';
 import { flash } from '../ui/flash';
 import { renderResults, renderVirtual } from '../ui/virtualScroll';
 import { loadSessions, stashPendingSession, renderPending } from './sessions';
+import { renderShareControls, hideShareControls } from './sharing';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -216,7 +217,11 @@ async function completeAnalysis(
     state.currentFilename = filename;
     state.parsedSubtitles = result.subtitles ?? [];
     state.activeSessionId = savedId;
+    state.activeSessionOwned = true;
     renderResults(result.results, result.total_tokens);
+    // A freshly saved analysis is owned with no recipients yet; otherwise hide.
+    if (savedId) renderShareControls(savedId, true, []);
+    else hideShareControls();
     if (_onAnalysisComplete) _onAnalysisComplete();
     if (savedId) flash('Session saved!');
     else if (!IS_LOGGED_IN) stashPendingSession();

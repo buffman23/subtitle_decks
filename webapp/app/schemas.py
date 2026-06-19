@@ -44,12 +44,21 @@ class IgnoreListAddRequest(BaseModel):
     language: str
 
 
+class ShareRecipient(BaseModel):
+    user_id: int
+    email: str
+
+
 class SessionOut(BaseModel):
     id: int
     name: str
     language: str
     srt_filename: str
     created_at: datetime
+    # True if the current viewer owns this session; False if it was shared
+    # with them. owner_email is set only for shared (non-owned) sessions.
+    owned: bool = True
+    owner_email: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -63,6 +72,11 @@ class SessionDetail(BaseModel):
     native_subtitles: list[SubtitleEntry] = []
     results: list[WordFrequency]
     created_at: datetime
+    owned: bool = True
+    # Populated only for the owner: who the session is shared with.
+    shared_with: list[ShareRecipient] = []
+    # Populated only for a recipient: the owner's email ("shared by").
+    owner_email: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -70,6 +84,10 @@ class SessionDetail(BaseModel):
     @classmethod
     def coerce_list(cls, v):
         return v or []
+
+
+class SessionShareCreateRequest(BaseModel):
+    email: str
 
 
 class SessionCreateRequest(BaseModel):

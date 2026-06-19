@@ -4,6 +4,10 @@ export const state = {
   currentLanguage: 'ar-msa',
   currentFilename: '',
   activeSessionId: null as number | null,
+  // Whether the current viewer owns the active session. Shared (received)
+  // sessions are read-only on content, so owner-only writes (native-subtitle
+  // persistence) are skipped when this is false.
+  activeSessionOwned: true,
   showingIgnored: false,
   allResults: [] as WordFrequency[],
   visibleIndices: [] as number[],

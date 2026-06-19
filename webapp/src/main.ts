@@ -4,6 +4,7 @@ import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler } f
 import { initSessions, loadSessions, checkPendingSession, registerSessionAnalysisCompleteHandler } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
+import { initSharing } from './features/sharing';
 import { initSubtitleViewer, selectLemma, onAnalysisComplete } from './features/subtitleViewer';
 import { initWordTooltip } from './ui/wordTooltip';
 import { state } from './state';
@@ -43,6 +44,7 @@ initToggleIgnored();
 initSessions();
 initIgnoreList();
 initCsvExport();
+initSharing();
 initSubtitleViewer();
 initWordTooltip();
 

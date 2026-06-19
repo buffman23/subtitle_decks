@@ -61,6 +61,30 @@
   opacity: 1;
 }
 
+/* Sidebar section header (e.g. "Shared with me") — a soft label with a
+   hairline rule that fades out to the right, separating it from owned sessions */
+.session-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.9rem 0.35rem 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #8a94a0;
+  user-select: none;
+}
+.session-section-header .bi {
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+.session-section-header .rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(to right, #d7dce2, transparent);
+}
+
 
 /* Profile avatar toggle — echo the btn-outline-light login button on the dark navbar */
 .profile-toggle img,

@@ -98,6 +98,26 @@
               </li>
             </ul>
           </div>
+          {% if user %}
+          <!-- Share dropdown (owner-only; shown by renderShareControls when an owned session is open) -->
+          <div class="dropdown d-none" id="share-dropdown-wrapper">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <i class="bi bi-people"></i> <span class="btn-label">Share</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-2" style="min-width:16rem">
+              <div class="input-group input-group-sm mb-2">
+                <input type="email" class="form-control" id="share-email-input"
+                       placeholder="Recipient email" autocomplete="off">
+                <button class="btn btn-primary" type="button" id="btn-share-add" title="Share">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+              <div class="text-muted small fw-semibold text-uppercase px-2">Shared with</div>
+              <div id="share-recipient-list"></div>
+            </div>
+          </div>
+          {% endif %}
         </div>
 
         <div class="d-flex gap-2 results-panels-row flex-grow-1" style="min-height:0">

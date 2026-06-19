@@ -3,6 +3,7 @@ import { flash } from '../ui/flash';
 import { renderResults } from '../ui/virtualScroll';
 import { resetUpload, viewPendingAnalysis, cancelPendingAnalysis } from './analyze';
 import { getNativeSubtitles, restoreNativeSubtitles } from './subtitleViewer';
+import { renderShareControls } from './sharing';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -13,6 +14,53 @@ export function registerSessionAnalysisCompleteHandler(fn: () => void): void {
 function langAbbr(code: string): string {
   const parts = code.split('-');
   return parts[parts.length - 1].toUpperCase();
+}
+
+interface SessionListItem {
+  id: number;
+  name: string;
+  language: string;
+  owned?: boolean;
+  owner_email?: string | null;
+}
+
+/**
+ * Build a sidebar row for one session. Owned sessions get a rename button;
+ * shared ("Shared with me") sessions omit it and show who shared them, but
+ * keep the delete button (which self-unshares on the backend).
+ */
+function buildSessionItem(s: SessionListItem): HTMLElement {
+  const owned = s.owned !== false;
+  const item = document.createElement('div');
+  item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
+  item.dataset['id'] = String(s.id);
+  const title = owned ? s.name : `${s.name} — shared by ${s.owner_email ?? 'someone'}`;
+  const renameBtn = owned
+    ? `<button class="btn btn-sm btn-link text-secondary btn-rename" title="Rename">
+         <i class="bi bi-pencil"></i>
+       </button>`
+    : '';
+  item.innerHTML = `
+    <div class="d-flex align-items-center gap-1 flex-grow-1 min-width-0">
+      <span class="text-truncate session-name" title="${title}">${s.name}</span>
+      <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
+    </div>
+    <div class="d-flex flex-shrink-0">
+      ${renameBtn}
+      <button class="btn btn-sm btn-link text-danger btn-delete" title="${owned ? 'Delete' : 'Remove shared session'}">
+        <i class="bi bi-trash3"></i>
+      </button>
+    </div>`;
+  item.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('.btn-delete')) {
+      deleteSession(s.id, owned);
+    } else if ((e.target as Element).closest('.btn-rename')) {
+      startRename(item, s.id, s.name);
+    } else {
+      openSession(s.id);
+    }
+  });
+  return item;
 }
 
 /**
@@ -78,41 +126,26 @@ export async function loadSessions(): Promise<void> {
   try {
     const res = await fetch('/api/sessions');
     if (!res.ok) { renderPending(); return; }
-    const sessions = await res.json();
+    const sessions: SessionListItem[] = await res.json();
+    const owned = sessions.filter(s => s.owned !== false);
+    const shared = sessions.filter(s => s.owned === false);
     if (sessions.length === 0) {
       list.innerHTML = '<div class="text-muted small text-center mt-3">No saved sessions</div>';
       renderPending();
       return;
     }
     list.innerHTML = '';
-    sessions.forEach((s: { id: number; name: string; language: string }) => {
-      const item = document.createElement('div');
-      item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
-      item.dataset['id'] = String(s.id);
-      item.innerHTML = `
-        <div class="d-flex align-items-center gap-1 flex-grow-1 min-width-0">
-          <span class="text-truncate session-name" title="${s.name}">${s.name}</span>
-          <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
-        </div>
-        <div class="d-flex flex-shrink-0">
-          <button class="btn btn-sm btn-link text-secondary btn-rename" title="Rename">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-link text-danger btn-delete" title="Delete">
-            <i class="bi bi-trash3"></i>
-          </button>
-        </div>`;
-      item.addEventListener('click', (e) => {
-        if ((e.target as Element).closest('.btn-delete')) {
-          deleteSession(s.id);
-        } else if ((e.target as Element).closest('.btn-rename')) {
-          startRename(item, s.id, s.name);
-        } else {
-          openSession(s.id);
-        }
-      });
-      list.appendChild(item);
-    });
+    owned.forEach(s => list.appendChild(buildSessionItem(s)));
+    if (shared.length > 0) {
+      const header = document.createElement('div');
+      header.className = 'session-section-header';
+      header.innerHTML = `
+        <i class="bi bi-people-fill"></i>
+        <span>Shared with me</span>
+        <span class="rule"></span>`;
+      list.appendChild(header);
+      shared.forEach(s => list.appendChild(buildSessionItem(s)));
+    }
     renderPending();
   } catch (_e) {
     list.innerHTML = '<div class="text-danger small text-center mt-3">Failed to load sessions</div>';
@@ -173,6 +206,7 @@ async function openSession(id: number): Promise<void> {
   state.currentFilename = session.srt_filename;
   state.parsedSubtitles = session.subtitles ?? [];
   state.activeSessionId = id;
+  state.activeSessionOwned = session.owned !== false;
 
   // Re-apply current ignore list so additions/removals since save are reflected
   const igRes = await fetch(`/api/ignorelist?language=${session.language}`);
@@ -186,14 +220,18 @@ async function openSession(id: number): Promise<void> {
 
   state.allResults = session.results;
   renderResults(session.results, session.results.reduce((a: number, r: { frequency: number }) => a + r.frequency, 0));
+  renderShareControls(id, session.owned !== false, session.shared_with ?? []);
   if (_onAnalysisComplete) _onAnalysisComplete();
   restoreNativeSubtitles(Array.isArray(session.native_subtitles) && session.native_subtitles.length > 0
     ? session.native_subtitles : []);
   loadSessions();
 }
 
-async function deleteSession(id: number): Promise<void> {
-  if (!confirm('Delete this session?')) return;
+async function deleteSession(id: number, owned: boolean = true): Promise<void> {
+  const msg = owned
+    ? 'Delete this session?'
+    : 'Remove this shared session? It stays available to the owner.';
+  if (!confirm(msg)) return;
   const res = await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
   if (res.ok) {
     if (state.activeSessionId === id) {
@@ -249,6 +287,8 @@ export async function checkPendingSession(): Promise<void> {
       if (res.ok) {
         const saved = await res.json();
         state.activeSessionId = saved.id;
+        state.activeSessionOwned = true;
+        renderShareControls(saved.id, true, []);
         flash('Session saved!');
       }
     } catch (_) { /* corrupt storage — silently discard */ }

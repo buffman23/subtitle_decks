@@ -322,7 +322,9 @@ export function initSubtitleViewer(): void {
     file.text().then(text => {
       nativeSubtitles = parseSrt(text);
       renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', detectLanguage(nativeSubtitles), false);
-      if (state.activeSessionId !== null) {
+      // Only the owner may persist native subtitles back to the shared row; a
+      // recipient still sees them locally for this view.
+      if (state.activeSessionId !== null && state.activeSessionOwned) {
         fetch(`/api/sessions/${state.activeSessionId}/native-subtitles`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
