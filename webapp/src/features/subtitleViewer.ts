@@ -295,9 +295,23 @@ export function restoreNativeSubtitles(subs: SubtitleEntry[]): void {
   renderSubtitleViewport(nativeSubtitles, 'subtitle-viewport-native', detectLanguage(subs), false);
 }
 
+// Shared (received) sessions are read-only on content, so the native-subtitle
+// upload control is disabled for non-owners.
+function updateNativeUploadAvailability(): void {
+  const input = document.getElementById('native-srt-file') as HTMLInputElement | null;
+  const label = input?.closest('label');
+  const disabled = state.activeSessionId !== null && !state.activeSessionOwned;
+  if (input) input.disabled = disabled;
+  if (label) {
+    label.classList.toggle('disabled', disabled);
+    label.title = disabled ? 'Native subtitles can only be loaded by the session owner' : 'Load native SRT';
+  }
+}
+
 export function onAnalysisComplete(): void {
   hideWordTooltip();
   buildLemmaIndex();
+  updateNativeUploadAvailability();
   restoreNativeSubtitles([]);
   const lang = detectLanguage(state.parsedSubtitles);
   const table = document.getElementById('results-table');
