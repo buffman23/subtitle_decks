@@ -38,10 +38,20 @@
 .session-item .btn-delete,
 .session-item .btn-rename,
 .session-item .session-owner-info {
-  opacity: 0;
   transition: opacity 0.15s;
   padding: 0 4px;
   font-size: 0.75rem;
+}
+/* Only hide-until-hover on devices that actually support hover (i.e. with a
+   mouse). On touch devices a "hover-reveal" makes the first tap get swallowed
+   by the emulated hover, so opening a session takes two taps — keep the buttons
+   visible there instead. */
+@media (hover: hover) {
+  .session-item .btn-delete,
+  .session-item .btn-rename,
+  .session-item .session-owner-info {
+    opacity: 0;
+  }
 }
 
 /* In-progress analysis placeholder */
@@ -57,10 +67,12 @@
   height: 0.85rem;
   border-width: 0.15em;
 }
-.session-item:hover .btn-delete,
-.session-item:hover .btn-rename,
-.session-item:hover .session-owner-info {
-  opacity: 1;
+@media (hover: hover) {
+  .session-item:hover .btn-delete,
+  .session-item:hover .btn-rename,
+  .session-item:hover .session-owner-info {
+    opacity: 1;
+  }
 }
 
 /* Sidebar section header (e.g. "Shared with me") — a soft label with a
