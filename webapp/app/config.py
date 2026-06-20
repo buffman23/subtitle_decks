@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     # Set True in production (behind HTTPS) so the session cookie is only sent
     # over TLS. Leave False for local http:// development.
     SESSION_COOKIE_SECURE: bool = False
+    # Local development only: enables a "log in as any existing user" picker on
+    # the login page (no Google OAuth round-trip). MUST stay False in production.
+    DEV_MODE: bool = False
 
     class Config:
         env_file = ".env"

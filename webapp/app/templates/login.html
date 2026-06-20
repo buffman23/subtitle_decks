@@ -9,6 +9,31 @@
       <a href="/auth/google" class="btn btn-outline-dark btn-lg">
         <i class="bi bi-google me-2"></i>Continue with Google
       </a>
+
+      {% if dev_mode %}
+      <div class="card border-warning mt-5 text-start">
+        <div class="card-header bg-warning-subtle d-flex align-items-center gap-2">
+          <i class="bi bi-tools"></i>
+          <strong>Dev login</strong>
+          <span class="badge bg-warning text-dark ms-auto">DEV_MODE</span>
+        </div>
+        <div class="card-body">
+          {% if dev_users %}
+          <form action="/auth/dev-login" method="post" class="d-flex gap-2">
+            <select name="user_id" class="form-select form-select-sm">
+              {% for u in dev_users %}
+              <option value="{{ u.id }}">{{ u.email }}{% if u.is_admin %} (admin){% endif %}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-warning flex-shrink-0">Log in</button>
+          </form>
+          <p class="text-muted small mb-0 mt-2">Log in as any existing user without Google OAuth.</p>
+          {% else %}
+          <p class="text-muted small mb-0">No users exist yet — sign in with Google once to create one.</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

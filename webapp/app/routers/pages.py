@@ -2,7 +2,9 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.dependencies import get_db, get_current_user
+from app.models import User
 from app.services.app_settings import effective_max_upload_bytes
 from app.services.processor_registry import get_available_languages
 from app.templating import templates
@@ -36,9 +38,14 @@ async def about(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
+async def login_page(request: Request, db: Session = Depends(get_db)):
+    # In dev mode, surface every existing user so they can be impersonated with
+    # one click (see /auth/dev-login). Never populated in production.
+    dev_users = (
+        db.query(User).order_by(User.email).all() if settings.DEV_MODE else []
+    )
     return templates.TemplateResponse(
         request,
         "login.html",
-        {"user": None},
+        {"user": None, "dev_mode": settings.DEV_MODE, "dev_users": dev_users},
     )

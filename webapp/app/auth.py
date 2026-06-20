@@ -1,7 +1,7 @@
 import logging
 
 from authlib.integrations.starlette_client import OAuth
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -70,6 +70,25 @@ async def auth_google_callback(request: Request, db: Session = Depends(_get_db))
 
     request.session["user_id"] = user.id
     return RedirectResponse("/")
+
+
+@router.post("/dev-login")
+async def dev_login(
+    request: Request,
+    user_id: int = Form(...),
+    db: Session = Depends(_get_db),
+):
+    """Local-development shortcut: log in as any existing user without Google.
+
+    Disabled unless DEV_MODE is set, so it can never be hit in production.
+    """
+    if not settings.DEV_MODE:
+        raise HTTPException(status_code=404)
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="No such user.")
+    request.session["user_id"] = user.id
+    return RedirectResponse("/", status_code=303)
 
 
 @router.get("/logout")
