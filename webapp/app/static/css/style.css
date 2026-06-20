@@ -554,3 +554,69 @@
 @media (max-width: 575.98px) {
   .btn-label { display: none; }
 }
+
+/* ---------- Responsive: actions drawer (< 768px) ---------- */
+@media (max-width: 767.98px) {
+  /* The Actions toggler lives in the top row next to Sessions, but should only
+     appear once results exist (results-section drops .d-none when populated). */
+  #actions-toggler { display: none; }
+  #main-content:has(#results-section:not(.d-none)) #actions-toggler { display: inline-flex; }
+
+  #actions-drawer.offcanvas-md { --bs-offcanvas-width: 300px; }
+  #actions-drawer .offcanvas-body { gap: 0.125rem; padding: 0.5rem; }
+
+  /* Show full labels here even though the global rule above hides them. */
+  #actions-drawer .btn-label { display: inline; }
+
+  /* Every action row — plain buttons AND flattened dropdown items — styled the same */
+  #actions-drawer .offcanvas-body > .btn,
+  #actions-drawer .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 0;
+    border-radius: 6px;
+    color: #212529;
+    font-size: 0.95rem;
+    font-weight: 400;
+    text-align: left;
+  }
+  #actions-drawer .offcanvas-body > .btn > i.bi,
+  #actions-drawer .dropdown-item > i.bi {
+    width: 1.1rem;
+    margin: 0;
+    font-size: 1rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  #actions-drawer .offcanvas-body > .btn:hover,
+  #actions-drawer .offcanvas-body > .btn:focus,
+  #actions-drawer .dropdown-item:hover,
+  #actions-drawer .dropdown-item:focus { background: #e9ecef; color: #212529; }
+
+  /* Ignore list stays flattened inline (Share is now a modal, not a dropdown) */
+  #actions-drawer .dropdown { width: 100%; }
+  #actions-drawer .dropdown > .dropdown-toggle { display: none; }
+  #actions-drawer .dropdown .dropdown-menu {
+    display: block !important;
+    position: static !important;
+    transform: none !important;
+    inset: auto !important;
+    float: none;
+    border: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  /* Group header ("Ignore list") + subtle separator before the Share row */
+  #actions-drawer .session-section-header { margin: 0.6rem 0.25rem 0.25rem; }
+  #actions-drawer #share-dropdown-wrapper {
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--bs-border-color);
+    padding-top: 0.6rem;
+  }
+}
