@@ -25,9 +25,9 @@ interface SessionListItem {
 }
 
 /**
- * Build a sidebar row for one session. Owned sessions get a rename button;
- * shared ("Shared with me") sessions omit it and show who shared them, but
- * keep the delete button (which self-unshares on the backend).
+ * Build a sidebar row for one session. The per-session actions (rename for
+ * owned sessions, delete/remove for both) live behind a meatballs (⋯) menu so
+ * tapping the row body always just opens the session.
  */
 function buildSessionItem(s: SessionListItem): HTMLElement {
   const owned = s.owned !== false;
@@ -35,34 +35,161 @@ function buildSessionItem(s: SessionListItem): HTMLElement {
   item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
   item.dataset['id'] = String(s.id);
   const title = owned ? s.name : `${s.name} — shared by ${s.owner_email ?? 'someone'}`;
-  const renameBtn = owned
-    ? `<button class="btn btn-sm btn-link text-secondary btn-rename" title="Rename">
-         <i class="bi bi-pencil"></i>
-       </button>`
-    : `<span class="btn btn-sm btn-link text-secondary session-owner-info" title="Shared by ${s.owner_email ?? 'someone'}">
-         <i class="bi bi-info-circle"></i>
-       </span>`;
   item.innerHTML = `
     <div class="d-flex align-items-center gap-1 flex-grow-1 min-width-0">
       <span class="text-truncate session-name" title="${title}">${s.name}</span>
       <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
     </div>
-    <div class="d-flex flex-shrink-0">
-      ${renameBtn}
-      <button class="btn btn-sm btn-link text-danger btn-delete" title="${owned ? 'Delete' : 'Remove shared session'}">
-        <i class="bi bi-trash3"></i>
-      </button>
-    </div>`;
+    <button class="btn btn-sm btn-link text-secondary btn-menu flex-shrink-0" title="More actions" aria-label="More actions">
+      <i class="bi bi-three-dots"></i>
+    </button>`;
   item.addEventListener('click', (e) => {
-    if ((e.target as Element).closest('.btn-delete')) {
-      deleteSession(s.id, owned);
-    } else if ((e.target as Element).closest('.btn-rename')) {
-      startRename(item, s.id, s.name);
+    const menuBtn = (e.target as Element).closest('.btn-menu');
+    if (menuBtn) {
+      e.stopPropagation();
+      openSessionMenu(menuBtn as HTMLElement, item, s, owned);
     } else {
       openSession(s.id);
     }
   });
   return item;
+}
+
+interface SessionMenuItem {
+  icon: string;
+  label: string;
+  danger?: boolean;
+  action: () => void;
+}
+
+let activeMenu: HTMLElement | null = null;
+let activeMenuBtn: HTMLElement | null = null;
+
+function closeSessionMenu(): void {
+  activeMenu?.remove();
+  activeMenu = null;
+  activeMenuBtn?.classList.remove('menu-open');
+  activeMenuBtn = null;
+  document.removeEventListener('click', onMenuOutsideClick, true);
+  document.removeEventListener('scroll', closeSessionMenu, true);
+  window.removeEventListener('resize', closeSessionMenu);
+}
+
+function onMenuOutsideClick(e: Event): void {
+  if (activeMenu && !activeMenu.contains(e.target as Node)) closeSessionMenu();
+}
+
+/**
+ * Pop up the per-session action menu anchored under the meatballs button. The
+ * menu is attached to <body> (not the row) so the sidebar's vertical scroll
+ * can't clip it, and it flips above the button if it would overflow the
+ * viewport bottom.
+ */
+function openSessionMenu(anchor: HTMLElement, item: HTMLElement, s: SessionListItem, owned: boolean): void {
+  const wasOpenForThis = activeMenuBtn === anchor;
+  closeSessionMenu();
+  if (wasOpenForThis) return;  // second click on the same button: just close
+
+  const entries: SessionMenuItem[] = [];
+  if (owned) {
+    entries.push({ icon: 'bi-pencil', label: 'Rename', action: () => startRename(item, s.id, s.name) });
+  } else {
+    entries.push({
+      icon: 'bi-info-circle',
+      label: 'Owner',
+      action: () => showOwnerCard(anchor, s.owner_email ?? 'someone'),
+    });
+  }
+  entries.push({
+    icon: 'bi-trash3',
+    label: owned ? 'Delete' : 'Remove',
+    danger: true,
+    action: () => deleteSession(s.id, owned),
+  });
+
+  const menu = document.createElement('div');
+  menu.className = 'session-menu';
+  for (const entry of entries) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'session-menu-item' + (entry.danger ? ' danger' : '');
+    btn.innerHTML = `<i class="bi ${entry.icon}"></i><span>${entry.label}</span>`;
+    btn.addEventListener('click', () => { closeSessionMenu(); entry.action(); });
+    menu.appendChild(btn);
+  }
+  document.body.appendChild(menu);
+
+  const r = anchor.getBoundingClientRect();
+  // Right-align the menu to the button; flip above if it would clip the bottom.
+  menu.style.left = `${Math.max(8, r.right - menu.offsetWidth)}px`;
+  menu.style.top = r.bottom + 4 + menu.offsetHeight > window.innerHeight
+    ? `${r.top - 4 - menu.offsetHeight}px`
+    : `${r.bottom + 4}px`;
+
+  activeMenu = menu;
+  activeMenuBtn = anchor;
+  anchor.classList.add('menu-open');
+  // Defer listener registration so this same click doesn't immediately close it.
+  setTimeout(() => {
+    document.addEventListener('click', onMenuOutsideClick, true);
+    document.addEventListener('scroll', closeSessionMenu, true);
+    window.addEventListener('resize', closeSessionMenu);
+  }, 0);
+}
+
+let activeCard: HTMLElement | null = null;
+
+function closeOwnerCard(): void {
+  activeCard?.remove();
+  activeCard = null;
+  document.removeEventListener('click', onCardOutsideClick, true);
+  document.removeEventListener('keydown', onCardKeydown, true);
+  document.removeEventListener('scroll', closeOwnerCard, true);
+  window.removeEventListener('resize', closeOwnerCard);
+}
+
+function onCardOutsideClick(e: Event): void {
+  if (activeCard && !activeCard.contains(e.target as Node)) closeOwnerCard();
+}
+
+function onCardKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape') closeOwnerCard();
+}
+
+/**
+ * Pop up a small dismissable card showing who shared a session. Dismissable by
+ * the × button, clicking anywhere outside, pressing Escape, or scrolling.
+ */
+function showOwnerCard(anchor: HTMLElement, email: string): void {
+  closeOwnerCard();
+  const card = document.createElement('div');
+  card.className = 'session-owner-card';
+  card.innerHTML = `
+    <button type="button" class="session-owner-card-close" aria-label="Dismiss">
+      <i class="bi bi-x-lg"></i>
+    </button>
+    <div class="session-owner-card-label">Shared by</div>
+    <div class="session-owner-card-email"></div>`;
+  (card.querySelector('.session-owner-card-email') as HTMLElement).textContent = email;
+  card.querySelector('.session-owner-card-close')!.addEventListener('click', closeOwnerCard);
+  document.body.appendChild(card);
+
+  const r = anchor.getBoundingClientRect();
+  // Right-align to the button, clamped to the viewport; flip above if it would
+  // overflow the bottom.
+  const left = Math.min(r.right - card.offsetWidth, window.innerWidth - card.offsetWidth - 8);
+  card.style.left = `${Math.max(8, left)}px`;
+  card.style.top = r.bottom + 4 + card.offsetHeight > window.innerHeight
+    ? `${r.top - 4 - card.offsetHeight}px`
+    : `${r.bottom + 4}px`;
+
+  activeCard = card;
+  setTimeout(() => {
+    document.addEventListener('click', onCardOutsideClick, true);
+    document.addEventListener('keydown', onCardKeydown, true);
+    document.addEventListener('scroll', closeOwnerCard, true);
+    window.addEventListener('resize', closeOwnerCard);
+  }, 0);
 }
 
 /**
@@ -122,6 +249,8 @@ export function renderPending(): void {
 }
 
 export async function loadSessions(): Promise<void> {
+  closeSessionMenu();  // the list is about to be rebuilt; drop any open menu
+  closeOwnerCard();
   if (!IS_LOGGED_IN) { renderPending(); return; }
   const list = document.getElementById('session-list');
   if (!list) return;

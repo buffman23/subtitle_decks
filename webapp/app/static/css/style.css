@@ -35,23 +35,103 @@
   background: #0d6efd22;
   font-weight: 600;
 }
-.session-item .btn-delete,
-.session-item .btn-rename,
-.session-item .session-owner-info {
+.session-item .btn-menu {
   transition: opacity 0.15s;
   padding: 0 4px;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1;
 }
 /* Only hide-until-hover on devices that actually support hover (i.e. with a
    mouse). On touch devices a "hover-reveal" makes the first tap get swallowed
-   by the emulated hover, so opening a session takes two taps — keep the buttons
+   by the emulated hover, so opening a session takes two taps — keep the button
    visible there instead. */
 @media (hover: hover) {
-  .session-item .btn-delete,
-  .session-item .btn-rename,
-  .session-item .session-owner-info {
+  .session-item .btn-menu {
     opacity: 0;
   }
+}
+/* Keep the button visible while its menu is open, even if the cursor leaves. */
+.session-item .btn-menu.menu-open {
+  opacity: 1;
+}
+
+/* Floating per-session action menu (attached to <body>, positioned in JS). */
+.session-menu {
+  position: fixed;
+  z-index: 1080;
+  min-width: 140px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+.session-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #212529;
+  font-size: 0.85rem;
+  text-align: left;
+}
+.session-menu-item i {
+  width: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.session-menu-item:hover {
+  background: #e9ecef;
+}
+.session-menu-item.danger {
+  color: #dc3545;
+}
+.session-menu-item.danger:hover {
+  background: #f8d7da;
+}
+
+/* Dismissable "Shared by" card popped from the menu's Owner item. */
+.session-owner-card {
+  position: fixed;
+  z-index: 1085;
+  min-width: 180px;
+  max-width: 260px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+.session-owner-card-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: #6c757d;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+.session-owner-card-close:hover {
+  color: #212529;
+}
+.session-owner-card-label {
+  margin-bottom: 2px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6c757d;
+}
+.session-owner-card-email {
+  padding-right: 14px;
+  font-size: 0.85rem;
+  color: #212529;
+  word-break: break-all;
 }
 
 /* In-progress analysis placeholder */
@@ -68,9 +148,7 @@
   border-width: 0.15em;
 }
 @media (hover: hover) {
-  .session-item:hover .btn-delete,
-  .session-item:hover .btn-rename,
-  .session-item:hover .session-owner-info {
+  .session-item:hover .btn-menu {
     opacity: 1;
   }
 }
