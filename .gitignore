@@ -15,6 +15,10 @@ webapp/.env
 # SSH keys
 *.pem
 
+# Cloudflare origin cert + private key (never commit)
+cloudflare/
+*.key
+
 # SQLite database
 webapp/app.db
 *.db
