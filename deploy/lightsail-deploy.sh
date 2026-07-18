@@ -233,18 +233,51 @@ sudo docker run --rm --user root \
 
 # --- ensure full UniDic dictionary on a persistent volume (downloaded once) -
 # Like the camel_tools models, the ~770MB UniDic dict is kept off the image and
-# lives on the named volume 'subtitle-decks-unidic', mounted read-only at
-# $UNIDIC_DIR. The image symlinks the pip 'unidic' package's dicdir to that mount
-# point (see Dockerfile), so 'python -m unidic download' writes straight onto the
-# volume and fugashi.Tagger() finds its mecabrc there. Guarded by sys.dic so later
-# deploys skip it in seconds.
+# lives on the named volume 'subtitle-decks-unidic', mounted at $UNIDIC_DIR. The
+# image symlinks the pip 'unidic' package's dicdir to that mount point (see
+# Dockerfile) so fugashi.Tagger() finds its mecabrc + sys.dic there.
+#
+# We do NOT use 'python -m unidic download' here: its download_and_clean() calls
+# shutil.rmtree(dicdir) before writing, and shutil.rmtree refuses to operate on a
+# symlink ("Cannot call rmtree on a symbolic link") — which is exactly what dicdir
+# is. So on a fresh volume that command always dies. Instead we replicate what it
+# produces, writing straight into the volume: the archive's dict files plus the
+# 'version' and dummy 'mecabrc' files unidic writes itself. Guarded by sys.dic so
+# later deploys skip it in seconds.
 echo "[deploy] ensuring UniDic dictionary on volume (one-time ~770MB download)..."
 status models "Preparing language models…"
 sudo docker volume create subtitle-decks-unidic >/dev/null
-sudo docker run --rm --user root \
+sudo docker run --rm -i --user root \
   -v subtitle-decks-unidic:/opt/unidic_data \
-  subtitle-decks \
-  sh -c '[ -f /opt/unidic_data/sys.dic ] || python -m unidic download'
+  -e UNIDIC_DIR=/opt/unidic_data \
+  subtitle-decks python - <<'PY'
+import os, sys, json, zipfile, tempfile, shutil, urllib.request
+d = os.environ["UNIDIC_DIR"]
+if os.path.exists(os.path.join(d, "sys.dic")):
+    print("[unidic] already present, skipping"); sys.exit(0)
+# Resolve the same 'latest' dictionary 'python -m unidic download' would fetch.
+info = json.loads(urllib.request.urlopen(
+    "https://raw.githubusercontent.com/polm/unidic-py/master/dicts.json").read())
+di = info["latest"]; url = di["url"]; ver = di["version"]
+print("[unidic] downloading v%s from %s" % (ver, url))
+tmp = tempfile.mkdtemp()
+zpath = os.path.join(tmp, "unidic.zip")
+urllib.request.urlretrieve(url, zpath)
+with zipfile.ZipFile(zpath) as zf:
+    zf.extractall(tmp)
+# Find the extracted dir holding the dictionary (robust to the archive layout).
+src = next((root for root, _dirs, files in os.walk(tmp) if "sys.dic" in files), None)
+if src is None:
+    print("[unidic] ERROR: sys.dic not found in archive", file=sys.stderr); sys.exit(1)
+for name in os.listdir(src):
+    s = os.path.join(src, name); t = os.path.join(d, name)
+    shutil.copytree(s, t, dirs_exist_ok=True) if os.path.isdir(s) else shutil.copy2(s, t)
+# unidic's own downloader writes these two; MeCab/fugashi needs mecabrc present.
+open(os.path.join(d, "version"), "w").write("unidic-%s" % ver)
+open(os.path.join(d, "mecabrc"), "w").write("# This is a dummy file.")
+shutil.rmtree(tmp, ignore_errors=True)
+print("[unidic] installed to", d)
+PY
 
 # --- ensure Stanza models on a persistent volume (downloaded once) ----------
 # Same off-the-image rationale as camel_tools/UniDic: the Stanza models for the
