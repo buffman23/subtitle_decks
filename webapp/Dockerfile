@@ -39,6 +39,16 @@ RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
+# calamanCy ships the Tagalog model as a pip package, and calamancy.load() lazily
+# pip-installs it into site-packages on first use. That runtime install fails in
+# prod (the container runs as non-root appuser and can't write site-packages, and
+# it would need huggingface egress on every start), so bake the wheel in at build
+# time. --no-deps because requirements.txt already satisfies spacy et al. Unlike
+# the multi-GB camel_tools/UniDic/Stanza data kept off-image, this model is ~225MB,
+# small enough to bake in. Pinned to the same URL/version calamancy 0.2.2 resolves.
+RUN pip install --no-deps \
+    "tl_calamancy_md @ https://huggingface.co/ljvmiranda921/tl_calamancy_md/resolve/main/tl_calamancy_md-any-py3-none-any.whl"
+
 # NOTE: large language data is NOT baked into the image. The camel_tools models
 # (~1.8GB) and the full UniDic dictionary (~770MB) are each downloaded once onto a
 # persistent named volume and mounted read-only at runtime ($CAMELTOOLS_DATA and
