@@ -1,12 +1,11 @@
-import os
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db, get_current_user, resolve_language_id
+from app.dependencies import get_db, get_current_user
 from app.models import AnalysisSession, SessionShare, User
+from app.services.session_store import persist_analysis_session
 from app.schemas import (
     SessionCreateRequest,
     SessionDetail,
@@ -117,35 +116,15 @@ async def create_session(
     db: Session = Depends(get_db),
 ):
     user = _require_user(request, db)
-    lang_id = resolve_language_id(payload.language, db)
-    base_name = os.path.splitext(payload.srt_filename)[0]
-    name = base_name
-    existing = {
-        s.name
-        for s in db.query(AnalysisSession.name).filter(
-            AnalysisSession.user_id == user.id,
-            AnalysisSession.language_id == lang_id,
-        )
-    }
-    if name in existing:
-        counter = 2
-        while f"{base_name} ({counter})" in existing:
-            counter += 1
-        name = f"{base_name} ({counter})"
-    session = AnalysisSession(
+    return persist_analysis_session(
+        db,
         user_id=user.id,
-        name=name,
-        language_id=lang_id,
+        language_code=payload.language,
         srt_filename=payload.srt_filename,
         subtitles=[s.model_dump() for s in payload.subtitles],
-        native_subtitles=[s.model_dump() for s in payload.native_subtitles] or None,
+        native_subtitles=[s.model_dump() for s in payload.native_subtitles],
         results=[r.model_dump() for r in payload.results],
-        created_at=datetime.utcnow(),
     )
-    db.add(session)
-    db.commit()
-    db.refresh(session)
-    return session
 
 
 @router.patch("/{session_id}", response_model=SessionOut)

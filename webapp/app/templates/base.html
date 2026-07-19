@@ -54,5 +54,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
+
+{# Cross-page analysis notifier — loaded last so page bundles (app.js) can claim
+   the job lifecycle via window.SUBTITLE_DECKS_APP before this runs. #}
+<script>window.SUBTITLE_DECKS_LOGGED_IN = {{ 'true' if user else 'false' }};</script>
+<script src="{{ asset_url('js/notifier.js') }}"></script>
 </body>
 </html>

@@ -51,6 +51,9 @@ class Job:
     finished_at: datetime | None = None
     error: str | None = None
     result: dict | None = None
+    # Set when the finished analysis is auto-saved as a session (logged-in jobs).
+    session_id: int | None = None
+    session_name: str | None = None
     cancel_event: threading.Event = field(default_factory=threading.Event)
 
 
@@ -69,6 +72,30 @@ def _run_job(job: Job) -> dict:
         "total_tokens": total_tokens,
         "subtitles": subtitles,
     }
+
+
+def _save_session(job: "Job", result: dict) -> tuple[int, str]:
+    """Persist a finished analysis as a session (blocking; runs in a threadpool).
+
+    Uses its own DB session — the worker owns no request-scoped one. Returns the
+    new session's (id, name).
+    """
+    from app.database import SessionLocal
+    from app.services.session_store import persist_analysis_session
+
+    db = SessionLocal()
+    try:
+        session = persist_analysis_session(
+            db,
+            user_id=job.user_id,
+            language_code=job.language_code,
+            srt_filename=job.filename,
+            subtitles=result["subtitles"],
+            results=result["results"],
+        )
+        return session.id, session.name
+    finally:
+        db.close()
 
 
 class JobQueueManager:
@@ -154,6 +181,18 @@ class JobQueueManager:
                         job.status = "cancelled"
                     else:
                         job.result = result
+                        # Auto-save the finished analysis as a session so the
+                        # client needn't stay on the page. Set session_id BEFORE
+                        # flipping to 'done' so the first poll that sees 'done'
+                        # already carries it. A save failure is logged but never
+                        # fails the job — the result is still pollable.
+                        if job.user_id is not None:
+                            try:
+                                job.session_id, job.session_name = (
+                                    await loop.run_in_executor(None, _save_session, job, result)
+                                )
+                            except Exception:  # noqa: BLE001
+                                logger.exception("Auto-saving session for job %s failed", job.id)
                         job.status = "done"
                 except CancelledAnalysis:
                     job.status = "cancelled"

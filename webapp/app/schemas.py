@@ -116,6 +116,10 @@ class JobStatusResponse(BaseModel):
     position: int | None = None
     result: AnalyzeResponse | None = None
     error: str | None = None
+    # Set once a finished analysis has been auto-saved as a session (logged-in
+    # jobs), so the client can link straight to it.
+    session_id: int | None = None
+    session_name: str | None = None
 
 
 class QueueJobOut(BaseModel):

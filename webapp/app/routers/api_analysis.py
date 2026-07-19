@@ -131,6 +131,8 @@ async def analyze_job_status(job_id: str, request: Request, db: Session = Depend
         position=manager.position_of(job.id),
         result=job.result if job.status == "done" else None,
         error=job.error,
+        session_id=job.session_id,
+        session_name=job.session_name,
     )
 
 

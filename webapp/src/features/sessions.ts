@@ -320,7 +320,7 @@ function startRename(item: HTMLElement, id: number, currentName: string): void {
   input.addEventListener('blur', commit);
 }
 
-async function openSession(id: number): Promise<void> {
+export async function openSession(id: number): Promise<void> {
   const res = await fetch(`/api/sessions/${id}`);
   if (!res.ok) { flash('Could not load session.', 'danger'); return; }
   // Leaving the in-progress analysis: it keeps running in the background and

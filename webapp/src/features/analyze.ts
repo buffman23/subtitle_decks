@@ -14,6 +14,37 @@ let selectedFile: File | null = null;
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Cross-page pending-job list (shared with the vanilla notifier.js loaded on
+ * every page). When the user navigates away from this page mid-analysis, the
+ * notifier reads this list, polls the job, and toasts on completion. Entries
+ * this page handles in-page are removed so the notifier doesn't re-toast them.
+ * Contract: localStorage['subtitleDecks.pendingJobs'] = [{jobId, filename, language, addedAt}].
+ */
+const PENDING_JOBS_KEY = 'subtitleDecks.pendingJobs';
+
+interface PendingJobEntry { jobId: string; filename: string; language: string; addedAt: number; }
+
+function readPendingJobs(): PendingJobEntry[] {
+  try { return JSON.parse(localStorage.getItem(PENDING_JOBS_KEY) || '[]'); }
+  catch (_) { return []; }
+}
+
+function writePendingJobs(jobs: PendingJobEntry[]): void {
+  try { localStorage.setItem(PENDING_JOBS_KEY, JSON.stringify(jobs)); }
+  catch (_) { /* storage unavailable — cross-page toast just won't fire */ }
+}
+
+function addPendingJob(jobId: string, filename: string, language: string): void {
+  const jobs = readPendingJobs().filter((j) => j.jobId !== jobId);
+  jobs.push({ jobId, filename, language, addedAt: Date.now() });
+  writePendingJobs(jobs);
+}
+
+function removePendingJob(jobId: string): void {
+  writePendingJobs(readPendingJobs().filter((j) => j.jobId !== jobId));
+}
+
 /** Mirror of the server-side humanize_bytes (B / KB / MB / GB). */
 function humanizeBytes(num: number): string {
   let size = num || 0;
@@ -127,8 +158,9 @@ export function viewPendingAnalysis(): void {
 
 /**
  * Poll a queued analysis job until it finishes, keeping the pending state and
- * sidebar placeholder up to date. Returns the analysis result on success, or
- * null if the job failed or was cancelled (a flash message is shown for those).
+ * sidebar placeholder up to date. Returns the finished job (its `result` and
+ * server-assigned `session_id`) on success, or null if the job failed or was
+ * cancelled (a flash message is shown for those).
  */
 async function pollJob(jobId: string): Promise<any | null> {
   while (true) {
@@ -145,7 +177,7 @@ async function pollJob(jobId: string): Promise<any | null> {
     renderPending();
     if (state.viewingPending) updatePendingStatusText();
 
-    if (job.status === 'done') return job.result;
+    if (job.status === 'done') return job;
     if (job.status === 'cancelled') { flash('Analysis was cancelled.', 'warning'); return null; }
     if (job.status === 'failed') { flash(job.error || 'Analysis failed.', 'danger'); return null; }
     await sleep(1000);
@@ -157,15 +189,26 @@ async function pollJob(jobId: string): Promise<any | null> {
  * away (to a saved session) and back via the sidebar placeholder while this
  * runs; results are only rendered into the main view if they're still watching.
  */
-async function startAnalysisJob(jobId: string, filename: string, language: string): Promise<void> {
+async function startAnalysisJob(
+  jobId: string,
+  filename: string,
+  language: string,
+  attach = true,
+): Promise<void> {
   state.pendingJob = { jobId, filename, language, status: 'queued', position: null, cancelling: false };
-  state.viewingPending = true;
-  showAnalyzingView();
+  // `attach` is false when resuming after a reload: restore the sidebar
+  // placeholder and keep polling, but don't hijack the main view — the user may
+  // have reloaded to look at something else. They can click the placeholder to
+  // re-attach it (viewPendingAnalysis).
+  if (attach) {
+    state.viewingPending = true;
+    showAnalyzingView();
+  }
   renderPending();
 
-  let result: any = null;
+  let job: any = null;
   try {
-    result = await pollJob(jobId);
+    job = await pollJob(jobId);
   } catch (err) {
     flash('Network error: ' + (err as Error).message, 'danger');
   }
@@ -173,8 +216,11 @@ async function startAnalysisJob(jobId: string, filename: string, language: strin
   const wasViewing = state.viewingPending;
   state.pendingJob = null;
   state.viewingPending = false;
+  // Handled in-page: drop it from the cross-page list so the global notifier
+  // (which only fires on pages the user navigated to) won't re-toast it.
+  removePendingJob(jobId);
 
-  if (!result) {
+  if (!job) {
     // Failed/cancelled/error — message already shown. Leave the upload view in
     // place (if they were watching) so they can retry.
     updateAnalyzeButton();
@@ -182,35 +228,24 @@ async function startAnalysisJob(jobId: string, filename: string, language: strin
     return;
   }
 
-  await completeAnalysis(result, filename, language, wasViewing);
+  await completeAnalysis(job, filename, language, wasViewing);
   updateAnalyzeButton();
   renderPending();
 }
 
-/** Persist the finished analysis and, if still watching, render it. */
+/**
+ * Render the finished analysis if the user is still watching. The session was
+ * already saved server-side on job completion (job.session_id); anonymous users
+ * have no session, so their result is stashed for save-after-login instead.
+ */
 async function completeAnalysis(
-  result: any,
+  job: any,
   filename: string,
   language: string,
   wasViewing: boolean,
 ): Promise<void> {
-  let savedId: number | null = null;
-  if (IS_LOGGED_IN) {
-    try {
-      const saveRes = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language,
-          srt_filename: filename,
-          subtitles: result.subtitles ?? [],
-          native_subtitles: [],
-          results: result.results,
-        }),
-      });
-      if (saveRes.ok) savedId = (await saveRes.json()).id;
-    } catch (_) { /* non-critical */ }
-  }
+  const result = job.result;
+  const savedId: number | null = job.session_id ?? null;
 
   if (wasViewing) {
     state.currentLanguage = language;
@@ -251,6 +286,34 @@ export function resetUpload(): void {
   if (fileInput) fileInput.value = '';
   // Keep controls locked if an analysis is still running in the background.
   setUploadControlsDisabled(!!state.pendingJob);
+}
+
+/**
+ * On page load, re-attach to an analysis still running server-side (tracked in
+ * the shared pending-jobs list) so its sidebar placeholder survives navigations
+ * and reloads. Only a still-active job is restored; a job that finished while
+ * away is dropped from the list — its session is already saved and shows up in
+ * the sidebar on its own.
+ */
+export async function resumePendingAnalysis(): Promise<void> {
+  if (!IS_LOGGED_IN || state.pendingJob) return;
+  const jobs = readPendingJobs();
+  if (!jobs.length) return;
+  const entry = jobs[jobs.length - 1];  // sidebar shows a single pending row
+  try {
+    const res = await fetch(`/api/analyze/jobs/${encodeURIComponent(entry.jobId)}`);
+    if (res.status === 404) { removePendingJob(entry.jobId); return; }  // gone/trimmed
+    if (!res.ok) return;  // transient — try again on the next load
+    const job = await res.json();
+    if (job.status !== 'queued' && job.status !== 'running') {
+      removePendingJob(entry.jobId);  // finished/cancelled while away
+      return;
+    }
+  } catch (_) {
+    return;
+  }
+  // Still in progress: restore the placeholder and resume polling (view detached).
+  void startAnalysisJob(entry.jobId, entry.filename, entry.language, false);
 }
 
 export function initAnalyzeForm(): void {
@@ -332,6 +395,9 @@ export function initAnalyzeForm(): void {
         updateAnalyzeButton();
         return;
       }
+      // Track it for the cross-page notifier so completion still toasts if the
+      // user navigates away (only logged-in jobs are auto-saved server-side).
+      if (IS_LOGGED_IN) addPendingJob(submitData.job_id, filename, language);
       // Intentionally not awaited: let it run in the background.
       void startAnalysisJob(submitData.job_id, filename, language);
     } catch (err) {
