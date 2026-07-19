@@ -19,6 +19,9 @@ webapp/.env
 cloudflare/
 *.key
 
+# Google OAuth client secrets (never commit)
+google-oauth/
+
 # SQLite database
 webapp/app.db
 *.db
