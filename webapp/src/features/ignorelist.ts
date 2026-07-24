@@ -1,6 +1,6 @@
 import { state, buildVisibleIndices } from '../state';
 import { flash } from '../ui/flash';
-import { updateSummary, renderVirtual } from '../ui/virtualScroll';
+import { updateSummary, renderTable } from '../ui/virtualScroll';
 import { loadSessions } from './sessions';
 
 function showLoginModal(): void {
@@ -25,8 +25,7 @@ export async function addToIgnoreList(word: string, _btn: HTMLButtonElement): Pr
     if (item) item.ignored = true;
     buildVisibleIndices();
     updateSummary();
-    const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement;
-    renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
+    renderTable();
   } else {
     flash('Failed to add to ignore list.', 'danger');
   }
@@ -47,8 +46,7 @@ export async function removeFromIgnoreList(word: string, _btn: HTMLButtonElement
     if (item) item.ignored = false;
     buildVisibleIndices();
     updateSummary();
-    const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement;
-    renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
+    renderTable();
   } else {
     flash('Failed to remove from ignore list.', 'danger');
   }
@@ -92,8 +90,7 @@ export function initIgnoreList(): void {
         if (changed) {
           buildVisibleIndices();
           updateSummary();
-          const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement;
-          renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
+          renderTable();
         }
       }
     }

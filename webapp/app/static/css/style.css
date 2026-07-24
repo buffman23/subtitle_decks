@@ -278,6 +278,11 @@
   overflow-x: hidden;
   border: 1px solid #dee2e6;
   border-radius: 4px;
+  /* renderTable() rebuilds the whole tbody on every re-render (e.g. when a word
+     is hidden/unhidden). Browser scroll anchoring reacts to that DOM churn by
+     shifting scrollTop, making the list jump. Opt out so scroll position stays
+     put across re-renders. */
+  overflow-anchor: none;
 }
 
 /* Subtitle viewports */

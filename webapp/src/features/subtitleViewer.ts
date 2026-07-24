@@ -1,6 +1,6 @@
 import type { SubtitleEntry, SubtitleSegment } from '../types';
 import { state, buildVisibleIndices } from '../state';
-import { escapeHtml, scrollTableToLemma, renderVirtual } from '../ui/virtualScroll';
+import { escapeHtml, scrollTableToLemma, renderTable } from '../ui/virtualScroll';
 import { showWordTooltip, hideWordTooltip, isWordTooltipAnchor } from '../ui/wordTooltip';
 
 type DetectedLanguage = 'arabic' | 'latin' | 'unknown';
@@ -303,8 +303,7 @@ export function onAnalysisComplete(): void {
   activeProcessedSubIdx = new Set();
   activeNativeSubIdx = new Set();
   updateNavControls();
-  const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement | null;
-  if (wrapper) renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
+  renderTable();
 }
 
 export function initSubtitleViewer(): void {

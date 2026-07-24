@@ -1,5 +1,5 @@
 import { applyColWidths, initColResize, applySidebarWidth, initSidebarResize } from './ui/colResize';
-import { renderVirtual, registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler } from './ui/virtualScroll';
+import { registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler } from './ui/virtualScroll';
 import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler, resumePendingAnalysis } from './features/analyze';
 import { initSessions, loadSessions, checkPendingSession, openSession, registerSessionAnalysisCompleteHandler } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
@@ -57,11 +57,6 @@ applyColWidths();
 initColResize();
 applySidebarWidth();
 initSidebarResize();
-
-/* ── Virtual scroll listener ── */
-document.querySelector('.results-table-wrapper')?.addEventListener('scroll', function (this: HTMLElement) {
-  renderVirtual(this.scrollTop, this.clientHeight);
-});
 
 /* ── Load sessions on startup (also restores + saves any pending session left by an anonymous user who just signed in) ── */
 if (IS_LOGGED_IN) checkPendingSession();

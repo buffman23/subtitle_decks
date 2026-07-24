@@ -1,6 +1,6 @@
 import { state, buildVisibleIndices } from '../state';
 import { flash } from '../ui/flash';
-import { renderResults, renderVirtual } from '../ui/virtualScroll';
+import { renderResults, renderTable } from '../ui/virtualScroll';
 import { loadSessions, stashPendingSession, renderPending } from './sessions';
 import { renderShareControls, hideShareControls } from './sharing';
 
@@ -413,7 +413,7 @@ export function initToggleIgnored(): void {
     buildVisibleIndices();
     const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement;
     wrapper.scrollTop = 0;
-    renderVirtual(0, wrapper.clientHeight);
+    renderTable();
     this.innerHTML = state.showingIgnored
       ? '<i class="bi bi-eye"></i> <span class="btn-label">Hide ignored</span>'
       : '<i class="bi bi-eye-slash"></i> <span class="btn-label">Show ignored</span>';
