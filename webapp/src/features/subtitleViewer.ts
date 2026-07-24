@@ -3,17 +3,12 @@ import { state, buildVisibleIndices } from '../state';
 import { escapeHtml, scrollTableToLemma, renderVirtual } from '../ui/virtualScroll';
 import { showWordTooltip, hideWordTooltip, isWordTooltipAnchor } from '../ui/wordTooltip';
 
-const ROW_HEIGHT_EST = 100;
-const OVERSCAN = 3;
-
 type DetectedLanguage = 'arabic' | 'latin' | 'unknown';
 
 interface ViewportData {
   subtitles: SubtitleEntry[];
   lang: DetectedLanguage;
   isProcessed: boolean;
-  lastStart: number;
-  lastEnd: number;
 }
 
 // Module-level state
@@ -71,61 +66,52 @@ function detectLanguage(subtitles: SubtitleEntry[]): DetectedLanguage {
   return 'unknown';
 }
 
-function renderWindow(containerId: string): void {
+// Render every subtitle entry into the viewport in normal document flow. No
+// virtualization: variable-height rows can't clip (natural layout grows to fit),
+// and every line is real DOM so browser Ctrl+F finds it. Subtitle files top out
+// around a couple thousand entries, well within what the browser renders fine.
+function renderViewport(containerId: string): void {
   const data = viewports.get(containerId);
   const container = document.getElementById(containerId);
   if (!data || !container) return;
 
   const { subtitles, lang, isProcessed } = data;
-  const total = subtitles.length;
-  if (total === 0) { container.innerHTML = ''; return; }
-
-  const scrollTop = container.scrollTop;
-  const clientHeight = container.clientHeight || ROW_HEIGHT_EST * 5;
-
-  const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT_EST) - OVERSCAN);
-  const endIdx = Math.min(total - 1, Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT_EST) + OVERSCAN);
-
-  if (data.lastStart === startIdx && data.lastEnd === endIdx) return;
-  data.lastStart = startIdx;
-  data.lastEnd = endIdx;
-
   const isRtl = lang === 'arabic';
-  const activeSet = containerId === 'subtitle-viewport-processed' ? activeProcessedSubIdx : activeNativeSubIdx;
 
-  // Inner container has fixed total height so scrollHeight is stable while scrolling.
-  const inner = document.createElement('div');
-  inner.style.position = 'relative';
-  inner.style.height = `${total * ROW_HEIGHT_EST}px`;
-
-  for (let i = startIdx; i <= endIdx; i++) {
-    const sub = subtitles[i];
-    const isActive = activeSet.has(sub.index);
-    const div = document.createElement('div');
-    div.className = 'subtitle-entry' + (isActive ? ' active' : '');
-    div.id = `${containerId}-sub-${sub.index}`;
-    div.style.position = 'absolute';
-    div.style.top = `${i * ROW_HEIGHT_EST}px`;
-    div.style.left = '0';
-    div.style.right = '0';
+  let html = '';
+  for (const sub of subtitles) {
     const textHtml = isProcessed
       ? renderProcessedText(sub.text, sub.segments)
       : renderNativeText(sub.text);
-    div.innerHTML = `
-      <div class="sub-number">${sub.index}</div>
-      <div class="sub-time">${escapeHtml(sub.start_time)} → ${escapeHtml(sub.end_time)}</div>
-      <div class="sub-text"${isRtl ? ' dir="rtl"' : ''}>${textHtml}</div>`;
+    html += `<div class="subtitle-entry" id="${containerId}-sub-${sub.index}">`
+      + `<div class="sub-number">${sub.index}</div>`
+      + `<div class="sub-time">${escapeHtml(sub.start_time)} → ${escapeHtml(sub.end_time)}</div>`
+      + `<div class="sub-text"${isRtl ? ' dir="rtl"' : ''}>${textHtml}</div></div>`;
+  }
+  container.innerHTML = html;
+  applyActiveState(containerId);
+}
 
-    if (isProcessed && isActive && selectedLemma) {
-      div.querySelectorAll<HTMLElement>(`.sub-word[data-lemma="${CSS.escape(selectedLemma)}"]`)
+// Reflect the current active-subtitle set (and, for the processed viewport, the
+// selected lemma) onto the already-rendered DOM without rebuilding it.
+function applyActiveState(containerId: string): void {
+  const data = viewports.get(containerId);
+  const container = document.getElementById(containerId);
+  if (!data || !container) return;
+
+  const activeSet = containerId === 'subtitle-viewport-processed' ? activeProcessedSubIdx : activeNativeSubIdx;
+  container.querySelectorAll('.subtitle-entry.active').forEach(el => el.classList.remove('active'));
+  container.querySelectorAll('.sub-word.active-word').forEach(el => el.classList.remove('active-word'));
+
+  for (const idx of activeSet) {
+    const entry = document.getElementById(`${containerId}-sub-${idx}`);
+    if (!entry) continue;
+    entry.classList.add('active');
+    if (data.isProcessed && selectedLemma) {
+      entry.querySelectorAll<HTMLElement>(`.sub-word[data-lemma="${CSS.escape(selectedLemma)}"]`)
         .forEach(el => el.classList.add('active-word'));
     }
-
-    inner.appendChild(div);
   }
-
-  container.innerHTML = '';
-  container.appendChild(inner);
 }
 
 function renderSubtitleViewport(
@@ -135,9 +121,9 @@ function renderSubtitleViewport(
   if (!container) return;
   container.classList.remove('lang-arabic', 'lang-latin', 'lang-unknown');
   container.classList.add(`lang-${lang}`);
-  viewports.set(containerId, { subtitles, lang, isProcessed, lastStart: -1, lastEnd: -1 });
+  viewports.set(containerId, { subtitles, lang, isProcessed });
   container.scrollTop = 0;
-  renderWindow(containerId);
+  renderViewport(containerId);
 }
 
 function scrollToSub(containerId: string, subIndex: number): void {
@@ -145,22 +131,21 @@ function scrollToSub(containerId: string, subIndex: number): void {
   const data = viewports.get(containerId);
   if (!container || !data) return;
 
-  const arrIdx = data.subtitles.findIndex(s => s.index === subIndex);
-  if (arrIdx === -1) return;
+  // Refresh active highlighting before scrolling so the target shows as active
+  // the moment the (possibly animated) scroll begins.
+  applyActiveState(containerId);
 
-  const itemTop = arrIdx * ROW_HEIGHT_EST;
-  const itemBottom = itemTop + ROW_HEIGHT_EST;
+  const el = document.getElementById(`${containerId}-sub-${subIndex}`);
+  if (!el) return;
+
+  const itemTop = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+  const itemHeight = el.offsetHeight;
+  const itemBottom = itemTop + itemHeight;
   const visibleTop = container.scrollTop;
   const visibleBottom = visibleTop + container.clientHeight;
   const targetVisible = itemBottom > visibleTop && itemTop < visibleBottom;
 
-  const targetScrollTop = Math.max(0, itemTop - container.clientHeight / 2 + ROW_HEIGHT_EST / 2);
-
-  // Force re-render so the new active-class state shows up immediately,
-  // before the (possibly animated) scroll begins.
-  data.lastStart = -1;
-  data.lastEnd = -1;
-  renderWindow(containerId);
+  const targetScrollTop = Math.max(0, itemTop - container.clientHeight / 2 + itemHeight / 2);
 
   if (targetVisible) {
     container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
@@ -181,9 +166,7 @@ function navigateToOccurrence(idx: number): void {
     scrollToSub('subtitle-viewport-native', matches[0].index);
   } else {
     activeNativeSubIdx = new Set();
-    const data = viewports.get('subtitle-viewport-native');
-    if (data) { data.lastStart = -1; data.lastEnd = -1; }
-    renderWindow('subtitle-viewport-native');
+    applyActiveState('subtitle-viewport-native');
   }
 
   updateNavControls();
@@ -345,14 +328,6 @@ export function initSubtitleViewer(): void {
 
   document.getElementById('btn-prev-occurrence')?.addEventListener('click', () => navigateOccurrence(-1));
   document.getElementById('btn-next-occurrence')?.addEventListener('click', () => navigateOccurrence(1));
-
-  document.getElementById('subtitle-viewport-processed')?.addEventListener('scroll', () => {
-    renderWindow('subtitle-viewport-processed');
-  });
-
-  document.getElementById('subtitle-viewport-native')?.addEventListener('scroll', () => {
-    renderWindow('subtitle-viewport-native');
-  });
 
   document.getElementById('subtitle-viewport-processed')?.addEventListener('click', e => {
     const span = (e.target as Element).closest<HTMLElement>('.sub-word[data-lemma]');
