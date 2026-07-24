@@ -21,7 +21,6 @@ export async function addToIgnoreList(word: string, _btn: HTMLButtonElement): Pr
     body: JSON.stringify({ word, language: state.currentLanguage }),
   });
   if (res.ok) {
-    flash(`"${word}" added to ignore list.`);
     const item = state.allResults.find(r => r.lemma === word);
     if (item) item.ignored = true;
     buildVisibleIndices();
@@ -44,7 +43,6 @@ export async function removeFromIgnoreList(word: string, _btn: HTMLButtonElement
     body: JSON.stringify({ word, language: state.currentLanguage }),
   });
   if (res.ok) {
-    flash(`"${word}" removed from ignore list.`);
     const item = state.allResults.find(r => r.lemma === word);
     if (item) item.ignored = false;
     buildVisibleIndices();
