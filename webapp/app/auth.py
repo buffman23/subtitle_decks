@@ -1,5 +1,7 @@
 import logging
 
+from typing import Optional
+
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
@@ -75,18 +77,39 @@ async def auth_google_callback(request: Request, db: Session = Depends(_get_db))
 @router.post("/dev-login")
 async def dev_login(
     request: Request,
-    user_id: int = Form(...),
+    user_id: Optional[int] = Form(None),
+    email: Optional[str] = Form(None),
     db: Session = Depends(_get_db),
 ):
-    """Local-development shortcut: log in as any existing user without Google.
+    """Local-development shortcut: log in without a Google round-trip.
+
+    Provide either ``user_id`` to impersonate an existing user, or ``email`` to
+    log in by address — creating the user if it does not exist yet. The
+    create-if-missing path lets automated tests (e.g. Playwright) spin up fresh,
+    isolated accounts on demand.
 
     Disabled unless DEV_MODE is set, so it can never be hit in production.
     """
     if not settings.DEV_MODE:
         raise HTTPException(status_code=404)
-    user = db.get(User, user_id)
-    if user is None:
-        raise HTTPException(status_code=404, detail="No such user.")
+
+    if user_id is not None:
+        user = db.get(User, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="No such user.")
+    elif email:
+        email = email.strip()
+        user = db.query(User).filter(User.email == email).first()
+        if user is None:
+            user = User(email=email)
+            if email.lower() in admin_emails():
+                user.is_admin = True
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+    else:
+        raise HTTPException(status_code=422, detail="Provide user_id or email.")
+
     request.session["user_id"] = user.id
     return RedirectResponse("/", status_code=303)
 
