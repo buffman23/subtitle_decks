@@ -65,6 +65,32 @@ class ArabicProcessor(LanguageProcessor):
     def is_loaded(self) -> bool:
         return self.__class__._disambiguators.get(self._model_name) is not None
 
+    @staticmethod
+    def _rescue_backoff(disambiguator, token: str) -> "LemmaResult | None":
+        """Recover a real lemma for a token the disambiguator scored as backoff.
+
+        The BERT disambiguator sometimes ranks a proper-noun *backoff* guess above
+        a genuine analysis the morphological analyzer produced (common for rare
+        fully-cliticized colloquial forms, e.g. قررتولي = قرّر + 2pl + IO clitic).
+        When that happens we'd otherwise keep the raw surface form as its own
+        lemma. Here we consult the same analyzer the disambiguator uses and, if it
+        offers any non-backoff analysis, pick the most probable one so the token
+        still collapses onto its true lemma. Returns None when the analyzer has no
+        real analysis (a genuinely unknown word), leaving backoff handling as-is.
+        """
+        analyzer = getattr(disambiguator, "_analyzer", None)
+        if analyzer is None:
+            return None
+        try:
+            analyses = analyzer.analyze(token)
+        except Exception:
+            return None
+        candidates = [a for a in analyses if a.get("source") != "backoff"]
+        if not candidates:
+            return None
+        best = max(candidates, key=lambda a: a.get("pos_lex_logprob", -99.0))
+        return LemmaResult(best.get("lex") or token, _extract_analysis(best))
+
     def load(self) -> None:
         self._load_measured(self.__class__.preload_disambiguator)
 
@@ -154,8 +180,12 @@ class ArabicProcessor(LanguageProcessor):
                         if disambig.analyses:
                             ana = disambig.analyses[0].analysis
                             if ana.get("source") == "backoff":
-                                backoff_count += 1
-                                sub_lemmas.append(LemmaResult(token))
+                                rescued = self._rescue_backoff(disambiguator, token)
+                                if rescued is not None:
+                                    sub_lemmas.append(rescued)
+                                else:
+                                    backoff_count += 1
+                                    sub_lemmas.append(LemmaResult(token))
                             else:
                                 sub_lemmas.append(LemmaResult(ana.get("lex") or token, _extract_analysis(ana)))
                         else:
