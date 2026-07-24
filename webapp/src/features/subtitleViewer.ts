@@ -22,8 +22,8 @@ let lemmaToSubtitles: Map<string, number[]> = new Map();
 let selectedLemma: string | null = null;
 let occurrenceList: number[] = [];
 let currentOccurrenceIdx = 0;
-let activeProcessedSubIdx: number | null = null;
-let activeNativeSubIdx: number | null = null;
+let activeProcessedSubIdx: Set<number> = new Set();
+let activeNativeSubIdx: Set<number> = new Set();
 const viewports = new Map<string, ViewportData>();
 
 export function buildLemmaIndex(): void {
@@ -91,7 +91,7 @@ function renderWindow(containerId: string): void {
   data.lastEnd = endIdx;
 
   const isRtl = lang === 'arabic';
-  const activeSubIdx = containerId === 'subtitle-viewport-processed' ? activeProcessedSubIdx : activeNativeSubIdx;
+  const activeSet = containerId === 'subtitle-viewport-processed' ? activeProcessedSubIdx : activeNativeSubIdx;
 
   // Inner container has fixed total height so scrollHeight is stable while scrolling.
   const inner = document.createElement('div');
@@ -100,7 +100,7 @@ function renderWindow(containerId: string): void {
 
   for (let i = startIdx; i <= endIdx; i++) {
     const sub = subtitles[i];
-    const isActive = sub.index === activeSubIdx;
+    const isActive = activeSet.has(sub.index);
     const div = document.createElement('div');
     div.className = 'subtitle-entry' + (isActive ? ' active' : '');
     div.id = `${containerId}-sub-${sub.index}`;
@@ -171,19 +171,16 @@ function scrollToSub(containerId: string, subIndex: number): void {
 
 function navigateToOccurrence(idx: number): void {
   const subIdx = occurrenceList[idx];
-  activeProcessedSubIdx = subIdx;
+  activeProcessedSubIdx = new Set([subIdx]);
   scrollToSub('subtitle-viewport-processed', subIdx);
 
   const procSub = state.parsedSubtitles.find(s => s.index === subIdx);
-  if (procSub && nativeSubtitles.length > 0) {
-    const nearest = nativeSubtitles.reduce((best, s) =>
-      Math.abs(s.start_seconds - procSub.start_seconds) < Math.abs(best.start_seconds - procSub.start_seconds)
-        ? s : best
-    );
-    activeNativeSubIdx = nearest.index;
-    scrollToSub('subtitle-viewport-native', nearest.index);
+  const matches = procSub && nativeSubtitles.length > 0 ? findOverlapping(procSub, nativeSubtitles) : [];
+  if (matches.length > 0) {
+    activeNativeSubIdx = new Set(matches.map(s => s.index));
+    scrollToSub('subtitle-viewport-native', matches[0].index);
   } else {
-    activeNativeSubIdx = null;
+    activeNativeSubIdx = new Set();
     const data = viewports.get('subtitle-viewport-native');
     if (data) { data.lastStart = -1; data.lastEnd = -1; }
     renderWindow('subtitle-viewport-native');
@@ -275,15 +272,13 @@ function handleNativeWordClick(entry: HTMLElement): void {
   const nativeIdx = parseInt(idParts[idParts.length - 1], 10);
   const nativeSub = nativeSubtitles.find(s => s.index === nativeIdx);
   if (!nativeSub || state.parsedSubtitles.length === 0) return;
-  const nearest = state.parsedSubtitles.reduce((best, s) =>
-    Math.abs(s.start_seconds - nativeSub.start_seconds) < Math.abs(best.start_seconds - nativeSub.start_seconds)
-      ? s : best
-  );
+  const matches = findOverlapping(nativeSub, state.parsedSubtitles);
+  if (matches.length === 0) return;
 
-  activeNativeSubIdx = nativeIdx;
-  activeProcessedSubIdx = nearest.index;
+  activeNativeSubIdx = new Set([nativeIdx]);
+  activeProcessedSubIdx = new Set(matches.map(s => s.index));
   scrollToSub('subtitle-viewport-native', nativeIdx);
-  scrollToSub('subtitle-viewport-processed', nearest.index);
+  scrollToSub('subtitle-viewport-processed', matches[0].index);
 }
 
 export function getNativeSubtitles(): SubtitleEntry[] {
@@ -322,8 +317,8 @@ export function onAnalysisComplete(): void {
   state.selectedLemma = null;
   occurrenceList = [];
   currentOccurrenceIdx = 0;
-  activeProcessedSubIdx = null;
-  activeNativeSubIdx = null;
+  activeProcessedSubIdx = new Set();
+  activeNativeSubIdx = new Set();
   updateNavControls();
   const wrapper = document.querySelector('.results-table-wrapper') as HTMLElement | null;
   if (wrapper) renderVirtual(wrapper.scrollTop, wrapper.clientHeight);
@@ -400,6 +395,27 @@ function parseSrt(text: string): SubtitleEntry[] {
     });
   }
   return results;
+}
+
+function endSeconds(s: SubtitleEntry): number {
+  return parseTimeToSeconds(s.end_time);
+}
+
+// Half-open interval overlap: a starts before b ends AND b starts before a ends.
+function overlaps(a: SubtitleEntry, b: SubtitleEntry): boolean {
+  return a.start_seconds < endSeconds(b) && b.start_seconds < endSeconds(a);
+}
+
+// All entries in `pool` whose time range overlaps `target`; falls back to the single
+// nearest-by-start entry when none overlap (never returns empty if pool is non-empty).
+function findOverlapping(target: SubtitleEntry, pool: SubtitleEntry[]): SubtitleEntry[] {
+  const hits = pool.filter(s => overlaps(s, target));
+  if (hits.length > 0) return hits;
+  if (pool.length === 0) return [];
+  const nearest = pool.reduce((best, s) =>
+    Math.abs(s.start_seconds - target.start_seconds) < Math.abs(best.start_seconds - target.start_seconds)
+      ? s : best);
+  return [nearest];
 }
 
 function parseTimeToSeconds(time: string): number {
