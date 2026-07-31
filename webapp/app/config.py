@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     DATABASE_URL: str = "sqlite:///./app.db"
     ADMIN_EMAILS: str = ""
+    # Public URL of the source repository. When set, a GitHub icon link appears
+    # in the navbar; leave blank to hide it.
+    GITHUB_URL: str = ""
     # Set True in production (behind HTTPS) so the session cookie is only sent
     # over TLS. Leave False for local http:// development.
     SESSION_COOKIE_SECURE: bool = False
