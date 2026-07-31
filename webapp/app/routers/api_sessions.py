@@ -81,6 +81,7 @@ async def list_sessions(
         SessionOut(
             id=s.id, name=s.name, language=s.language,
             srt_filename=s.srt_filename, created_at=s.created_at, owned=True,
+            is_demo=s.is_demo,
         )
         for s in owned
     ]
@@ -88,7 +89,7 @@ async def list_sessions(
         SessionOut(
             id=s.id, name=s.name, language=s.language,
             srt_filename=s.srt_filename, created_at=s.created_at,
-            owned=False, owner_email=s.user.email,
+            owned=False, owner_email=s.user.email, is_demo=s.is_demo,
         )
         for s in shared
     ]

@@ -23,6 +23,7 @@ interface SessionListItem {
   owned?: boolean;
   owner_email?: string | null;
   is_default?: boolean;
+  is_demo?: boolean;
 }
 
 /**
@@ -48,11 +49,16 @@ function buildSessionItem(s: SessionListItem): HTMLElement {
   const defaultStar = DEMO_MODE && IS_ADMIN && s.is_default
     ? `<i class="bi bi-star-fill text-warning flex-shrink-0" style="font-size:0.7rem" title="Default demo session"></i>`
     : '';
+  // In the main app, mark sessions that are featured on the public /demo page.
+  const demoIcon = !DEMO_MODE && s.is_demo
+    ? `<i class="bi bi-easel text-secondary flex-shrink-0" style="font-size:0.8rem" title="Featured on the demo page"></i>`
+    : '';
   item.innerHTML = `
     <div class="d-flex align-items-center gap-1 flex-grow-1 min-width-0">
       <span class="text-truncate session-name" title="${title}">${s.name}</span>
       ${defaultStar}
       <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
+      ${demoIcon}
     </div>
     ${menuBtn}`;
   item.addEventListener('click', (e) => {
@@ -128,6 +134,13 @@ function openSessionMenu(anchor: HTMLElement, item: HTMLElement, s: SessionListI
         label: 'Owner',
         action: () => showOwnerCard(anchor, s.owner_email ?? 'someone'),
       });
+    }
+    // Admins can feature any session on the public /demo page (toggles based on
+    // whether it's already featured).
+    if (IS_ADMIN) {
+      entries.push(s.is_demo
+        ? { icon: 'bi-easel', label: 'Remove from demo page', action: () => removeFromDemo(s.id) }
+        : { icon: 'bi-easel', label: 'Add to demo', action: () => addToDemo(s.id) });
     }
     entries.push({
       icon: 'bi-trash3',
@@ -447,13 +460,25 @@ async function deleteSession(id: number, owned: boolean = true): Promise<void> {
   }
 }
 
+async function addToDemo(id: number): Promise<void> {
+  const res = await fetch(`/api/sessions/${id}/demo`, { method: 'POST' });
+  if (res.ok) {
+    flash('Added to the demo page.', 'success');
+    loadSessions();  // refresh so the menu now offers "Remove from demo"
+  } else {
+    flash('Failed to add to demo page.', 'danger');
+  }
+}
+
 async function removeFromDemo(id: number): Promise<void> {
   if (!confirm('Remove this session from the demo page?')) return;
   const res = await fetch(`/api/sessions/${id}/demo`, { method: 'DELETE' });
   if (res.ok) {
-    if (state.activeSessionId === id) {
-      // Drop the open view; loadSessions() will auto-open the next demo session
-      // (or show the empty-state placeholder). The upload form stays hidden here.
+    // On the public /demo page the removed session is what's on screen, so drop
+    // the open view — loadSessions() then auto-opens the next demo session (or
+    // the empty-state placeholder). In the main app, unfeaturing a session must
+    // not close the session the admin is currently viewing.
+    if (DEMO_MODE && state.activeSessionId === id) {
       state.activeSessionId = null;
       document.getElementById('results-section')?.classList.add('d-none');
     }
