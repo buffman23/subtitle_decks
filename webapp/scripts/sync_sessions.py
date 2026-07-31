@@ -249,7 +249,9 @@ def cmd_push(args: argparse.Namespace) -> None:
     container = args.container
 
     with tempfile.TemporaryDirectory() as tmp:
-        bundle_path = os.path.join(tmp, "bundle.json")
+        # Name the local bundle to match its remote /tmp landing spot so the
+        # docker-cp step below finds it (scp preserves the basename).
+        bundle_path = os.path.join(tmp, os.path.basename(remote_bundle))
         cmd_export(argparse.Namespace(db=args.db, email=args.email, out=bundle_path))
 
         # Copy bundle + this script to the host, then into the container.
