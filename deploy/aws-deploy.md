@@ -7,7 +7,7 @@ is the runbook for that deployment, plus notes on alternatives.
 ## Current deployment (Lightsail instance)
 | | |
 |---|---|
-| Host | `ubuntu@52.39.205.152` (Lightsail instance, us-west-2) |
+| Host | `ubuntu@<INSTANCE_IP>` (Lightsail instance, us-west-2) |
 | OS | Ubuntu 24.04 LTS, x86_64, 2 vCPU / 8 GB RAM / 160 GB SSD |
 | SSH key | `LightsailDefaultKey-us-west-2.pem` (repo root, gitignored — local only) |
 | App dir on server | `~/subtitle_decks/webapp` |
@@ -18,7 +18,7 @@ is the runbook for that deployment, plus notes on alternatives.
 | Domain | `subtitledecks.com` (+ `www`), set via `DOMAIN=` in the server `.env` |
 | HTTPS | ✅ **live** — Cloudflare (proxied) → Caddy on the instance, using a Cloudflare Origin Certificate. `deploy.sh` installs/configures Caddy automatically; see "HTTPS" below. Container binds to `127.0.0.1:8000` so Caddy owns 443. |
 
-Live: https://subtitledecks.com — `GET /healthz` → `{"status":"ok"}`. (The raw instance IP `52.39.205.152` also answers, but Google login only works over the domain/HTTPS.)
+Live: https://subtitledecks.com — `GET /healthz` → `{"status":"ok"}`. (The raw instance IP `<INSTANCE_IP>` also answers, but Google login only works over the domain/HTTPS.)
 
 ## What the image contains
 - Python 3.10 runtime, CPU-only PyTorch (no GPU on Lightsail)
@@ -87,7 +87,7 @@ unhealthy would need image versioning (a registry) — out of scope here.
 2. **Runner → server SSH.** Create a keypair for the runner to log in **as
    `ubuntu`** and add three repo secrets (Settings → Secrets and variables →
    Actions): `LIGHTSAIL_SSH_KEY` (the private key), `LIGHTSAIL_HOST`
-   (`52.39.205.152` or `subtitledecks.com`), `LIGHTSAIL_USER` (`ubuntu`). Add the
+   (`<INSTANCE_IP>` or `subtitledecks.com`), `LIGHTSAIL_USER` (`ubuntu`). Add the
    public half to `~/.ssh/authorized_keys` on the box. Port 22 is open by default
    on Lightsail, so GitHub-hosted runners can reach it. *(If you'd rather not
    expose SSH to GitHub's IP ranges, run a self-hosted runner on the instance
@@ -107,7 +107,7 @@ On Windows the key needs locked-down ACLs or OpenSSH refuses it:
 $key = "$env:USERPROFILE\ls_key.pem"
 Copy-Item .\LightsailDefaultKey-us-west-2.pem $key -Force
 icacls $key /inheritance:r; icacls $key /grant:r "$($env:USERNAME):(R)"
-ssh -i $key ubuntu@52.39.205.152
+ssh -i $key ubuntu@<INSTANCE_IP>
 ```
 
 ## Manual redeploy (fallback / break-glass)
@@ -120,7 +120,7 @@ ssh -i $key ubuntu@52.39.205.152
 From the repo root (PowerShell), ship the updated source and rebuild:
 ```powershell
 $key  = "$env:USERPROFILE\ls_key.pem"
-$repo = "C:\Users\ryanc\Desktop\Arabic\subtitle_decks"   # adjust to your clone
+$repo = "C:\path\to\subtitle_decks"                      # adjust to your clone
 $tgz  = "$env:TEMP\webapp.tgz"
 # 1. Package webapp/ (excluding heavy/local-only dirs).
 #    Use an ABSOLUTE -C path: the tool shell keeps its cwd between commands, so a
@@ -133,10 +133,10 @@ if (-not $?) { throw "tar failed — aborting before scp" } # else scp ships sta
 # Optional sanity check: confirm your edited files are in the archive
 # tar -tzf $tgz | Select-String 'app/templates/index.html'
 # 2. Copy up and extract
-scp -i $key $tgz ubuntu@52.39.205.152:/home/ubuntu/webapp.tgz
-ssh -i $key ubuntu@52.39.205.152 'tar -xzf ~/webapp.tgz -C ~/subtitle_decks/webapp && rm ~/webapp.tgz'
+scp -i $key $tgz ubuntu@<INSTANCE_IP>:/home/ubuntu/webapp.tgz
+ssh -i $key ubuntu@<INSTANCE_IP> 'tar -xzf ~/webapp.tgz -C ~/subtitle_decks/webapp && rm ~/webapp.tgz'
 # 3. Rebuild + restart (cached layers make this fast unless requirements changed)
-ssh -i $key ubuntu@52.39.205.152 'bash ~/subtitle_decks/deploy/lightsail-deploy.sh'
+ssh -i $key ubuntu@<INSTANCE_IP> 'bash ~/subtitle_decks/deploy/lightsail-deploy.sh'
 # 4. Verify the new code is actually SERVED, not just that the container is "Up".
 #    Health, plus confirm an edited asset round-trips (bump the ?v= cache-buster
 #    in base.html when you change static files, or Cloudflare/browser may cache them):
@@ -184,9 +184,9 @@ image (`.env` is in `.dockerignore`) nor written by any script in the repo.
 > the original notes below describe.
 
 Google OAuth rejects non-`localhost` `http://` redirect URIs, so **login is
-broken until HTTPS is set up.** With a domain pointed at `52.39.205.152`:
+broken until HTTPS is set up.** With a domain pointed at `<INSTANCE_IP>`:
 
-1. **DNS:** add an A record `yourdomain.com → 52.39.205.152`.
+1. **DNS:** add an A record `yourdomain.com → <INSTANCE_IP>`.
 2. **Firewall:** in the Lightsail console → instance → *Networking*, open **443**
    (80 and 22 are open by default; 443 is not).
 3. **Rebind the container to loopback** so Caddy can own 80/443. In `deploy.sh`
