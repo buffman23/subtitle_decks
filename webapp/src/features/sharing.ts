@@ -7,9 +7,17 @@ interface ShareRecipient {
 
 // The session whose share controls are currently displayed. Owner-only.
 let currentSessionId: number | null = null;
+// Whether that session is currently featured on the demo page (admin toggle).
+let currentIsDemo = false;
 
 function el(id: string): HTMLElement | null {
   return document.getElementById(id);
+}
+
+/** Reflect the current demo state in the admin dropdown's toggle label. */
+function renderDemoToggle(): void {
+  const label = el('demo-share-label');
+  if (label) label.textContent = currentIsDemo ? 'Remove from demo page' : 'Add to demo page';
 }
 
 /** Hide the Share dropdown (e.g. when viewing a shared or unsaved session). */
@@ -26,6 +34,7 @@ export function renderShareControls(
   sessionId: number | null,
   owned: boolean,
   shares: ShareRecipient[],
+  isDemo = false,
 ): void {
   const wrapper = el('share-dropdown-wrapper');
   if (!wrapper) return;
@@ -34,8 +43,10 @@ export function renderShareControls(
     return;
   }
   currentSessionId = sessionId;
+  currentIsDemo = isDemo;
   wrapper.classList.remove('d-none');
   renderRecipients(shares);
+  renderDemoToggle();
 }
 
 function renderRecipients(shares: ShareRecipient[]): void {
@@ -77,6 +88,22 @@ async function addShare(email: string): Promise<void> {
   flash(`Shared with ${trimmed}.`, 'success');
 }
 
+/** Admin-only: flag / unflag the current session as a demo-page feature. */
+async function toggleDemo(): Promise<void> {
+  if (currentSessionId == null) return;
+  const adding = !currentIsDemo;
+  const res = await fetch(`/api/sessions/${currentSessionId}/demo`, {
+    method: adding ? 'POST' : 'DELETE',
+  });
+  if (!res.ok) {
+    flash('Failed to update demo page.', 'danger');
+    return;
+  }
+  currentIsDemo = adding;
+  renderDemoToggle();
+  flash(adding ? 'Added to the demo page.' : 'Removed from the demo page.', 'success');
+}
+
 async function removeShare(userId: number): Promise<void> {
   if (currentSessionId == null) return;
   const res = await fetch(`/api/sessions/${currentSessionId}/shares/${userId}`, { method: 'DELETE' });
@@ -94,6 +121,7 @@ export function initSharing(): void {
     if (input) void addShare(input.value);
   };
   el('btn-share-add')?.addEventListener('click', submit);
+  el('btn-demo-share')?.addEventListener('click', () => void toggleDemo());
   el('share-email-input')?.addEventListener('keydown', (e) => {
     if ((e as KeyboardEvent).key === 'Enter') {
       e.preventDefault();

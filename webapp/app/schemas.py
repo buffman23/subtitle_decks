@@ -59,6 +59,10 @@ class SessionOut(BaseModel):
     # with them. owner_email is set only for shared (non-owned) sessions.
     owned: bool = True
     owner_email: str | None = None
+    # True if the session is featured on the public /demo page.
+    is_demo: bool = False
+    # True if this is the demo page's default (auto-opened) session.
+    is_default: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -77,6 +81,8 @@ class SessionDetail(BaseModel):
     shared_with: list[ShareRecipient] = []
     # Populated only for a recipient: the owner's email ("shared by").
     owner_email: str | None = None
+    # True if the session is featured on the public /demo page.
+    is_demo: bool = False
 
     model_config = {"from_attributes": True}
 

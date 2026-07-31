@@ -42,8 +42,15 @@
         </button>
       </div>
 
-      <!-- Upload form -->
-      <div id="upload-section" class="flex-grow-1 d-flex align-items-center justify-content-center">
+      {% if demo_mode %}
+      <!-- Demo page empty state (shown by JS only when no demo sessions exist) -->
+      <div id="demo-empty" class="flex-grow-1 d-none align-items-center justify-content-center text-muted">
+        No demo sessions are available yet.
+      </div>
+      {% endif %}
+
+      <!-- Upload form (hidden on the demo page, which auto-opens a session instead) -->
+      <div id="upload-section" class="flex-grow-1 d-flex align-items-center justify-content-center{% if demo_mode %} d-none{% endif %}">
         <form id="analyze-form" class="text-center">
           <div id="drop-zone" class="drop-zone">
             <i class="bi bi-file-earmark-arrow-up drop-zone-icon"></i>
@@ -116,11 +123,34 @@
                 </ul>
               </div>
               {% if user %}
+              {% if user.is_admin %}
+              <!-- Share control (owner-only; shown by renderShareControls). Admins get a
+                   dropdown: the existing per-recipient share plus a demo-page toggle. -->
+              <div class="dropdown d-none" id="share-dropdown-wrapper">
+                <div class="session-section-header d-md-none">Share</div>
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-people"></i> <span class="btn-label">Share</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#share-modal">
+                      <i class="bi bi-person-plus me-2"></i>Share…
+                    </button>
+                  </li>
+                  <li>
+                    <button class="dropdown-item" id="btn-demo-share">
+                      <i class="bi bi-easel me-2"></i><span id="demo-share-label">Add to demo page</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              {% else %}
               <!-- Share button (owner-only; shown by renderShareControls; opens #share-modal) -->
               <button class="btn btn-sm btn-outline-secondary d-none" id="share-dropdown-wrapper" type="button"
                       data-bs-toggle="modal" data-bs-target="#share-modal">
                 <i class="bi bi-people"></i> <span class="btn-label">Share</span>
               </button>
+              {% endif %}
               {% endif %}
             </div>
           </div>
@@ -226,6 +256,8 @@
 {% block scripts %}
 <script>
   const IS_LOGGED_IN = {{ 'true' if user else 'false' }};
+  const IS_ADMIN = {{ 'true' if user and user.is_admin else 'false' }};
+  const DEMO_MODE = {{ 'true' if demo_mode else 'false' }};
   const MAX_UPLOAD_BYTES = {{ max_upload_bytes }};
 </script>
 <script src="{{ asset_url('js/app.js') }}"></script>

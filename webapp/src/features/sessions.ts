@@ -22,6 +22,7 @@ interface SessionListItem {
   language: string;
   owned?: boolean;
   owner_email?: string | null;
+  is_default?: boolean;
 }
 
 /**
@@ -34,15 +35,26 @@ function buildSessionItem(s: SessionListItem): HTMLElement {
   const item = document.createElement('div');
   item.className = 'session-item' + (s.id === state.activeSessionId ? ' active' : '');
   item.dataset['id'] = String(s.id);
-  const title = owned ? s.name : `${s.name} — shared by ${s.owner_email ?? 'someone'}`;
+  const title = (DEMO_MODE || owned) ? s.name : `${s.name} — shared by ${s.owner_email ?? 'someone'}`;
+  // In demo mode the only per-session action is the admin "Remove from demo";
+  // for anonymous / non-admin visitors there's nothing to do, so drop the menu.
+  const showMenu = DEMO_MODE ? IS_ADMIN : true;
+  const menuBtn = showMenu
+    ? `<button class="btn btn-sm btn-link text-secondary btn-menu flex-shrink-0" title="More actions" aria-label="More actions">
+      <i class="bi bi-three-dots"></i>
+    </button>`
+    : '';
+  // Admin-only star marking the session the demo page auto-opens by default.
+  const defaultStar = DEMO_MODE && IS_ADMIN && s.is_default
+    ? `<i class="bi bi-star-fill text-warning flex-shrink-0" style="font-size:0.7rem" title="Default demo session"></i>`
+    : '';
   item.innerHTML = `
     <div class="d-flex align-items-center gap-1 flex-grow-1 min-width-0">
       <span class="text-truncate session-name" title="${title}">${s.name}</span>
+      ${defaultStar}
       <span class="badge bg-secondary fw-normal flex-shrink-0" style="font-size:0.6rem">${langAbbr(s.language)}</span>
     </div>
-    <button class="btn btn-sm btn-link text-secondary btn-menu flex-shrink-0" title="More actions" aria-label="More actions">
-      <i class="bi bi-three-dots"></i>
-    </button>`;
+    ${menuBtn}`;
   item.addEventListener('click', (e) => {
     const menuBtn = (e.target as Element).closest('.btn-menu');
     if (menuBtn) {
@@ -91,21 +103,39 @@ function openSessionMenu(anchor: HTMLElement, item: HTMLElement, s: SessionListI
   if (wasOpenForThis) return;  // second click on the same button: just close
 
   const entries: SessionMenuItem[] = [];
-  if (owned) {
-    entries.push({ icon: 'bi-pencil', label: 'Rename', action: () => startRename(item, s.id, s.name) });
-  } else {
+  if (DEMO_MODE) {
+    // The demo list is public; the actions here are admin-only: pick which
+    // session the page auto-opens, and unfeature a session.
+    if (!s.is_default) {
+      entries.push({
+        icon: 'bi-star',
+        label: 'Set as default',
+        action: () => setDefaultDemo(s.id),
+      });
+    }
     entries.push({
-      icon: 'bi-info-circle',
-      label: 'Owner',
-      action: () => showOwnerCard(anchor, s.owner_email ?? 'someone'),
+      icon: 'bi-easel',
+      label: 'Remove from demo',
+      danger: true,
+      action: () => removeFromDemo(s.id),
+    });
+  } else {
+    if (owned) {
+      entries.push({ icon: 'bi-pencil', label: 'Rename', action: () => startRename(item, s.id, s.name) });
+    } else {
+      entries.push({
+        icon: 'bi-info-circle',
+        label: 'Owner',
+        action: () => showOwnerCard(anchor, s.owner_email ?? 'someone'),
+      });
+    }
+    entries.push({
+      icon: 'bi-trash3',
+      label: owned ? 'Delete' : 'Remove',
+      danger: true,
+      action: () => deleteSession(s.id, owned),
     });
   }
-  entries.push({
-    icon: 'bi-trash3',
-    label: owned ? 'Delete' : 'Remove',
-    danger: true,
-    action: () => deleteSession(s.id, owned),
-  });
 
   const menu = document.createElement('div');
   menu.className = 'session-menu';
@@ -248,9 +278,46 @@ export function renderPending(): void {
   (item.querySelector('.btn-cancel-pending') as HTMLButtonElement).disabled = pj.cancelling;
 }
 
+function toggleDemoEmpty(show: boolean): void {
+  const empty = document.getElementById('demo-empty');
+  if (!empty) return;
+  empty.classList.toggle('d-none', !show);
+  empty.classList.toggle('d-flex', show);
+}
+
+async function loadDemoSessions(): Promise<void> {
+  const list = document.getElementById('session-list');
+  if (!list) return;
+  try {
+    const res = await fetch('/api/demo/sessions');
+    if (!res.ok) { list.innerHTML = '<div class="text-danger small text-center mt-3">Failed to load demo sessions</div>'; return; }
+    const sessions: SessionListItem[] = await res.json();
+    if (sessions.length === 0) {
+      list.innerHTML = '<div class="text-muted small text-center mt-3">No demo sessions yet</div>';
+      // Nothing to auto-open: show the main-area placeholder instead of a blank page.
+      if (state.activeSessionId == null) toggleDemoEmpty(true);
+      return;
+    }
+    toggleDemoEmpty(false);
+    list.innerHTML = '';
+    sessions.forEach(s => list.appendChild(buildSessionItem(s)));
+    // Auto-open a session so the visitor sees results immediately — the pinned
+    // default if there is one, otherwise the first (newest) row. Only when
+    // nothing is open yet, so a reload (e.g. after Set as default) doesn't yank
+    // an admin away from the session they're viewing.
+    if (state.activeSessionId == null) {
+      const target = sessions.find(s => s.is_default) ?? sessions[0];
+      void openSession(target.id);
+    }
+  } catch (_e) {
+    list.innerHTML = '<div class="text-danger small text-center mt-3">Failed to load demo sessions</div>';
+  }
+}
+
 export async function loadSessions(): Promise<void> {
   closeSessionMenu();  // the list is about to be rebuilt; drop any open menu
   closeOwnerCard();
+  if (DEMO_MODE) { await loadDemoSessions(); return; }
   if (!IS_LOGGED_IN) { renderPending(); return; }
   const list = document.getElementById('session-list');
   if (!list) return;
@@ -321,7 +388,7 @@ function startRename(item: HTMLElement, id: number, currentName: string): void {
 }
 
 export async function openSession(id: number): Promise<void> {
-  const res = await fetch(`/api/sessions/${id}`);
+  const res = await fetch(DEMO_MODE ? `/api/demo/sessions/${id}` : `/api/sessions/${id}`);
   if (!res.ok) { flash('Could not load session.', 'danger'); return; }
   // Leaving the in-progress analysis: it keeps running in the background and
   // stays in the sidebar, but its result should no longer hijack this view.
@@ -351,7 +418,7 @@ export async function openSession(id: number): Promise<void> {
 
   state.allResults = session.results;
   renderResults(session.results, session.results.reduce((a: number, r: { frequency: number }) => a + r.frequency, 0));
-  renderShareControls(id, session.owned !== false, session.shared_with ?? []);
+  renderShareControls(id, session.owned !== false, session.shared_with ?? [], session.is_demo === true);
   if (_onAnalysisComplete) _onAnalysisComplete();
   restoreNativeSubtitles(Array.isArray(session.native_subtitles) && session.native_subtitles.length > 0
     ? session.native_subtitles : []);
@@ -373,6 +440,32 @@ async function deleteSession(id: number, owned: boolean = true): Promise<void> {
     loadSessions();
   } else {
     flash('Failed to delete session.', 'danger');
+  }
+}
+
+async function removeFromDemo(id: number): Promise<void> {
+  if (!confirm('Remove this session from the demo page?')) return;
+  const res = await fetch(`/api/sessions/${id}/demo`, { method: 'DELETE' });
+  if (res.ok) {
+    if (state.activeSessionId === id) {
+      // Drop the open view; loadSessions() will auto-open the next demo session
+      // (or show the empty-state placeholder). The upload form stays hidden here.
+      state.activeSessionId = null;
+      document.getElementById('results-section')?.classList.add('d-none');
+    }
+    loadSessions();
+  } else {
+    flash('Failed to remove from demo page.', 'danger');
+  }
+}
+
+async function setDefaultDemo(id: number): Promise<void> {
+  const res = await fetch(`/api/sessions/${id}/demo/default`, { method: 'POST' });
+  if (res.ok) {
+    flash('Set as the default demo session.', 'success');
+    loadSessions();  // refresh the star indicator on the rows
+  } else {
+    flash('Failed to set default demo session.', 'danger');
   }
 }
 
@@ -429,6 +522,8 @@ export async function checkPendingSession(): Promise<void> {
 
 export function initSessions(): void {
   document.getElementById('btn-new-session')?.addEventListener('click', () => {
+    // On the demo page, starting a new analysis means leaving it for the normal app.
+    if (DEMO_MODE) { window.location.href = '/'; return; }
     state.activeSessionId = null;
     state.viewingPending = false;
     state.allResults = [];

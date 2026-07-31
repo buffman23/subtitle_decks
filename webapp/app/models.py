@@ -80,6 +80,8 @@ class AnalysisSession(Base):
     native_subtitles: Mapped[list | None] = mapped_column(JSON, nullable=True)
     results: Mapped[list] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # When True, the session is featured on the public /demo page (admin-managed).
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="0")
 
     user: Mapped["User"] = relationship(back_populates="sessions")
     language_row: Mapped["LanguageRow"] = relationship()

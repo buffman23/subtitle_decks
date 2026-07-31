@@ -13,6 +13,7 @@ def run(engine: Engine) -> None:
         _migrate_sessions_language(conn)
         _migrate_sessions_subtitles(conn)
         _migrate_sessions_native_subtitles(conn)
+        _migrate_sessions_is_demo(conn)
         _migrate_users_picture(conn)
         _migrate_users_is_admin(conn)
         _migrate_users_created_at(conn)
@@ -112,6 +113,12 @@ def _migrate_sessions_native_subtitles(conn) -> None:
     cols = _table_columns(conn, "analysis_sessions")
     if "native_subtitles" not in cols:
         conn.execute(text("ALTER TABLE analysis_sessions ADD COLUMN native_subtitles JSON"))
+
+
+def _migrate_sessions_is_demo(conn) -> None:
+    """Add is_demo column to analysis_sessions (featured on the public /demo page)."""
+    if "is_demo" not in _table_columns(conn, "analysis_sessions"):
+        conn.execute(text("ALTER TABLE analysis_sessions ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT 0"))
 
 
 def _migrate_users_picture(conn) -> None:

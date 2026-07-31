@@ -23,6 +23,25 @@ async def index(request: Request, db: Session = Depends(get_db)):
             "user": user,
             "languages": languages,
             "max_upload_bytes": effective_max_upload_bytes(db, user),
+            "demo_mode": False,
+        },
+    )
+
+
+@router.get("/demo", response_class=HTMLResponse)
+async def demo(request: Request, db: Session = Depends(get_db)):
+    # The public demo page reuses the full app UI; only the sidebar source and a
+    # few controls change, driven by the demo_mode flag (see index.html / app.js).
+    user = get_current_user(request, db)
+    languages = get_available_languages()
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "user": user,
+            "languages": languages,
+            "max_upload_bytes": effective_max_upload_bytes(db, user),
+            "demo_mode": True,
         },
     )
 

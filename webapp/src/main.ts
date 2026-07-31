@@ -33,7 +33,7 @@ if (languageSelect) {
     state.allResults = [];
     document.getElementById('results-section')?.classList.add('d-none');
     document.getElementById('upload-section')?.classList.remove('d-none');
-    if (IS_LOGGED_IN) loadSessions();
+    if (DEMO_MODE || IS_LOGGED_IN) loadSessions();
   });
 }
 
@@ -58,16 +58,20 @@ initColResize();
 applySidebarWidth();
 initSidebarResize();
 
+/* ── On the public demo page, just load the demo sessions into the sidebar for
+   everyone (logged in or not); skip all the owned-session bootstrapping below. ── */
+if (DEMO_MODE) void loadSessions();
+
 /* ── Load sessions on startup (also restores + saves any pending session left by an anonymous user who just signed in) ── */
-if (IS_LOGGED_IN) checkPendingSession();
+if (!DEMO_MODE && IS_LOGGED_IN) checkPendingSession();
 
 /* ── Re-attach the sidebar placeholder to an analysis still running from a
    previous page (survives navigation/reload). ── */
-if (IS_LOGGED_IN) void resumePendingAnalysis();
+if (!DEMO_MODE && IS_LOGGED_IN) void resumePendingAnalysis();
 
 /* ── Deep-link: /?session=<id> (used by the notifier's completion toast) opens
    that session, then strips the param so a refresh won't reopen it. ── */
-if (IS_LOGGED_IN) {
+if (!DEMO_MODE && IS_LOGGED_IN) {
   const sessionParam = new URLSearchParams(window.location.search).get('session');
   const sessionId = sessionParam ? Number(sessionParam) : NaN;
   if (Number.isInteger(sessionId) && sessionId > 0) {

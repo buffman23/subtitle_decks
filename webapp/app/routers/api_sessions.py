@@ -3,8 +3,12 @@ from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, require_admin
 from app.models import AnalysisSession, SessionShare, User
+from app.services.app_settings import (
+    get_default_demo_session_id,
+    set_default_demo_session_id,
+)
 from app.services.session_store import persist_analysis_session
 from app.schemas import (
     SessionCreateRequest,
@@ -106,6 +110,7 @@ async def get_session(session_id: int, request: Request, db: Session = Depends(g
         native_subtitles=session.native_subtitles, results=session.results,
         created_at=session.created_at, owned=is_owner, shared_with=shared_with,
         owner_email=None if is_owner else session.user.email,
+        is_demo=session.is_demo,
     )
 
 
@@ -237,4 +242,49 @@ async def unshare_session(
         SessionShare.shared_with_user_id == user_id,
     ).delete()
     db.commit()
+    return Response(status_code=204)
+
+
+# --- Demo page management (admin-only) -------------------------------------
+# Admins flag any session as a demo (from the owner's Share dropdown) and remove
+# it again (from the public /demo page). No ownership requirement, so a single
+# pair of endpoints serves both entry points.
+
+def _set_demo(session_id: int, is_demo: bool, db: Session) -> Response:
+    session = db.get(AnalysisSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    session.is_demo = is_demo
+    # Removing a session from the demo page must not leave it pinned as the default.
+    if not is_demo and get_default_demo_session_id(db) == session_id:
+        set_default_demo_session_id(db, None)
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.post("/{session_id}/demo", status_code=204)
+async def add_to_demo(
+    session_id: int, db: Session = Depends(get_db), _admin: User = Depends(require_admin)
+):
+    return _set_demo(session_id, True, db)
+
+
+@router.delete("/{session_id}/demo", status_code=204)
+async def remove_from_demo(
+    session_id: int, db: Session = Depends(get_db), _admin: User = Depends(require_admin)
+):
+    return _set_demo(session_id, False, db)
+
+
+@router.post("/{session_id}/demo/default", status_code=204)
+async def set_demo_default(
+    session_id: int, db: Session = Depends(get_db), _admin: User = Depends(require_admin)
+):
+    """Pin a demo session as the one the /demo page auto-opens. Admin-only."""
+    session = db.get(AnalysisSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    if not session.is_demo:
+        raise HTTPException(status_code=400, detail="Only a demo session can be the default.")
+    set_default_demo_session_id(db, session_id)
     return Response(status_code=204)
