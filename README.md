@@ -1,5 +1,7 @@
 # Subtitle Decks
 
+**Live app: [subtitledecks.com](https://subtitledecks.com/)**
+
 Turn subtitle files into study-ready **word-frequency lists** for language learning.
 
 Feed Subtitle Decks a `.srt` file and it parses, tokenizes, and lemmatizes every line,
