@@ -361,6 +361,10 @@ function startRename(item: HTMLElement, id: number, currentName: string): void {
   nameSpan.replaceWith(input);
   input.focus();
   input.select();
+  // The input lives inside the .session-item row, whose click handler opens the
+  // session. Without this, clicking into the field to move the cursor bubbles up
+  // and reloads the sidebar, wiping out the edit before you can type.
+  input.addEventListener('click', (e) => e.stopPropagation());
 
   async function commit() {
     input.removeEventListener('blur', commit);
