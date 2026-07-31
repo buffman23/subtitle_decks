@@ -51,6 +51,9 @@ subtitles/
 # Planning items
 todo.md
 
+# Personal notes
+docs/TECH_STACK.md
+
 # Playwright MCP artifacts
 .playwright-mcp/
 .tmp
