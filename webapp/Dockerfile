@@ -34,7 +34,11 @@ WORKDIR /app
 
 # CPU-only PyTorch (no GPU on Fargate/App Runner) — far smaller than the CUDA build.
 # Installed first so the camel-tools/stanza deps reuse it instead of pulling CUDA wheels.
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Upgrade pip first: the base image's pip 23.0 rejects newer wheels whose metadata
+# Name isn't normalized (e.g. typing_extensions 4.16), falls back to an sdist, and
+# then fails because the PyTorch-only index has no build backend (flit_core).
+RUN pip install --upgrade pip \
+ && pip install torch --index-url https://download.pytorch.org/whl/cpu
 
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
@@ -46,8 +50,11 @@ RUN pip install -r requirements.txt
 # time. --no-deps because requirements.txt already satisfies spacy et al. Unlike
 # the multi-GB camel_tools/UniDic/Stanza data kept off-image, this model is ~225MB,
 # small enough to bake in. Pinned to the same URL/version calamancy 0.2.2 resolves.
-RUN pip install --no-deps \
-    "tl_calamancy_md @ https://huggingface.co/ljvmiranda921/tl_calamancy_md/resolve/main/tl_calamancy_md-any-py3-none-any.whl"
+# The upstream filename has no version, which modern pip rejects as an invalid
+# wheel name, so save it under its real name (0.2.0, per its dist-info) first.
+RUN python -c "import urllib.request; urllib.request.urlretrieve('https://huggingface.co/ljvmiranda921/tl_calamancy_md/resolve/main/tl_calamancy_md-any-py3-none-any.whl', '/tmp/tl_calamancy_md-0.2.0-py3-none-any.whl')" \
+ && pip install --no-deps /tmp/tl_calamancy_md-0.2.0-py3-none-any.whl \
+ && rm /tmp/tl_calamancy_md-0.2.0-py3-none-any.whl
 
 # NOTE: large language data is NOT baked into the image. The camel_tools models
 # (~1.8GB) and the full UniDic dictionary (~770MB) are each downloaded once onto a
