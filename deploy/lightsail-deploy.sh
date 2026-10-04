@@ -281,11 +281,12 @@ PY
 
 # --- ensure Stanza models on a persistent volume (downloaded once) ----------
 # Same off-the-image rationale as camel_tools/UniDic: the Stanza models for the
-# Stanza-backed processors (English, German, Spanish) live on the named volume
+# Stanza-backed processors (English, German, Spanish, Greek) live on the named volume
 # 'subtitle-decks-stanza', mounted read-only at $STANZA_RESOURCES_DIR. Without
 # this the in-container default dir resolves to an unwritable '/stanza_resources'
 # and every Stanza language silently falls back to raw, unlemmatized tokens.
-# Guarded by a .download_complete marker so later deploys skip it in seconds.
+# Guarded by per-language .download_complete_<lang> markers so later deploys
+# skip it in seconds, while a newly added language still gets fetched.
 echo "[deploy] ensuring Stanza models on volume (one-time download)..."
 status models "Preparing language models…"
 sudo docker volume create subtitle-decks-stanza >/dev/null
@@ -296,17 +297,33 @@ sudo docker run --rm --user root \
   python -c '
 import os, stanza
 d = os.environ["STANZA_RESOURCES_DIR"]
-marker = os.path.join(d, ".download_complete")
-if not os.path.exists(marker):
-    for lang in ("en", "de", "es"):
-        # Only the processors the app actually uses. The default package also
-        # pulls ner/sentiment/constituency/depparse (several GB, unused) — that
-        # bloat made the download outlast the deploy SSH session and left the
-        # app down. stanza resolves the needed deps (pretrain/charlm) itself.
-        # NB: stanza.download() uses model_dir (stanza.Pipeline uses dir).
-        stanza.download(lang, model_dir=d, processors="tokenize,pos,lemma", verbose=False)
-    open(marker, "w").close()  # written only after every language succeeds
+# Legacy all-in-one marker from before per-language markers; it covers en/de/es.
+legacy = os.path.exists(os.path.join(d, ".download_complete"))
+for lang in ("en", "de", "es", "el"):
+    marker = os.path.join(d, ".download_complete_" + lang)
+    if os.path.exists(marker) or (legacy and lang in ("en", "de", "es")):
+        continue
+    # Only the processors the app actually uses. The default package also
+    # pulls ner/sentiment/constituency/depparse (several GB, unused) — that
+    # bloat made the download outlast the deploy SSH session and left the
+    # app down. stanza resolves the needed deps (pretrain/charlm) itself.
+    # NB: stanza.download() uses model_dir (stanza.Pipeline uses dir).
+    stanza.download(lang, model_dir=d, processors="tokenize,pos,lemma", verbose=False)
+    open(marker, "w").close()  # written only after this language succeeds
 '
+
+# --- ensure the Greek Wiktionary lexicon on the same volume (built once) ------
+# GreekProcessor corrects Stanza's Greek lemmas against a lexicon built from the
+# kaikki.org Wiktionary dump (~1MB gzipped, written atomically so its existence
+# means a complete build). It's optional — without it Greek still works on plain
+# Stanza lemmas — so a failed download (e.g. kaikki.org down) must not fail the deploy.
+echo "[deploy] ensuring Greek Wiktionary lexicon on volume (one-time build)..."
+sudo docker run --rm --user root \
+  -v subtitle-decks-stanza:/opt/stanza_data \
+  -e STANZA_RESOURCES_DIR=/opt/stanza_data \
+  subtitle-decks \
+  sh -c 'test -f /opt/stanza_data/el_wiktionary_lexicon.tsv.gz || python -m app.services.greek_lexicon build' \
+  || echo "[deploy] WARNING: Greek lexicon build failed; Greek will use plain Stanza lemmas" >&2
 
 # --- (re)start container ---------------------------------------------------
 echo "[deploy] starting new container..."

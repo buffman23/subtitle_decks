@@ -31,6 +31,7 @@ vocabulary study list for the show or film you're watching.
 | `es`     | Spanish                      | Stanza             |
 | `tl`     | Tagalog                      | calamancy          |
 | `ja`     | Japanese                     | fugashi / UniDic   |
+| `el`     | Greek                        | Stanza + Wiktionary lexicon |
 
 Languages are registered in `webapp/app/services/processor_registry.py`.
 

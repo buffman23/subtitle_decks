@@ -3,7 +3,7 @@
 ## About Subtitle Decks
 Subtitle Decks takes subtitle files as input and outputs a word frequency list that can be used for language study.
 
-- **Languages**: Currently supports Arabic (MSA + Egyptian, via camel_tools), English/German/Spanish (via Stanza), Tagalog (via calamancy), and Japanese (via fugashi/UniDic). More languages are planned — keep code interfaces flexible, as each language will likely rely on different lemmatization libraries. New processors go in `webapp/app/services/` and are registered in `processor_registry.py`.
+- **Languages**: Currently supports Arabic (MSA + Egyptian, via camel_tools), English/German/Spanish/Greek (via Stanza), Tagalog (via calamancy), and Japanese (via fugashi/UniDic). More languages are planned — keep code interfaces flexible, as each language will likely rely on different lemmatization libraries. New processors go in `webapp/app/services/` and are registered in `processor_registry.py`.
 - **Subtitle formats**: Currently supports `.srt` only. More formats are planned — the parsing layer (`subtitle_parser.py`) should remain decoupled from the rest of the pipeline.
 
 ## Python Environment
