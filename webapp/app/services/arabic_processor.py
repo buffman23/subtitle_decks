@@ -3,6 +3,7 @@ import logging
 
 from typing import Callable
 
+from app.services import egyptian_lexicon
 from app.services.language_processor import (
     CancelledAnalysis,
     LanguageProcessor,
@@ -230,3 +231,27 @@ class ArabicEGYProcessor(ArabicProcessor):
     @property
     def language_name(self) -> str:
         return "Arabic – Egyptian (EGY)"
+
+    def lemmatize(
+        self,
+        token_sentences: list[list[str]],
+        should_cancel: Callable[[], bool] | None = None,
+    ) -> list[LemmaResult]:
+        results = super().lemmatize(token_sentences, should_cancel)
+        tokens = [tok for sentence in token_sentences for tok in sentence]
+        return [self._correct(token, result) for token, result in zip(tokens, results)]
+
+    @staticmethod
+    def _correct(token: str, result: LemmaResult) -> LemmaResult:
+        """Apply the curated Egyptian override table (see egyptian_lexicon).
+
+        calima's analysis describes the wrong word (e.g. أَيّ "which" for إيه), so
+        its root/gloss/morphology are dropped rather than shown under our lemma.
+        """
+        override = egyptian_lexicon.lookup(token)
+        if override is None or override[0] == result.lemma:
+            return result
+        lemma, gloss = override
+        return LemmaResult(
+            lemma, {"lex": lemma, "gloss": gloss, "camel_lex": result.lemma, "lex_source": "egy-override"}
+        )
