@@ -523,11 +523,20 @@
 /* One full-height view at a time, picked by the bottom tab bar
    (body[data-mobile-tab] is set by src/features/mobileTabs.ts). */
 @media (max-width: 767.98px) {
-  :root { --tabbar-h: 56px; }
+  :root {
+    --tabbar-h: 56px;
+    /* Room the shell leaves at the bottom for the fixed tab bar */
+    --tabbar-space: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  }
+
+  /* No session/results loaded (upload form or empty state): there is nothing
+     to switch between, so drop the tab bar and give the shell its space. */
+  body:not(:has(#results-section:not(.d-none))) { --tabbar-space: 0px; }
+  body:not(:has(#results-section:not(.d-none))) #mobile-tabbar { display: none; }
 
   #app-shell {
     height: calc(100vh - 56px - var(--tabbar-h));
-    height: calc(100dvh - 56px - var(--tabbar-h) - env(safe-area-inset-bottom));
+    height: calc(100dvh - 56px - var(--tabbar-space));
   }
 
   /* Bottom tab bar (Instagram/Snapchat style: icon-only, filled icon = active) */
