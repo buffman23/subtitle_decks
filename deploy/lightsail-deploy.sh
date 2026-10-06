@@ -339,6 +339,16 @@ fi
 status live "Back online"
 trap - ERR
 
+# --- reclaim disk from superseded builds ------------------------------------
+# Each build moves the 'subtitle-decks' tag to a new image and leaves the old one
+# dangling (~2GB apiece), and BuildKit's cache grows with every changed layer.
+# Only now, with the new container healthy, is the previous image no longer the
+# rollback target, so drop dangling images and cache entries unused for a week
+# (recent cache is kept so the next build stays fast). Never fail the deploy here.
+echo "[deploy] pruning superseded images and stale build cache..."
+sudo docker image prune -f || true
+sudo docker builder prune -f --filter until=168h || true
+
 echo "[deploy] done. Container status:"
 sudo docker ps --filter name=subtitle-decks
 echo "[deploy] Caddy status:"
