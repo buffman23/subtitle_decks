@@ -1,8 +1,15 @@
 {% extends "admin/layout.html" %}
 {% block admin_content %}
+{% macro avatar(acct, size, icon_size) %}
+  {% if acct.picture %}
+    <img src="{{ acct.picture }}" alt="" referrerpolicy="no-referrer" class="rounded-circle" width="{{ size }}" height="{{ size }}">
+  {% else %}
+    <i class="bi bi-person-circle {{ icon_size }} text-secondary"></i>
+  {% endif %}
+{% endmacro %}
 <h3 class="mb-4">Accounts <span class="text-muted fs-6">({{ accounts|length }})</span></h3>
 <div class="table-responsive">
-  <table class="table align-middle">
+  <table class="table table-stack align-middle">
     <thead>
       <tr>
         <th></th>
@@ -20,42 +27,41 @@
       {% set acct = a.user %}
       {% set is_self = acct.id == user.id %}
       <tr data-user-id="{{ acct.id }}">
-        <td style="width:48px">
-          {% if acct.picture %}
-            <img src="{{ acct.picture }}" alt="" referrerpolicy="no-referrer" class="rounded-circle" width="36" height="36">
-          {% else %}
-            <i class="bi bi-person-circle fs-3 text-secondary"></i>
-          {% endif %}
+        <td class="d-none d-md-table-cell" style="width:48px">{{ avatar(acct, 36, 'fs-3') }}</td>
+        <td class="stack-title gap-2">
+          <span class="d-md-none">{{ avatar(acct, 28, 'fs-4') }}</span>
+          <span>{{ acct.email }}{% if is_self %} <span class="text-muted small fw-normal">(you)</span>{% endif %}</span>
         </td>
-        <td>{{ acct.email }}{% if is_self %} <span class="text-muted small">(you)</span>{% endif %}</td>
-        <td class="text-center">
+        <td class="text-center" data-label="Role">
           <span class="badge admin-badge {{ 'text-bg-success' if acct.is_admin else 'text-bg-secondary' }}">
             {{ 'Admin' if acct.is_admin else 'User' }}
           </span>
         </td>
-        <td class="text-center">{{ a.session_count }}</td>
-        <td class="text-end">{{ humanize_bytes(a.storage_bytes) }}</td>
-        <td class="text-end">
+        <td class="text-center" data-label="Sessions">{{ a.session_count }}</td>
+        <td class="text-end" data-label="Storage">{{ humanize_bytes(a.storage_bytes) }}</td>
+        <td class="text-end" data-label="Upload limit">
           {% set custom = acct.max_upload_bytes %}
-          <span class="upload-limit">
-            {% if custom %}{{ humanize_bytes(custom) }}{% else %}{{ humanize_bytes(default_upload_kb * 1024) }} <span class="text-muted">(default)</span>{% endif %}
+          <span class="text-nowrap">
+            <span class="upload-limit">
+              {% if custom %}{{ humanize_bytes(custom) }}{% else %}{{ humanize_bytes(default_upload_kb * 1024) }} <span class="text-muted">(default)</span>{% endif %}
+            </span>
+            <button class="btn btn-sm btn-link p-0 ms-1 align-baseline btn-edit-limit"
+                    data-email="{{ acct.email }}"
+                    data-current-kb="{{ (custom // 1024) if custom else '' }}"
+                    title="Edit upload limit">
+              <i class="bi bi-pencil"></i>
+            </button>
           </span>
-          <button class="btn btn-sm btn-link p-0 ms-1 align-baseline btn-edit-limit"
-                  data-email="{{ acct.email }}"
-                  data-current-kb="{{ (custom // 1024) if custom else '' }}"
-                  title="Edit upload limit">
-            <i class="bi bi-pencil"></i>
-          </button>
         </td>
-        <td>{{ humanize_age(acct.created_at) }}</td>
-        <td class="text-end">
+        <td data-label="Account age">{{ humanize_age(acct.created_at) }}</td>
+        <td class="text-end stack-actions">
           <button class="btn btn-sm btn-outline-secondary btn-toggle-admin"
                   data-make-admin="{{ 'false' if acct.is_admin else 'true' }}"
                   data-email="{{ acct.email }}"
                   {{ 'disabled' if is_self }}>
             {{ 'Remove admin' if acct.is_admin else 'Make admin' }}
           </button>
-          <button class="btn btn-sm btn-outline-danger btn-delete-account"
+          <button class="btn btn-sm btn-outline-danger btn-icon btn-delete-account"
                   data-email="{{ acct.email }}"
                   {{ 'disabled' if is_self }}>
             <i class="bi bi-trash"></i>

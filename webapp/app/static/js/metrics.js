@@ -16,7 +16,8 @@
     new Chart(activityEl, {
       type: "line",
       data: {
-        labels: data.activity.labels,
+        // "YYYY-MM-DD" → "MM-DD" so the ticks fit flat on narrow screens
+        labels: data.activity.labels.map((l) => String(l).slice(5)),
         datasets: [
           {
             label: "Analyses",
@@ -38,7 +39,11 @@
       },
       options: {
         responsive: true,
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        maintainAspectRatio: false, // height comes from .chart-box
+        scales: {
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+        },
       },
     });
   }
@@ -59,7 +64,11 @@
           },
         ],
       },
-      options: { responsive: true, plugins: { legend: { position: "bottom" } } },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+      },
     });
   }
 })();
