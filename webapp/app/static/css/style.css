@@ -585,10 +585,12 @@
   body[data-mobile-tab="subtitles"] .subtitle-panels-col { transform: translateX(-100%); }
 
   #results-section { margin-top: 0 !important; }
-  /* Summary row is Words-only. It snaps rather than animating: animating its
-     height relayouts both full panels every frame and stalls the slide. */
-  #results-toolbar { margin-bottom: 0.5rem !important; }
-  body[data-mobile-tab="subtitles"] #results-toolbar { display: none !important; }
+  /* The lemma/token summary is hidden on mobile so the word table's and the
+     subtitle panes' title bars sit at the same height across the slide. Only
+     the summary goes: the row itself must stay displayed because it holds the
+     Actions offcanvas (fixed-position, so the row collapses to zero height). */
+  #result-summary { display: none; }
+  #results-toolbar { margin-bottom: 0 !important; }
 
   /* Subtitles tab: foreign pane on top, native below, an exact 50/50 split,
      each scrolling on its own */
