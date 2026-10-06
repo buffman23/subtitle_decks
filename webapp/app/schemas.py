@@ -1,4 +1,6 @@
 from datetime import datetime
+import re
+
 from pydantic import BaseModel, field_validator
 
 
@@ -152,6 +154,18 @@ class AutoUnloadRequest(BaseModel):
 class GeneralSettingsRequest(BaseModel):
     # Configured by the admin in KB; stored internally as bytes.
     max_upload_kb: int
+    # Navbar GitHub link; "" hides it, None leaves it unchanged.
+    github_url: str | None = None
+
+    @field_validator("github_url")
+    @classmethod
+    def http_url(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if v and not re.match(r"^https?://[^\s/]+\.[^\s]*$", v):
+            raise ValueError("GitHub link must be a full http(s):// URL, or empty to hide it.")
+        return v
 
     @field_validator("max_upload_kb")
     @classmethod

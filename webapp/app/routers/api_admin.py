@@ -14,7 +14,12 @@ from app.schemas import (
     QueueJobOut,
     UserUploadLimitRequest,
 )
-from app.services.app_settings import get_max_upload_bytes, set_max_upload_bytes
+from app.services.app_settings import (
+    get_github_url,
+    get_max_upload_bytes,
+    set_github_url,
+    set_max_upload_bytes,
+)
 from app.services.job_queue import manager, model_lock
 from app.services.processor_registry import get_processor
 
@@ -151,7 +156,7 @@ async def get_settings(
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    return {"max_upload_kb": get_max_upload_bytes(db) // 1024}
+    return _settings_out(db)
 
 
 @router.post("/settings")
@@ -161,7 +166,16 @@ async def update_settings(
     db: Session = Depends(get_db),
 ):
     set_max_upload_bytes(db, payload.max_upload_kb * 1024)
-    return {"max_upload_kb": get_max_upload_bytes(db) // 1024}
+    if payload.github_url is not None:
+        set_github_url(db, payload.github_url)
+    return _settings_out(db)
+
+
+def _settings_out(db: Session) -> dict:
+    return {
+        "max_upload_kb": get_max_upload_bytes(db) // 1024,
+        "github_url": get_github_url(db),
+    }
 
 
 @router.post("/models/{code}/auto-unload")

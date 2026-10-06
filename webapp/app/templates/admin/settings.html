@@ -14,6 +14,12 @@
         </div>
         <div class="form-text">The largest subtitle file a user may upload for analysis.</div>
       </div>
+      <div class="mb-3">
+        <label for="github-url" class="form-label fw-semibold">GitHub link</label>
+        <input type="url" class="form-control" id="github-url" name="github_url"
+               placeholder="https://github.com/owner/repo" value="{{ github_url_setting }}">
+        <div class="form-text">Shown as a GitHub icon in the navbar. Leave empty to hide it.</div>
+      </div>
       <div class="d-flex align-items-center gap-3">
         <button type="submit" class="btn btn-primary" id="settings-save">Save</button>
         <span id="settings-status" class="small"></span>

@@ -7,6 +7,7 @@ default below and a typed accessor pair.
 """
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models import AnalysisSession, AppSetting, User
 
 # Default upload cap: 200 KB.
@@ -14,6 +15,9 @@ DEFAULT_MAX_UPLOAD_BYTES = 200 * 1024
 
 _DEFAULTS: dict[str, str] = {
     "max_upload_bytes": str(DEFAULT_MAX_UPLOAD_BYTES),
+    # GITHUB_URL from the environment seeds the navbar link until an admin
+    # saves one; a saved empty string then hides the link.
+    "github_url": settings.GITHUB_URL,
 }
 
 
@@ -51,6 +55,15 @@ def get_max_upload_bytes(db: Session) -> int:
 
 def set_max_upload_bytes(db: Session, value: int) -> None:
     _set_raw(db, "max_upload_bytes", str(int(value)))
+
+
+def get_github_url(db: Session) -> str:
+    """Navbar GitHub link; empty means the link is hidden."""
+    return _get_raw(db, "github_url").strip()
+
+
+def set_github_url(db: Session, url: str) -> None:
+    _set_raw(db, "github_url", url.strip())
 
 
 def effective_max_upload_bytes(db: Session, user: User | None) -> int:

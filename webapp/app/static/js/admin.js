@@ -21,6 +21,8 @@ async function postJSON(url, body) {
   if (!res.ok) {
     let detail = res.statusText;
     try { detail = (await res.json()).detail || detail; } catch (e) {}
+    // FastAPI validation errors arrive as a list of {msg, ...}
+    if (Array.isArray(detail)) detail = detail.map((d) => String(d.msg).replace(/^Value error, /, "")).join(" ");
     throw new Error(detail);
   }
   return res.status === 204 ? null : res.json();
@@ -251,11 +253,16 @@ if (settingsForm) {
     const saveBtn = document.getElementById("settings-save");
     const status = document.getElementById("settings-status");
     const maxUploadKb = parseInt(document.getElementById("max-upload-kb").value, 10);
+    const githubInput = document.getElementById("github-url");
     saveBtn.disabled = true;
     if (status) { status.textContent = ""; status.className = "small"; }
     try {
-      const data = await postJSON("/api/admin/settings", { max_upload_kb: maxUploadKb });
+      const data = await postJSON("/api/admin/settings", {
+        max_upload_kb: maxUploadKb,
+        github_url: githubInput ? githubInput.value : null,
+      });
       document.getElementById("max-upload-kb").value = data.max_upload_kb;
+      if (githubInput) githubInput.value = data.github_url;
       if (status) { status.textContent = "Saved."; status.className = "small text-success"; }
     } catch (err) {
       if (status) { status.textContent = `Could not save: ${err.message}`; status.className = "small text-danger"; }

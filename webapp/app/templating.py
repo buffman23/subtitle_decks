@@ -5,7 +5,8 @@ from datetime import datetime
 
 from fastapi.templating import Jinja2Templates
 
-from app.config import settings
+from app.database import SessionLocal
+from app.services.app_settings import get_github_url
 from app.version import get_build_info
 
 templates = Jinja2Templates(directory="app/templates")
@@ -51,4 +52,14 @@ templates.env.globals["asset_url"] = asset_url
 templates.env.globals["humanize_age"] = humanize_age
 templates.env.globals["humanize_bytes"] = humanize_bytes
 templates.env.globals["build_info"] = get_build_info()
-templates.env.globals["github_url"] = settings.GITHUB_URL
+def current_github_url() -> str:
+    """Navbar GitHub link, read per render so an admin change shows at once
+    (and stays consistent across worker processes)."""
+    db = SessionLocal()
+    try:
+        return get_github_url(db)
+    finally:
+        db.close()
+
+
+templates.env.globals["github_url"] = current_github_url

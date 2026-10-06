@@ -17,8 +17,9 @@
   <div class="ms-auto d-flex align-items-center gap-2 gap-sm-3 flex-shrink-0">
     <a href="/demo" class="text-white text-decoration-none">Demo</a>
     <a href="/about" class="text-white text-decoration-none">About</a>
-    {% if github_url %}
-      <a href="{{ github_url }}" target="_blank" rel="noopener"
+    {% set gh_url = github_url() %}
+    {% if gh_url %}
+      <a href="{{ gh_url }}" target="_blank" rel="noopener"
          class="text-white text-decoration-none" aria-label="GitHub" title="GitHub">
         <i class="bi bi-github"></i>
       </a>
