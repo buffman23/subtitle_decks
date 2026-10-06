@@ -264,6 +264,14 @@
 /* Title bar: clip overflowing content instead of letting it spill outside the column */
 .subtitle-viewports-row > * > .bg-dark { overflow: hidden; }
 
+/* Rapid taps on the prev/next occurrence arrows or the bottom tab bar would
+   otherwise register as a double-tap and zoom the page on mobile;
+   manipulation keeps pan/pinch only. */
+#subtitle-nav,
+#subtitle-nav *,
+#mobile-tabbar,
+#mobile-tabbar * { touch-action: manipulation; }
+
 /* Selected-lemma readout: allow shrinking and ellipsis when column is narrow */
 #selected-lemma-display {
   min-width: 0;
@@ -502,39 +510,76 @@
   word-break: break-word;
 }
 
+/* Fixed-height app shell below the 56px navbar */
+#app-shell {
+  height: calc(100vh - 56px);
+  height: calc(100dvh - 56px);
+}
+
+/* Scroll-focus tracking measures entries' offsetTop relative to their pane */
+.subtitle-viewport { position: relative; }
+
 /* ---------- Responsive: mobile (< 768px) ---------- */
+/* One full-height view at a time, picked by the bottom tab bar
+   (body[data-mobile-tab] is set by src/features/mobileTabs.ts). */
 @media (max-width: 767.98px) {
+  :root { --tabbar-h: 56px; }
+
+  #app-shell {
+    height: calc(100vh - 56px - var(--tabbar-h));
+    height: calc(100dvh - 56px - var(--tabbar-h) - env(safe-area-inset-bottom));
+  }
+
+  /* Bottom tab bar (Instagram/Snapchat style: icon-only, filled icon = active) */
+  #mobile-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1030;
+    display: flex;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+  }
+  #mobile-tabbar button {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: none;
+    color: #8e9297;
+    font-size: 1.5rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #mobile-tabbar button.active { color: #212529; }
+
   /* The manual resize handle is meaningless when the sidebar is an offcanvas drawer */
   #sidebar-resize-handle { display: none; }
 
   /* Bootstrap's offcanvas-md uses var(--bs-offcanvas-width) below the breakpoint */
   #sidebar.offcanvas-md { --bs-offcanvas-width: 280px; }
 
-  /* The desktop layout pins everything inside a fixed-height app shell.
-     On a phone the stacked panels can't all fit, so let the main column
-     scroll as a page instead of clipping the bottom panels. */
-  #main-content { overflow-y: auto !important; }
-  #results-section { flex-shrink: 0; }
+  #main-content { padding: 0.75rem !important; }
 
-  /* Stack results table above the subtitle viewers */
-  .results-panels-row { flex-direction: column; }
-  .results-panels-row .results-table-wrapper {
-    flex: 0 0 auto;
-    height: 45vh;
-    min-height: 200px;
-    width: 100%;
-  }
+  /* Words / Subtitles tabs: the table and the subtitle panes swap in place */
+  .results-panels-row .results-table-wrapper { flex: 1 1 0; width: 100%; min-width: 0; }
+  body[data-mobile-tab="words"] .subtitle-panels-col { display: none !important; }
+  body[data-mobile-tab="subtitles"] .results-table-wrapper,
+  body[data-mobile-tab="subtitles"] #results-toolbar { display: none !important; }
+  #results-section { margin-top: 0 !important; }
+  #results-toolbar { margin-bottom: 0.5rem !important; }
 
-  /* Stack the two subtitle viewers vertically too; each gets a fixed,
-     non-shrinking height so its own scrollbar works and nothing collapses */
-  .subtitle-viewports-row { flex-direction: column; flex: 0 0 auto; }
-  .subtitle-viewports-row > * { flex: 0 0 auto; }
-  .subtitle-viewport { flex: 0 0 auto; height: 45vh; }
+  /* Subtitles tab: foreign pane on top, native below, an exact 50/50 split,
+     each scrolling on its own */
+  .subtitle-viewports-row { flex-direction: column; }
+  .subtitle-viewports-row > * { flex: 1 1 0; min-height: 0; }
+  .subtitle-viewport { flex: 1 1 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 
   /* Column-resize handles are unusable on touch — hide them */
   .col-resize-handle { display: none; }
-
-  #main-content { padding: 1rem !important; }
 
   .drop-zone {
     min-width: 0;

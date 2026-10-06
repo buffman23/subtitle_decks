@@ -4,6 +4,7 @@ import { renderResults } from '../ui/virtualScroll';
 import { resetUpload, viewPendingAnalysis, cancelPendingAnalysis } from './analyze';
 import { getNativeSubtitles, restoreNativeSubtitles } from './subtitleViewer';
 import { renderShareControls } from './sharing';
+import { onMobileSessionShown } from './mobileTabs';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -259,6 +260,7 @@ export function renderPending(): void {
         cancelPendingAnalysis();
       } else {
         viewPendingAnalysis();
+        onMobileSessionShown();
       }
     });
     item.innerHTML = `
@@ -563,5 +565,7 @@ export function initSessions(): void {
     try { sessionStorage.removeItem('pendingSession'); } catch (_) { /* ignore */ }
     resetUpload();
     loadSessions();
+    // On mobile the upload form lives behind the Words tab.
+    onMobileSessionShown();
   });
 }

@@ -2,6 +2,7 @@ import type { SubtitleEntry, SubtitleSegment } from '../types';
 import { state, buildVisibleIndices } from '../state';
 import { escapeHtml, scrollTableToLemma, renderTable } from '../ui/virtualScroll';
 import { showWordTooltip, hideWordTooltip, isWordTooltipAnchor } from '../ui/wordTooltip';
+import { isMobileLayout } from './mobileTabs';
 
 type DetectedLanguage = 'arabic' | 'latin' | 'unknown';
 
@@ -20,6 +21,13 @@ let currentOccurrenceIdx = 0;
 let activeProcessedSubIdx: Set<number> = new Set();
 let activeNativeSubIdx: Set<number> = new Set();
 const viewports = new Map<string, ViewportData>();
+// Mobile scroll-focus: the pane the user is currently scrolling by hand. Only
+// the leader's scroll drives highlighting; the other pane follows it. Cleared
+// on programmatic navigation so those scrolls don't re-pick the highlight.
+let scrollLeader: string | null = null;
+
+const PROCESSED_ID = 'subtitle-viewport-processed';
+const NATIVE_ID = 'subtitle-viewport-native';
 
 export function buildLemmaIndex(): void {
   lemmaToSubtitles.clear();
@@ -122,6 +130,7 @@ function renderSubtitleViewport(
   container.classList.remove('lang-arabic', 'lang-latin', 'lang-unknown');
   container.classList.add(`lang-${lang}`);
   viewports.set(containerId, { subtitles, lang, isProcessed });
+  scrollLeader = null;
   container.scrollTop = 0;
   renderViewport(containerId);
 }
@@ -135,8 +144,16 @@ function scrollToSub(containerId: string, subIndex: number): void {
   // the moment the (possibly animated) scroll begins.
   applyActiveState(containerId);
 
+  centerSub(containerId, subIndex, true);
+}
+
+// Scroll a subtitle entry to the vertical centre of its pane. With `smooth`,
+// animates only when the target is already on screen (a long smooth jump
+// across the file is disorienting); otherwise jumps instantly.
+function centerSub(containerId: string, subIndex: number, smooth: boolean): void {
+  const container = document.getElementById(containerId);
   const el = document.getElementById(`${containerId}-sub-${subIndex}`);
-  if (!el) return;
+  if (!container || !el) return;
 
   const itemTop = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
   const itemHeight = el.offsetHeight;
@@ -147,14 +164,102 @@ function scrollToSub(containerId: string, subIndex: number): void {
 
   const targetScrollTop = Math.max(0, itemTop - container.clientHeight / 2 + itemHeight / 2);
 
-  if (targetVisible) {
+  if (smooth && targetVisible) {
     container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
   } else {
     container.scrollTop = targetScrollTop;
   }
 }
 
+// The entry occupying the most vertical space in the pane's viewport; ties
+// (e.g. several fully visible one-line entries) go to the one nearest the
+// centre. Entries are in document order, so binary-search for the first one
+// reaching into view, then scan only the visible run.
+function mostVisibleEntry(container: HTMLElement): HTMLElement | null {
+  const entries = container.children as HTMLCollectionOf<HTMLElement>;
+  const n = entries.length;
+  if (n === 0) return null;
+  const top = container.scrollTop;
+  const bottom = top + container.clientHeight;
+  const center = (top + bottom) / 2;
+
+  let lo = 0, hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (entries[mid].offsetTop + entries[mid].offsetHeight <= top) lo = mid + 1;
+    else hi = mid;
+  }
+
+  let best: HTMLElement | null = null;
+  let bestVisible = 0, bestDist = Infinity;
+  for (let i = lo; i < n; i++) {
+    const el = entries[i];
+    const elTop = el.offsetTop;
+    if (elTop >= bottom) break;
+    const elBottom = elTop + el.offsetHeight;
+    const visible = Math.min(elBottom, bottom) - Math.max(elTop, top);
+    const dist = Math.abs((elTop + elBottom) / 2 - center);
+    if (visible > bestVisible || (visible === bestVisible && dist < bestDist)) {
+      best = el; bestVisible = visible; bestDist = dist;
+    }
+  }
+  return best;
+}
+
+function entrySubIndex(el: HTMLElement): number {
+  return parseInt(el.id.split('-').pop()!, 10);
+}
+
+function setActiveSet(containerId: string, set: Set<number>): void {
+  if (containerId === PROCESSED_ID) activeProcessedSubIdx = set;
+  else activeNativeSubIdx = set;
+}
+
+// Mobile: highlight the leader pane's most visible subtitle and bring the
+// time-overlapping subtitle(s) in the other pane to its centre.
+function onPaneScrolled(containerId: string): void {
+  if (!isMobileLayout() || scrollLeader !== containerId) return;
+  const container = document.getElementById(containerId);
+  const data = viewports.get(containerId);
+  if (!container || !data) return;
+
+  const el = mostVisibleEntry(container);
+  if (!el) return;
+  const idx = entrySubIndex(el);
+  const current = containerId === PROCESSED_ID ? activeProcessedSubIdx : activeNativeSubIdx;
+  if (current.size === 1 && current.has(idx)) return;
+
+  setActiveSet(containerId, new Set([idx]));
+  applyActiveState(containerId);
+
+  const otherId = containerId === PROCESSED_ID ? NATIVE_ID : PROCESSED_ID;
+  const otherSubs = viewports.get(otherId)?.subtitles ?? [];
+  const sub = data.subtitles.find(s => s.index === idx);
+  const matches = sub && otherSubs.length > 0 ? findOverlapping(sub, otherSubs) : [];
+  setActiveSet(otherId, new Set(matches.map(s => s.index)));
+  applyActiveState(otherId);
+  if (matches.length > 0) centerSub(otherId, matches[0].index, false);
+}
+
+function initScrollFocus(): void {
+  for (const id of [PROCESSED_ID, NATIVE_ID]) {
+    const pane = document.getElementById(id);
+    if (!pane) continue;
+    const claim = () => { scrollLeader = id; };
+    pane.addEventListener('touchstart', claim, { passive: true });
+    pane.addEventListener('wheel', claim, { passive: true });
+    pane.addEventListener('pointerdown', claim);
+
+    let frame = 0;
+    pane.addEventListener('scroll', () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = 0; onPaneScrolled(id); });
+    }, { passive: true });
+  }
+}
+
 function navigateToOccurrence(idx: number): void {
+  scrollLeader = null;
   const subIdx = occurrenceList[idx];
   activeProcessedSubIdx = new Set([subIdx]);
   scrollToSub('subtitle-viewport-processed', subIdx);
@@ -258,6 +363,7 @@ function handleNativeWordClick(entry: HTMLElement): void {
   const matches = findOverlapping(nativeSub, state.parsedSubtitles);
   if (matches.length === 0) return;
 
+  scrollLeader = null;
   activeNativeSubIdx = new Set([nativeIdx]);
   activeProcessedSubIdx = new Set(matches.map(s => s.index));
   scrollToSub('subtitle-viewport-native', nativeIdx);
@@ -307,6 +413,8 @@ export function onAnalysisComplete(): void {
 }
 
 export function initSubtitleViewer(): void {
+  initScrollFocus();
+
   document.getElementById('native-srt-file')?.addEventListener('change', function (this: HTMLInputElement) {
     const file = this.files?.[0];
     if (!file) return;

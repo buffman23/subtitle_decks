@@ -7,6 +7,7 @@ import { initCsvExport } from './features/csvExport';
 import { initSharing } from './features/sharing';
 import { initSubtitleViewer, selectLemma, onAnalysisComplete } from './features/subtitleViewer';
 import { initWordTooltip } from './ui/wordTooltip';
+import { initMobileTabs, isMobileLayout, setMobileTab, onMobileSessionShown } from './features/mobileTabs';
 import { state } from './state';
 
 /* ── Signal to the global notifier.js that the full app bundle owns the job
@@ -40,9 +41,15 @@ if (languageSelect) {
 /* ── Wire up all modules ── */
 registerIgnoreHandler(addToIgnoreList);
 registerUnignoreHandler(removeFromIgnoreList);
-registerLemmaSelectHandler(selectLemma);
-registerAnalysisCompleteHandler(onAnalysisComplete);
-registerSessionAnalysisCompleteHandler(onAnalysisComplete);
+// On mobile, tapping a word jumps to the Subtitles tab. Switch first: the
+// occurrence scroll measures the panes, which have no size while hidden.
+registerLemmaSelectHandler(lemma => {
+  if (isMobileLayout()) setMobileTab('subtitles');
+  selectLemma(lemma);
+});
+const onResultsShown = () => { onAnalysisComplete(); onMobileSessionShown(); };
+registerAnalysisCompleteHandler(onResultsShown);
+registerSessionAnalysisCompleteHandler(onResultsShown);
 
 initAnalyzeForm();
 initToggleIgnored();
@@ -52,6 +59,7 @@ initCsvExport();
 initSharing();
 initSubtitleViewer();
 initWordTooltip();
+initMobileTabs();
 
 applyColWidths();
 initColResize();

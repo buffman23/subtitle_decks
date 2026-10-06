@@ -2,7 +2,7 @@
 {% block title %}Subtitle Decks{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column" style="height: calc(100vh - 56px); height: calc(100dvh - 56px);">
+<div id="app-shell" class="d-flex flex-column">
 
   <div class="d-flex flex-grow-1 overflow-hidden">
 
@@ -31,7 +31,7 @@
     <div id="main-content" class="flex-grow-1 overflow-hidden p-4 d-flex flex-column">
 
       <!-- Mobile-only drawer togglers: Sessions (left) / Actions (right) -->
-      <div class="d-md-none d-flex justify-content-between align-items-center mb-2">
+      <div id="mobile-toolbar" class="d-md-none d-flex justify-content-between align-items-center mb-2">
         <button class="btn btn-sm btn-outline-secondary" type="button"
                 data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
           <i class="bi bi-list"></i> Sessions
@@ -84,7 +84,7 @@
 
       <!-- Results section -->
       <div id="results-section" class="mt-4 d-none d-flex flex-column flex-grow-1" style="min-height:0">
-        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap flex-shrink-0">
+        <div id="results-toolbar" class="d-flex align-items-center gap-3 mb-3 flex-wrap flex-shrink-0">
           <span id="result-summary" class="text-muted"></span>
 
           <!-- Inline toolbar at md+, right-side offcanvas drawer below md -->
@@ -210,6 +210,16 @@
     </div><!-- /main -->
   </div><!-- /split -->
 </div><!-- /outer -->
+
+<!-- Mobile-only bottom tab bar (driven by src/features/mobileTabs.ts) -->
+<nav id="mobile-tabbar" class="d-md-none" aria-label="Views">
+  <button type="button" data-tab="words" aria-label="Word frequency" title="Word frequency">
+    <i class="bi bi-list-ol" data-icon="bi-list-ol"></i>
+  </button>
+  <button type="button" data-tab="subtitles" aria-label="Subtitles" title="Subtitles">
+    <i class="bi bi-badge-cc" data-icon="bi-badge-cc"></i>
+  </button>
+</nav>
 
 <input type="file" id="ignore-list-file" accept=".txt" class="d-none">
 
