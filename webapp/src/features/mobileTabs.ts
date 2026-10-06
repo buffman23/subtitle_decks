@@ -1,9 +1,9 @@
-import { state } from '../state';
-import { scrollTableToLemma } from '../ui/virtualScroll';
-
 /* ── Mobile bottom tab bar. Below the md breakpoint the app shows one
    full-height view at a time; the active one is exposed to CSS as
-   body[data-mobile-tab]. Above md the attribute is ignored. ── */
+   body[data-mobile-tab], which slides a two-panel track between them.
+   Both panels stay laid out while off-screen, so the table and subtitle
+   panes can be scrolled into place before they slide in. Above md the
+   attribute is ignored. ── */
 
 export type MobileTab = 'words' | 'subtitles';
 
@@ -25,9 +25,6 @@ export function setMobileTab(tab: MobileTab): void {
     // Filled icon variant marks the active tab (no fill variant for list-ol).
     if (icon && base) icon.className = `bi ${active && base !== 'bi-list-ol' ? base + '-fill' : base}`;
   });
-  // The table was hidden while another tab was showing, so its scroll position
-  // couldn't follow the selected word; re-centre it now that it has a size.
-  if (tab === 'words' && state.selectedLemma && isMobileLayout()) scrollTableToLemma(state.selectedLemma);
 }
 
 /** Close the sessions drawer and bring the word table (or upload form)

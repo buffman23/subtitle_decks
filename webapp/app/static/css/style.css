@@ -564,13 +564,31 @@
 
   #main-content { padding: 0.75rem !important; }
 
-  /* Words / Subtitles tabs: the table and the subtitle panes swap in place */
-  .results-panels-row .results-table-wrapper { flex: 1 1 0; width: 100%; min-width: 0; }
-  body[data-mobile-tab="words"] .subtitle-panels-col { display: none !important; }
+  /* Words / Subtitles tabs: a two-panel horizontal track. Both panels stay
+     laid out side by side (so the off-screen one can still be measured and
+     scrolled into place), and the active tab slides the track left/right. */
+  .results-panels-row { overflow: hidden; gap: 0 !important; }
+  .results-panels-row > .results-table-wrapper,
+  .results-panels-row > .subtitle-panels-col {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    /* The off-screen panel is clipped by the track rather than
+       visibility-hidden: toggling an inherited property would restyle
+       thousands of descendants at the start of every slide. (will-change
+       was tried too; layering panels this large stalled the first frame.) */
+    transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
+  }
+  /* Panels are named explicitly: a `*` subject here would make every tab
+     switch restyle the whole page (thousands of word spans). */
   body[data-mobile-tab="subtitles"] .results-table-wrapper,
-  body[data-mobile-tab="subtitles"] #results-toolbar { display: none !important; }
+  body[data-mobile-tab="subtitles"] .subtitle-panels-col { transform: translateX(-100%); }
+
   #results-section { margin-top: 0 !important; }
+  /* Summary row is Words-only. It snaps rather than animating: animating its
+     height relayouts both full panels every frame and stalls the slide. */
   #results-toolbar { margin-bottom: 0.5rem !important; }
+  body[data-mobile-tab="subtitles"] #results-toolbar { display: none !important; }
 
   /* Subtitles tab: foreign pane on top, native below, an exact 50/50 split,
      each scrolling on its own */
@@ -587,6 +605,10 @@
     width: 100%;
     max-width: 360px;
   }
+}
+@media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
+  .results-panels-row > .results-table-wrapper,
+  .results-panels-row > .subtitle-panels-col { transition: none; }
 }
 
 /* Sidebar layout: flex column at all widths; fixed dimensions only at md+ */
