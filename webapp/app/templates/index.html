@@ -195,10 +195,13 @@
               <div class="d-flex flex-column flex-grow-1 min-width-0">
                 <div class="bg-dark text-white d-flex align-items-center gap-2 mb-1 py-1 px-2">
                   <span class="fw-semibold">Native Subtitles</span>
+                  {% if not demo_mode %}
+                  <!-- Not on the demo page: demo sessions are read-only showcases -->
                   <label class="btn btn-outline-light btn-sm py-0 px-1 mb-0 ms-auto" title="Load native SRT">
                     <i class="bi bi-upload"></i>
                     <input type="file" id="native-srt-file" accept=".srt" class="d-none">
                   </label>
+                  {% endif %}
                 </div>
                 <div id="subtitle-viewport-native" class="subtitle-viewport"></div>
               </div>

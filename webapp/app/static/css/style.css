@@ -264,6 +264,10 @@
 /* Title bar: clip overflowing content instead of letting it spill outside the column */
 .subtitle-viewports-row > * > .bg-dark { overflow: hidden; }
 
+/* Keep both title bars the height of one holding a small button, so they stay
+   level when the native bar has none (the demo page hides its upload button). */
+.subtitle-viewports-row > * > .bg-dark { min-height: 33px; }
+
 /* Rapid taps on the prev/next occurrence arrows or the bottom tab bar would
    otherwise register as a double-tap and zoom the page on mobile;
    manipulation keeps pan/pinch only. */
