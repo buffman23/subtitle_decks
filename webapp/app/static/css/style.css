@@ -707,3 +707,93 @@
     padding-top: 0.6rem;
   }
 }
+
+/* ---------- Admin pages ---------- */
+@media (min-width: 768px) {
+  .admin-sidebar { min-height: calc(100vh - 56px); }
+}
+
+.chart-box { position: relative; }
+.chart-box-activity { height: 300px; }
+.chart-box-language { height: 260px; }
+
+@media (max-width: 767.98px) {
+  /* Sidebar becomes a single-row, sideways-scrolling tab strip */
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    padding: 0.5rem 0;
+    background: #fff !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+  .admin-sidebar .nav-pills {
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .admin-sidebar .nav-pills::-webkit-scrollbar { display: none; }
+  .admin-sidebar .nav-link { white-space: nowrap; padding: 0.375rem 0.75rem; }
+
+  .admin-main h3 { font-size: 1.4rem; margin-bottom: 1rem !important; }
+  .admin-main > p.text-muted { font-size: 0.875rem; }
+  .admin-stat { font-size: 1.75rem; }
+  .chart-box-activity { height: 220px; }
+  .chart-box-language { height: 240px; }
+
+  /* .table-stack: each row becomes a card of label/value lines.
+     Cells label themselves via data-label; .stack-title is the card heading,
+     .stack-actions holds the row's buttons. */
+  .table-responsive:has(> .table-stack) { overflow-x: visible; }
+  .table.table-stack,
+  .table.table-stack tbody { display: block; }
+  .table.table-stack thead { display: none; }
+  .table.table-stack tr {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+  }
+  .table.table-stack td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    border: 0;
+    text-align: right !important;
+    max-width: none !important;
+  }
+  .table.table-stack td > * { min-width: 0; }
+  .table.table-stack td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+  }
+  .table.table-stack td.stack-title {
+    order: -1;
+    justify-content: flex-start;
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    font-weight: 600;
+    text-align: left !important;
+    overflow-wrap: anywhere;
+  }
+  .table.table-stack td.stack-actions {
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+  }
+  .table.table-stack td.stack-actions > .btn { flex: 1 1 auto; padding: 0.375rem 0.75rem; }
+  .table.table-stack td.stack-actions > .btn-icon { flex: 0 0 auto; }
+  .table.table-stack td.stack-empty { display: none; }
+  .table.table-stack tr.stack-full { border: 0; padding: 0; }
+  .table.table-stack tr.stack-full td { justify-content: center; text-align: center !important; }
+}

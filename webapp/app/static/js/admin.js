@@ -209,7 +209,7 @@ async function renderQueue() {
   }
   if (!jobs.length) {
     tbody.innerHTML =
-      '<tr><td colspan="7" class="text-center text-muted py-4">No jobs yet.</td></tr>';
+      '<tr class="stack-full"><td colspan="7" class="text-center text-muted py-4">No jobs yet.</td></tr>';
     return;
   }
   tbody.innerHTML = jobs
@@ -227,14 +227,15 @@ async function renderQueue() {
             j.id
           )}">Cancel</button>`
         : '<span class="text-muted">—</span>';
+      // data-label / stack-* classes drive the mobile card layout (.table-stack)
       return `<tr>
-        <td class="text-center">${pos}</td>
-        <td>${escapeHtml(j.user_label)}</td>
-        <td><code>${escapeHtml(j.language_code)}</code></td>
-        <td class="text-truncate" style="max-width: 16rem">${escapeHtml(j.filename)}</td>
-        <td class="text-center"><span class="badge ${badge}">${escapeHtml(j.status)}</span></td>
-        <td>${formatTime(j.created_at)}</td>
-        <td class="text-end">${action}</td>
+        <td class="text-center${j.status === "queued" ? "" : " stack-empty"}" data-label="Position">${pos}</td>
+        <td data-label="User">${escapeHtml(j.user_label)}</td>
+        <td data-label="Model"><code>${escapeHtml(j.language_code)}</code></td>
+        <td class="stack-title" style="max-width: 16rem"><span class="d-block text-truncate">${escapeHtml(j.filename)}</span></td>
+        <td class="text-center" data-label="Status"><span class="badge ${badge}">${escapeHtml(j.status)}</span></td>
+        <td data-label="Submitted">${formatTime(j.created_at)}</td>
+        <td class="text-end stack-actions${cancellable ? "" : " stack-empty"}">${action}</td>
       </tr>`;
     })
     .join("");
@@ -295,3 +296,8 @@ document.addEventListener("change", async (e) => {
     input.disabled = false;
   }
 });
+
+// --- Mobile: keep the current page's pill visible in the sideways tab strip ---
+document
+  .querySelector(".admin-sidebar .nav-link.active")
+  ?.scrollIntoView({ inline: "center", block: "nearest" });

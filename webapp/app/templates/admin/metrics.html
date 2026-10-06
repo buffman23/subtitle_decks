@@ -7,7 +7,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Total users</div>
-        <div class="display-6">{{ metrics.total_users }}</div>
+        <div class="display-6 admin-stat">{{ metrics.total_users }}</div>
       </div>
     </div>
   </div>
@@ -15,7 +15,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Total analyses</div>
-        <div class="display-6">{{ metrics.total_analyses }}</div>
+        <div class="display-6 admin-stat">{{ metrics.total_analyses }}</div>
       </div>
     </div>
   </div>
@@ -23,7 +23,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Active (7d)</div>
-        <div class="display-6">{{ metrics.active_7 }}</div>
+        <div class="display-6 admin-stat">{{ metrics.active_7 }}</div>
       </div>
     </div>
   </div>
@@ -31,7 +31,7 @@
     <div class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Active (30d)</div>
-        <div class="display-6">{{ metrics.active_30 }}</div>
+        <div class="display-6 admin-stat">{{ metrics.active_30 }}</div>
       </div>
     </div>
   </div>
@@ -42,7 +42,7 @@
     <div class="card h-100">
       <div class="card-body">
         <h5 class="card-title">Activity (last 30 days)</h5>
-        <canvas id="activityChart" height="120"></canvas>
+        <div class="chart-box chart-box-activity"><canvas id="activityChart"></canvas></div>
       </div>
     </div>
   </div>
@@ -50,7 +50,7 @@
     <div class="card h-100">
       <div class="card-body">
         <h5 class="card-title">Analyses by language</h5>
-        <canvas id="languageChart" height="220"></canvas>
+        <div class="chart-box chart-box-language"><canvas id="languageChart"></canvas></div>
       </div>
     </div>
   </div>

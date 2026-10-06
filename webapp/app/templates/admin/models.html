@@ -4,7 +4,7 @@
 <p class="text-muted">Loading a model can take a while (Arabic BERT especially). Unloading frees memory.
 With <strong>auto-unload</strong> on (default), a model is released after each analysis, so its RAM is not measured.</p>
 <div class="table-responsive">
-  <table class="table align-middle">
+  <table class="table table-stack align-middle">
     <thead>
       <tr>
         <th>Language</th>
@@ -18,23 +18,23 @@ With <strong>auto-unload</strong> on (default), a model is released after each a
     <tbody>
       {% for m in models %}
       <tr data-model-code="{{ m.code }}">
-        <td>{{ m.name }}</td>
-        <td><code>{{ m.code }}</code></td>
-        <td class="text-center">
+        <td class="stack-title gap-2">{{ m.name }} <code class="d-md-none fw-normal">{{ m.code }}</code></td>
+        <td class="d-none d-md-table-cell"><code>{{ m.code }}</code></td>
+        <td class="text-center" data-label="Status">
           <span class="badge model-status {{ 'text-bg-success' if m.status == 'loaded' else 'text-bg-secondary' }}">
             {{ m.status }}
           </span>
         </td>
-        <td class="text-end model-ram">
+        <td class="text-end model-ram" data-label="RAM">
           {% if m.ram_bytes %}{{ humanize_bytes(m.ram_bytes) }}{% else %}<span class="text-muted">—</span>{% endif %}
         </td>
-        <td class="text-center">
+        <td class="text-center" data-label="Auto-unload">
           <div class="form-check form-switch d-inline-block m-0">
             <input class="form-check-input model-autounload" type="checkbox" role="switch"
                    {{ 'checked' if m.auto_unload }} aria-label="Auto-unload after analysis">
           </div>
         </td>
-        <td class="text-end">
+        <td class="text-end stack-actions">
           <button class="btn btn-sm btn-toggle-model {{ 'btn-outline-secondary' if m.status == 'loaded' else 'btn-outline-success' }}"
                   data-action="{{ 'unload' if m.status == 'loaded' else 'load' }}">
             {{ 'Unload' if m.status == 'loaded' else 'Load' }}

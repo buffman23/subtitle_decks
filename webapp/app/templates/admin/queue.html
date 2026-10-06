@@ -4,7 +4,7 @@
 <p class="text-muted">Analyses run one at a time. Queued and running jobs can be cancelled; finished
 jobs stay here as a log until the server restarts.</p>
 <div class="table-responsive">
-  <table class="table align-middle" id="queue-table">
+  <table class="table table-stack align-middle" id="queue-table">
     <thead>
       <tr>
         <th class="text-center">#</th>
@@ -17,7 +17,7 @@ jobs stay here as a log until the server restarts.</p>
       </tr>
     </thead>
     <tbody id="queue-tbody">
-      <tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>
+      <tr class="stack-full"><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>
     </tbody>
   </table>
 </div>
