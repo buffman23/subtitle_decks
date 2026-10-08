@@ -1,4 +1,5 @@
 import type { WordFrequency, SubtitleEntry } from './types';
+import type { LemmaPos } from './ui/pos';
 
 export const state = {
   currentLanguage: 'ar-msa',
@@ -14,6 +15,8 @@ export const state = {
   totalTokensCached: 0,
   parsedSubtitles: [] as SubtitleEntry[],
   selectedLemma: null as string | null,
+  // Most frequent part of speech per lemma, derived from parsedSubtitles.
+  posByLemma: new Map<string, LemmaPos>(),
   // The analysis currently being processed by the server, surfaced as a
   // placeholder in the sessions sidebar so the user can navigate away and come
   // back to it. null when no analysis is running.
