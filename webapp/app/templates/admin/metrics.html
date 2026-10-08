@@ -2,9 +2,9 @@
 {% block admin_content %}
 <h3 class="mb-4">Website Metrics</h3>
 
-<div class="row g-3 mb-4">
+<div id="metrics-stats" class="row g-3 mb-4">
   <div class="col-6 col-md-4 col-xl">
-    <div class="card h-100">
+    <div id="metrics-total-users" class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Total users</div>
         <div class="display-6 admin-stat">{{ metrics.total_users }}</div>
@@ -12,7 +12,7 @@
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl">
-    <div class="card h-100">
+    <div id="metrics-total-analyses" class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Total analyses</div>
         <div class="display-6 admin-stat">{{ metrics.total_analyses }}</div>
@@ -20,7 +20,7 @@
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl">
-    <div class="card h-100">
+    <div id="metrics-active-7d" class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Active (7d)</div>
         <div class="display-6 admin-stat">{{ metrics.active_7 }}</div>
@@ -28,7 +28,7 @@
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl">
-    <div class="card h-100">
+    <div id="metrics-active-30d" class="card h-100">
       <div class="card-body">
         <div class="text-muted small text-uppercase">Active (30d)</div>
         <div class="display-6 admin-stat">{{ metrics.active_30 }}</div>
@@ -37,9 +37,9 @@
   </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div id="metrics-charts" class="row g-3 mb-4">
   <div class="col-12 col-xl-8">
-    <div class="card h-100">
+    <div id="metrics-activity-card" class="card h-100">
       <div class="card-body">
         <h5 class="card-title">Activity (last 30 days)</h5>
         <div class="chart-box chart-box-activity"><canvas id="activityChart"></canvas></div>
@@ -47,7 +47,7 @@
     </div>
   </div>
   <div class="col-12 col-xl-4">
-    <div class="card h-100">
+    <div id="metrics-language-card" class="card h-100">
       <div class="card-body">
         <h5 class="card-title">Analyses by language</h5>
         <div class="chart-box chart-box-language"><canvas id="languageChart"></canvas></div>
@@ -56,7 +56,7 @@
   </div>
 </div>
 
-<div class="card">
+<div id="metrics-table-card" class="card">
   <div class="card-body">
     <h5 class="card-title">Top users</h5>
     {% if top_users %}

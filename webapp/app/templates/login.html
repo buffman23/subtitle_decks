@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Sign In{% endblock %}
 {% block content %}
-<div class="container mt-5">
+<div id="login-page" class="container mt-5">
   <div class="row justify-content-center">
     <div class="col-md-4 text-center">
       <h2 class="mb-4">Sign In</h2>
@@ -11,7 +11,7 @@
       </a>
 
       {% if dev_mode %}
-      <div class="card border-warning mt-5 text-start">
+      <div id="dev-login-card" class="card border-warning mt-5 text-start">
         <div class="card-header bg-warning-subtle d-flex align-items-center gap-2">
           <i class="bi bi-tools"></i>
           <strong>Dev login</strong>

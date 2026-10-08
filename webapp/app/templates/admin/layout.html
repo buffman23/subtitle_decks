@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Admin — Subtitle Decks{% endblock %}
 {% block content %}
-<div class="container-fluid">
+<div id="admin-shell" class="container-fluid">
   <div class="row">
-    <nav class="admin-sidebar col-12 col-md-3 col-lg-2 bg-light border-end py-md-3">
+    <nav id="admin-sidebar" class="admin-sidebar col-12 col-md-3 col-lg-2 bg-light border-end py-md-3">
       <div class="px-3 mb-2 text-muted text-uppercase small fw-semibold d-none d-md-block">Admin</div>
-      <ul class="nav nav-pills flex-column px-2">
+      <ul id="admin-nav" class="nav nav-pills flex-column px-2">
         <li class="nav-item">
           <a class="nav-link {{ 'active' if active == 'index' }}" href="/admin">
             <i class="bi bi-speedometer2 me-2"></i>Dashboard
@@ -42,11 +42,11 @@
           </a>
         </li>
       </ul>
-      <div class="px-3 mt-3 pt-2 border-top text-muted small d-none d-md-block" title="built {{ build_info.build_time }} · ref {{ build_info.ref }}">
+      <div id="admin-version" class="px-3 mt-3 pt-2 border-top text-muted small d-none d-md-block" title="built {{ build_info.build_time }} · ref {{ build_info.ref }}">
         v{{ build_info.version }} &middot; <code>{{ build_info.sha }}</code>
       </div>
     </nav>
-    <main class="admin-main col py-3 px-3 py-md-4 px-md-4">
+    <main id="admin-main" class="admin-main col py-3 px-3 py-md-4 px-md-4">
       {% block admin_content %}{% endblock %}
     </main>
   </div>

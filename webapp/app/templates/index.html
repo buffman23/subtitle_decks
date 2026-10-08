@@ -4,13 +4,13 @@
 {% block content %}
 <div id="app-shell" class="d-flex flex-column">
 
-  <div class="d-flex flex-grow-1 overflow-hidden">
+  <div id="app-split" class="d-flex flex-grow-1 overflow-hidden">
 
     <!-- Session Sidebar (acts as an offcanvas drawer below 768px, normal column above) -->
     <div id="sidebar" class="offcanvas-md offcanvas-start bg-light border-end" tabindex="-1" aria-labelledby="sidebar-label">
-      <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+      <div id="sidebar-header" class="p-3 border-bottom d-flex justify-content-between align-items-center">
         <strong id="sidebar-label">Sessions</strong>
-        <div class="d-flex gap-1">
+        <div id="sidebar-header-actions" class="d-flex gap-1">
           <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
             <i class="bi bi-plus-lg"></i>
           </button>
@@ -60,7 +60,7 @@
             <div id="drop-zone-filename" class="mt-2 text-primary small d-none"></div>
           </div>
           <input type="file" id="srt-file" name="file" accept=".srt" class="d-none">
-          <div class="mt-3 d-flex align-items-center justify-content-center gap-2">
+          <div id="language-select-row" class="mt-3 d-flex align-items-center justify-content-center gap-2">
             <label class="form-label mb-0 small text-muted" for="language-select">Language</label>
             <select class="form-select form-select-sm w-auto" id="language-select" name="language">
               {% for lang in languages %}
@@ -68,7 +68,7 @@
               {% endfor %}
             </select>
           </div>
-          <div class="mt-3">
+          <div id="analyze-actions" class="mt-3">
             <button type="submit" class="btn btn-primary" id="btn-analyze" disabled>
               <i class="bi bi-play-fill"></i> Analyze
             </button>
@@ -90,19 +90,19 @@
           <!-- Inline toolbar at md+, right-side offcanvas drawer below md -->
           <div id="actions-drawer" class="offcanvas-md offcanvas-end" tabindex="-1"
                aria-labelledby="actions-drawer-label">
-            <div class="offcanvas-header d-md-none border-bottom">
+            <div id="actions-drawer-header" class="offcanvas-header d-md-none border-bottom">
               <strong id="actions-drawer-label">Actions</strong>
               <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
                       data-bs-target="#actions-drawer" aria-label="Close"></button>
             </div>
-            <div class="offcanvas-body d-flex flex-column flex-md-row gap-2 gap-md-3 p-3 p-md-0">
+            <div id="actions-drawer-body" class="offcanvas-body d-flex flex-column flex-md-row gap-2 gap-md-3 p-3 p-md-0">
               <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
                 <i class="bi bi-filetype-csv"></i> <span class="btn-label">Download CSV</span>
               </button>
               <button class="btn btn-sm btn-outline-secondary" id="btn-toggle-ignored">
                 <i class="bi bi-eye-slash"></i> <span class="btn-label">Show ignored</span>
               </button>
-              <div class="dropdown">
+              <div id="ignorelist-dropdown" class="dropdown">
                 <div class="session-section-header d-md-none">Ignore list</div>
                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                   <i class="bi bi-list"></i> <span class="btn-label">Ignore list</span>
@@ -156,9 +156,9 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2 results-panels-row flex-grow-1" style="min-height:0">
+        <div id="results-panels-row" class="d-flex gap-2 results-panels-row flex-grow-1" style="min-height:0">
           <!-- Results table -->
-          <div class="results-table-wrapper">
+          <div id="results-table-wrapper" class="results-table-wrapper">
             <table class="table table-sm table-hover align-middle text-start" dir="ltr" id="results-table">
               <thead class="table-dark">
                 <tr>
@@ -173,11 +173,11 @@
           </div>
 
           <!-- Subtitle panels -->
-          <div class="d-flex flex-column flex-grow-1 min-width-0 subtitle-panels-col">
+          <div id="subtitle-panels-col" class="d-flex flex-column flex-grow-1 min-width-0 subtitle-panels-col">
             <!-- Two viewports side by side -->
-            <div class="d-flex gap-2 flex-grow-1 min-width-0 subtitle-viewports-row">
-              <div class="d-flex flex-column flex-grow-1 min-width-0">
-                <div class="bg-dark text-white d-flex align-items-center gap-2 mb-1 py-1 px-2">
+            <div id="subtitle-viewports-row" class="d-flex gap-2 flex-grow-1 min-width-0 subtitle-viewports-row">
+              <div id="subtitle-panel-processed" class="d-flex flex-column flex-grow-1 min-width-0">
+                <div id="subtitle-header-processed" class="bg-dark text-white d-flex align-items-center gap-2 mb-1 py-1 px-2">
                   <span class="fw-semibold">Subtitles</span>
                   <div id="subtitle-nav" class="d-flex align-items-center gap-2 ms-auto">
                     <button id="btn-prev-occurrence" class="btn btn-sm btn-outline-light py-0" disabled>
@@ -192,8 +192,8 @@
                 </div>
                 <div id="subtitle-viewport-processed" class="subtitle-viewport"></div>
               </div>
-              <div class="d-flex flex-column flex-grow-1 min-width-0">
-                <div class="bg-dark text-white d-flex align-items-center gap-2 mb-1 py-1 px-2">
+              <div id="subtitle-panel-native" class="d-flex flex-column flex-grow-1 min-width-0">
+                <div id="subtitle-header-native" class="bg-dark text-white d-flex align-items-center gap-2 mb-1 py-1 px-2">
                   <span class="fw-semibold">Native Subtitles</span>
                   {% if not demo_mode %}
                   <!-- Not on the demo page: demo sessions are read-only showcases -->
@@ -236,7 +236,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="input-group input-group-sm mb-2">
+        <div id="share-add-row" class="input-group input-group-sm mb-2">
           <input type="email" class="form-control" id="share-email-input"
                  placeholder="Recipient email" autocomplete="off">
           <button class="btn btn-primary" type="button" id="btn-share-add" title="Share">
@@ -255,7 +255,7 @@
 <div class="modal fade" id="login-modal" tabindex="-1">
   <div class="modal-dialog modal-sm modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-body text-center p-4">
+      <div id="login-modal-body" class="modal-body text-center p-4">
         <h6 class="mb-3">Sign in to manage your ignore list</h6>
         <a href="/auth/google" class="btn btn-outline-dark">
           <i class="bi bi-google me-1"></i> Sign in with Google

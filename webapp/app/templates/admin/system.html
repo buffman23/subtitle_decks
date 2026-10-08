@@ -6,7 +6,7 @@
 {%- endmacro %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div id="system-header" class="d-flex justify-content-between align-items-center mb-4">
   <h3 class="mb-0">System <span class="text-muted fs-6">host server</span></h3>
   <a href="/admin/system" class="btn btn-sm btn-outline-secondary">
     <i class="bi bi-arrow-clockwise me-1"></i>Refresh
@@ -14,7 +14,7 @@
 </div>
 
 <!-- Running build — confirms which version is live (e.g. after a deploy or rollback) -->
-<div class="card mb-4">
+<div id="system-version-card" class="card mb-4">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-baseline mb-2">
       <h5 class="card-title mb-0"><i class="bi bi-tag me-2"></i>Build</h5>
@@ -27,10 +27,10 @@
   </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div id="system-stats" class="row g-3 mb-4">
   <!-- CPU -->
   <div class="col-12 col-lg-4">
-    <div class="card h-100">
+    <div id="system-cpu-card" class="card h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-baseline mb-1">
           <h5 class="card-title mb-0"><i class="bi bi-cpu me-2"></i>CPU</h5>
@@ -51,7 +51,7 @@
 
   <!-- Memory -->
   <div class="col-12 col-lg-4">
-    <div class="card h-100">
+    <div id="system-memory-card" class="card h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-baseline mb-1">
           <h5 class="card-title mb-0"><i class="bi bi-memory me-2"></i>Memory</h5>
@@ -70,7 +70,7 @@
 
   <!-- Disk -->
   <div class="col-12 col-lg-4">
-    <div class="card h-100">
+    <div id="system-disk-card" class="card h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-baseline mb-1">
           <h5 class="card-title mb-0"><i class="bi bi-hdd me-2"></i>Storage</h5>
