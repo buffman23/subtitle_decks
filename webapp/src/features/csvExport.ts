@@ -5,8 +5,9 @@ export function initCsvExport(): void {
   document.getElementById('btn-csv')?.addEventListener('click', () => {
     closeFab();
     if (!state.allResults.length) return;
-    const header = 'rank,lemma,frequency,ignored\n';
-    const rows = state.allResults.map((r, i) => `${i + 1},"${r.lemma}",${r.frequency},${r.ignored}`).join('\n');
+    const header = 'rank,lemma,pos,frequency,ignored\n';
+    const rows = state.allResults.map((r, i) =>
+      `${i + 1},"${r.lemma}","${state.posByLemma.get(r.lemma)?.top ?? ''}",${r.frequency},${r.ignored}`).join('\n');
     const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -403,9 +403,29 @@
 }
 
 /* Earlier columns stack above later ones so their handles render on top */
-#results-table thead th:nth-child(1) { z-index: 3; }
-#results-table thead th:nth-child(2) { z-index: 2; }
-#results-table thead th:nth-child(3) { z-index: 1; }
+#results-table thead th:nth-child(1) { z-index: 4; }
+#results-table thead th:nth-child(2) { z-index: 3; }
+#results-table thead th:nth-child(3) { z-index: 2; }
+#results-table thead th:nth-child(4) { z-index: 1; }
+
+#results-tbody td.pos-cell {
+  font-size: .85rem;
+  color: var(--bs-secondary-color);
+}
+
+/* Tap-to-show POS breakdown on touch devices (see ui/pos.ts) */
+.pos-popover {
+  display: none;
+  position: fixed;
+  z-index: 1080;
+  max-width: 240px;
+  padding: .25rem .5rem;
+  background: #212529;
+  color: #fff;
+  border-radius: 4px;
+  font-size: .8rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
 
 /* Action column: fixed, non-resizable, just wide enough for the button */
 #results-table thead th:last-child {

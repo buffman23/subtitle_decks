@@ -110,6 +110,11 @@ function expandValue(field: string, raw: string): string {
   return FEATURE_VALUE_LABELS[field]?.[raw] ?? raw;
 }
 
+/** Readable label for a CAMeL Tools POS tag, or undefined if unknown. */
+export function expandArabicPos(raw: string): string | undefined {
+  return FEATURE_VALUE_LABELS['pos'][raw];
+}
+
 const LEXICAL_FIELDS  = ['lex', 'root', 'gloss', 'diac', 'bw', 'caphi', 'pattern'];
 const MORPH_FIELDS    = ['pos', 'xpos', 'feats', 'per', 'gen', 'num', 'asp', 'mod', 'vox', 'stt', 'cas', 'form_gen', 'form_num'];
 const CLITIC_FIELDS   = ['prc0', 'prc1', 'prc2', 'prc3', 'enc0', 'enc1', 'enc2'];

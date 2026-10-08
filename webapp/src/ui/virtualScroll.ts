@@ -1,5 +1,6 @@
 import type { WordFrequency } from '../types';
 import { state, buildVisibleIndices } from '../state';
+import { buildPosIndex, togglePosPopover, hidePosPopover } from './pos';
 
 let _onIgnore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
 let _onUnignore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
@@ -33,6 +34,7 @@ export function updateSummary(): void {
 function rowHtml(origIdx: number): string {
   const row = state.allResults[origIdx];
   const selected = row.lemma === state.selectedLemma ? ' selected-row' : '';
+  const pos = state.posByLemma.get(row.lemma);
   const actionBtn = (row.ignored && state.showingIgnored)
     ? `<button class="btn btn-outline-danger btn-sm btn-unignore"
                data-word="${escapeHtml(row.lemma)}"
@@ -48,6 +50,7 @@ function rowHtml(origIdx: number): string {
   return `<tr class="result-row${selected}" id="result-row-${origIdx}" data-lemma="${escapeHtml(row.lemma)}">
       <td class="text-muted">${origIdx + 1}</td>
       <td>${escapeHtml(row.lemma)}</td>
+      <td class="pos-cell"${pos ? ` title="${escapeHtml(pos.title)}"` : ''}>${pos ? escapeHtml(pos.top) : ''}</td>
       <td>${row.frequency}</td>
       <td>${actionBtn}</td>
     </tr>`;
@@ -62,6 +65,7 @@ function rowHtml(origIdx: number): string {
 export function renderTable(): void {
   const tbody = document.getElementById('results-tbody');
   if (!tbody) return;
+  hidePosPopover();  // its anchor cell is about to be replaced
   let html = '';
   for (const origIdx of state.visibleIndices) html += rowHtml(origIdx);
   tbody.innerHTML = html;
@@ -90,6 +94,8 @@ function ensureDelegation(): void {
       if (word && _onUnignore) _onUnignore(word, unignoreBtn);
       return;
     }
+    const posCell = target.closest<HTMLElement>('td.pos-cell');
+    if (posCell && togglePosPopover(posCell)) return;
 
     // Lemma selection: only when the lemma cell (2nd column) itself is clicked,
     // and not while the user is selecting text.
@@ -123,6 +129,7 @@ export function renderResults(results: WordFrequency[], totalTokens: number): vo
   state.totalTokensCached = totalTokens;
   state.showingIgnored = false;
   state.selectedLemma = null;
+  state.posByLemma = buildPosIndex(state.parsedSubtitles);
   buildVisibleIndices();
   updateSummary();
 

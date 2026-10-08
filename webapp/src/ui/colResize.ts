@@ -6,7 +6,10 @@ export function applyColWidths(): void {
   const saved = localStorage.getItem(COL_WIDTHS_KEY);
   if (!saved) return;
   const widths: (number | null)[] = JSON.parse(saved);
-  document.querySelectorAll<HTMLElement>('#results-table thead th').forEach((th, i) => {
+  const ths = document.querySelectorAll<HTMLElement>('#results-table thead th');
+  // Widths are saved by column index; ignore them if the columns have changed.
+  if (widths.length !== ths.length) return;
+  ths.forEach((th, i) => {
     if (widths[i] != null) th.style.width = widths[i] + 'px';
   });
 }
