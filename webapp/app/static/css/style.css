@@ -481,6 +481,15 @@
 
 #occurrence-counter { white-space: nowrap; }
 
+/* ? button next to #pos-select: opens #pos-help-modal */
+.pos-help-btn {
+  flex-shrink: 0;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.6);
+}
+.pos-help-btn:hover,
+.pos-help-btn:focus-visible { color: #fff; }
+
 @media (max-width: 767.98px) {
   /* Leave the selected word room in the narrow nav header */
   .pos-select { max-width: 5.5rem; padding-right: 1.5rem; background-position: right .3rem center; }

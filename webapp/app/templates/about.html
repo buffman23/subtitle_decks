@@ -42,93 +42,9 @@
     </li>
   </ul>
 
-  {# "Shown as" must match posAbbr() in src/ui/pos.ts #}
-  {% set general_pos = [
-    ("Noun", "Noun", "Names a person, place, thing or idea. Acts as the subject or object of a verb.", "dog, idea, house"),
-    ("Prop n", "Proper noun", "The name of a specific person, place or organisation.", "Tokyo, María"),
-    ("Verb", "Verb", "Expresses an action or state; the core of the sentence's predicate.", "run, know, become"),
-    ("Aux", "Auxiliary", "A helper verb that adds tense, mood or voice to a main verb, or links a subject to a description (the copula).", "is, have, will, can"),
-    ("Adj", "Adjective", "Describes or qualifies a noun.", "red, happy, old"),
-    ("Adverb", "Adverb", "Modifies a verb, adjective or whole clause — how, when, where or how much.", "quickly, very, here"),
-    ("Pron", "Pronoun", "Stands in for a noun that is already known from context.", "she, this, who"),
-    ("Det", "Determiner", "Introduces a noun and specifies which one or how many.", "the, a, some, my"),
-    ("Prep", "Preposition", "Links a noun to the rest of the sentence to show place, time or relation.", "in, of, with"),
-    ("Conj", "Conjunction", "Joins words, phrases or clauses together.", "and, but, because, that"),
-    ("Part", "Particle", "A small function word with a grammatical job but little meaning of its own.", "not, to (in “to go”)"),
-    ("Interj", "Interjection", "A standalone exclamation or reaction.", "oh!, hey, wow"),
-    ("Number", "Number", "A numeral or number word.", "three, 3"),
-    ("Punct · Symbol · Other", "Punctuation, symbol, unclassified", "Not vocabulary; tagged so it can be told apart from real words.", "?, %, …"),
-  ] %}
-  {% set japanese_pos = [
-    ("Adj n", "Adjectival noun", "A “na-adjective”: describes a noun, taking な before it.", "静か, 好き"),
-    ("Adnom", "Adnominal", "Can only modify the noun that follows it; never inflects.", "この, 大きな"),
-    ("Prefix", "Prefix", "Attaches to the front of a word, often for politeness.", "お (お茶), ご"),
-    ("Suffix", "Suffix", "Attaches to the end of a word, e.g. name honorifics and counters.", "さん, 的, 枚"),
-    ("Part", "Particle", "Marks a word's role in the sentence: topic, subject, object, direction…", "は, が, を, に"),
-    ("Aux", "Auxiliary", "Attaches to verbs and adjectives for politeness, tense or negation.", "です, ます, た, ない"),
-  ] %}
-  {% set arabic_pos = [
-    ("Dem pron", "Demonstrative pronoun", "Points to something: this, that, these.", [("هذا", "this"), ("تلك", "that (f.)")]),
-    ("Rel pron", "Relative pronoun", "Introduces a relative clause: who, which, that.", [("الذي", "who, which (m.)"), ("التي", "who, which (f.)")]),
-    ("Interrog pron", "Interrogative pronoun", "Asks who or what.", [("من", "who?"), ("ماذا", "what?")]),
-    ("Excl pron", "Exclamatory pronoun", "The ما of exclamations: how…!", [("ما أجمل", "how beautiful…!")]),
-    ("Interrog adv", "Interrogative adverb", "Asks when, where or how.", [("متى", "when?"), ("أين", "where?"), ("كيف", "how?")]),
-    ("Rel adv", "Relative adverb", "Introduces a clause of place or time: where, when.", [("حيث", "where")]),
-    ("Comp adj", "Comparative adjective", "The elative form: bigger, biggest.", [("أكبر", "bigger, biggest"), ("أحسن", "better, best")]),
-    ("Num adj", "Numerical adjective", "An ordinal number: first, third.", [("أول", "first"), ("ثالث", "third")]),
-    ("Num n", "Number noun", "A cardinal number word.", [("ثلاثة", "three"), ("عشرون", "twenty")]),
-    ("Quant n", "Quantity noun", "Expresses an amount: all, some, each.", [("كل", "all, every"), ("بعض", "some")]),
-    ("Pseudo v", "Pseudo verb", "إنّ and its sisters: verb-like particles that put the following noun in the accusative.", [("إنّ", "indeed"), ("لكنّ", "but"), ("ليت", "if only")]),
-    ("Neg part", "Negative particle", "Negates a verb or sentence.", [("لا", "not, no"), ("لن", "will not"), ("لم", "did not")]),
-    ("Fut part", "Future marker particle", "Marks the future tense.", [("سوف", "will")]),
-    ("Voc part", "Vocative particle", "Addresses someone directly: O…!", [("يا", "O…!, hey")]),
-    ("Verb part", "Verbal particle", "Comes before a verb to add nuance, e.g. certainty or possibility.", [("قد", "already; may")]),
-    ("Restr part", "Restrictive particle", "Restricts the statement: only, merely.", [("إنما", "only, rather")]),
-    ("Focus part", "Focus particle", "Sets up a topic for emphasis or contrast: as for…", [("أمّا", "as for")]),
-    ("Interrog part", "Interrogative particle", "Turns a statement into a yes/no question.", [("هل", "marks a yes/no question")]),
-    ("Dem part", "Demonstrative particle", "The attention-drawing ها prefixed to demonstratives.", [("ها", "here! — as in هاهو, here he is")]),
-    ("Det part", "Determiner particle", "A particle acting as a determiner before a noun.", ""),
-    ("Sub conj", "Subordinating conjunction", "Introduces a dependent clause: that, because.", [("أنّ", "that"), ("لأنّ", "because")]),
-    ("Abbr", "Abbreviation", "A shortened form of a word or name.", ""),
-    ("Digit", "Digit", "A number written in digits.", [("٣", "3")]),
-    ("Foreign", "Latin/Foreign", "A word in Latin script or from another language.", ""),
-  ] %}
-  {% macro pos_table(id, rows, lang=None) %}
-  <div id="{{ id }}" class="table-responsive">
-    <table id="{{ id }}-table" class="table table-sm small align-top pos-glossary mb-3">
-      <thead><tr><th>Shown as</th><th>Part of speech</th><th>Role in a sentence</th></tr></thead>
-      <tbody>
-        {% for abbr, name, role, example in rows %}
-        <tr id="{{ id }}-{{ name|lower|replace(',', '')|replace('/', '-')|replace(' ', '-') }}">
-          <td><span class="badge text-bg-light border text-nowrap">{{ abbr }}</span></td>
-          <td>{{ name }}</td>
-          <td>{{ role }}{% if example %}<br><span class="text-muted">e.g. {% if example is string %}{% if lang %}<span lang="{{ lang }}"{% if lang == 'ar' %} dir="rtl"{% endif %}>{{ example }}</span>{% else %}<em>{{ example }}</em>{% endif %}{% else %}{% for word, gloss in example %}<span lang="{{ lang }}"{% if lang == 'ar' %} dir="rtl"{% endif %}>{{ word }}</span> <em>“{{ gloss }}”</em>{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</span>{% endif %}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endmacro %}
-
   <section id="pos-section">
   <h5 class="mt-4" id="parts-of-speech">Parts of speech</h5>
-  <p id="pos-intro" class="text-muted small mb-2">
-    Each word's part of speech (POS) is tagged automatically by the language model, so occasional
-    mistags are possible. A word used in more than one role — Spanish <em>que</em> as both a
-    conjunction and a pronoun — can be narrowed to one role with the POS filter in the subtitle
-    navigation.
-  </p>
-  {{ pos_table('pos-general', general_pos) }}
-
-  <details id="pos-japanese" class="mb-2">
-    <summary id="pos-japanese-summary" class="fw-semibold">Japanese-specific categories</summary>
-    {{ pos_table('pos-japanese-glossary', japanese_pos, 'ja') }}
-  </details>
-  <details id="pos-arabic" class="mb-4">
-    <summary id="pos-arabic-summary" class="fw-semibold">Arabic subcategories</summary>
-    <p id="pos-arabic-intro" class="text-muted small mt-2 mb-2">CAMeL Tools splits several categories into finer subtypes.</p>
-    {{ pos_table('pos-arabic-glossary', arabic_pos, 'ar') }}
-  </details>
+  {% include "_pos_glossary.html" %}
   </section>
 </div>
 {% endblock %}

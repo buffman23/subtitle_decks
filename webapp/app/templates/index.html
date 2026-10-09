@@ -186,8 +186,13 @@
                     </button>
                     <span id="selected-lemma-display" dir="auto" class="subtitle-lemma-display fw-bold">—</span>
                     <select id="pos-select" class="form-select form-select-sm py-0 pos-select" aria-label="Part of speech" disabled>
-                      <option value="">All POS</option>
+                      <option value="">All</option>
                     </select>
+                    <button id="btn-pos-help" type="button" class="btn btn-sm btn-link p-0 pos-help-btn"
+                            data-bs-toggle="modal" data-bs-target="#pos-help-modal"
+                            title="What do these parts of speech mean?" aria-label="Part of speech help">
+                      <i class="bi bi-question-circle"></i>
+                    </button>
                     <span id="occurrence-counter" class="text-white-50 small">Select a word</span>
                     <button id="btn-next-occurrence" class="btn btn-sm btn-outline-light py-0" disabled>
                       <i class="bi bi-chevron-right"></i>
@@ -264,6 +269,21 @@
         <a href="/auth/google" class="btn btn-outline-dark">
           <i class="bi bi-google me-1"></i> Sign in with Google
         </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POS help (opened by the ? button next to #pos-select; same glossary as the About page) -->
+<div class="modal fade" id="pos-help-modal" tabindex="-1" aria-labelledby="pos-help-title">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="pos-help-title">Parts of speech</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div id="pos-help-body" class="modal-body">
+        {% include "_pos_glossary.html" %}
       </div>
     </div>
   </div>
