@@ -634,15 +634,66 @@
   overflow-y: auto;
 }
 
-.word-tooltip-section-label {
+.word-tooltip-body > * + * { margin-top: 6px; }
+
+.word-tooltip-lemma-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.word-tooltip-lemma {
+  font-family: "Scheherazade New", serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.word-tooltip-pos-chip {
+  flex-shrink: 0;
   font-size: 0.72rem;
   font-weight: 600;
-  text-transform: uppercase;
-  color: #6c757d;
-  letter-spacing: 0.04em;
-  margin: 8px 0 2px;
+  color: #0d6efd;
+  background: #e7f1ff;
+  border-radius: 10px;
+  padding: 1px 8px;
 }
-.word-tooltip-section-label:first-child { margin-top: 0; }
+
+.word-tooltip-reading { color: #6c757d; }
+
+.word-tooltip-gloss {
+  font-size: 0.9rem;
+  color: #212529;
+}
+
+.word-tooltip-muted { color: #6c757d; }
+
+.word-tooltip-root span[dir] { font-family: "Scheherazade New", serif; font-size: 1rem; }
+
+.word-tooltip-grammar { color: #495057; }
+
+.word-tooltip-clitics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.word-tooltip-clitic {
+  font-size: 0.75rem;
+  background: #f1f3f5;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 0 6px;
+}
+
+.word-tooltip-details summary {
+  font-size: 0.75rem;
+  color: #6c757d;
+  cursor: pointer;
+  user-select: none;
+}
+.word-tooltip-details[open] summary { margin-bottom: 2px; }
 
 .word-tooltip-dl {
   display: grid;

@@ -4,6 +4,7 @@ export interface WordAnalysis {
   // Lexical
   lex?: string; root?: string; gloss?: string; diac?: string;
   bw?: string; caphi?: string; pattern?: string;
+  reading?: string; orth_base?: string;  // Japanese (UniDic)
   // Morphology
   pos?: string; per?: string; gen?: string; num?: string; asp?: string;
   mod?: string; vox?: string; stt?: string; cas?: string;
