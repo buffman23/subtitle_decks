@@ -96,6 +96,22 @@ class AnalysisSession(Base):
         return self.language_row.code
 
 
+class DefinitionCache(Base):
+    """Cached Wiktionary definitions for one lemma (see services/dictionary.py).
+
+    `entries` is [{pos, definitions: [str]}]; an empty list caches "no entry".
+    `lemma` is the normalized lookup key (e.g. Arabic with diacritics stripped).
+    """
+    __tablename__ = "definition_cache"
+    __table_args__ = (UniqueConstraint("language_code", "lemma"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    language_code: Mapped[str] = mapped_column(String)
+    lemma: Mapped[str] = mapped_column(String)
+    entries: Mapped[list] = mapped_column(JSON)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class SessionShare(Base):
     """Grants a user read access to an AnalysisSession owned by someone else.
 

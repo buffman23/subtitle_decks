@@ -1,6 +1,7 @@
 import { applyColWidths, initColResize, applySidebarWidth, initSidebarResize } from './ui/colResize';
 import { registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler, renderTable } from './ui/virtualScroll';
 import { registerPosPickHandler } from './ui/pos';
+import { registerWordActionHandler } from './ui/wordActionMenu';
 import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler, resumePendingAnalysis } from './features/analyze';
 import { initSessions, loadSessions, checkPendingSession, openSession, registerSessionAnalysisCompleteHandler } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
@@ -9,6 +10,7 @@ import { initPosHelp } from './features/posHelp';
 import { initSharing } from './features/sharing';
 import { initSubtitleViewer, selectLemma, onAnalysisComplete } from './features/subtitleViewer';
 import { initWordTooltip } from './ui/wordTooltip';
+import { initDefinitionsContainer } from './features/definitions';
 import { initMobileTabs, isMobileLayout, setMobileTab, onMobileSessionShown } from './features/mobileTabs';
 import { state } from './state';
 
@@ -49,6 +51,20 @@ registerLemmaSelectHandler(lemma => {
   if (isMobileLayout()) setMobileTab('subtitles');
   selectLemma(lemma);
 });
+// On mobile, tapping a word opens a menu by it: its subtitles or its
+// definition (the book tab). Either way the word becomes the selection.
+registerWordActionHandler((lemma, action) => {
+  if (action === 'definition') {
+    selectLemma(lemma);  // the Definition tab shows state.selectedLemma
+    setMobileTab('definition');
+  } else {
+    setMobileTab('subtitles');
+    selectLemma(lemma);
+  }
+  renderTable();
+});
+const definitionPanelBody = document.getElementById('definition-panel-body');
+if (definitionPanelBody) initDefinitionsContainer(definitionPanelBody);
 // Picking a POS from a POS cell's menu selects that word filtered to the POS.
 registerPosPickHandler((lemma, pos) => {
   if (isMobileLayout()) setMobileTab('subtitles');

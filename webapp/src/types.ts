@@ -13,6 +13,10 @@ export interface WordAnalysis {
   enc0?: string; enc1?: string; enc2?: string;
 }
 
+/** Definitions under one part-of-speech heading (Wiktionary or model gloss). */
+export interface DefinitionEntry { pos: string; definitions: string[]; }
+export interface DefinitionsResponse { lemma: string; entries: DefinitionEntry[]; source: string; }
+
 export interface SubtitleSegment { lemma: string; start: number; length: number; analysis?: WordAnalysis | null; }
 export interface SubtitleEntry {
   index: number;

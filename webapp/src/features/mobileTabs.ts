@@ -1,11 +1,14 @@
 /* ── Mobile bottom tab bar. Below the md breakpoint the app shows one
    full-height view at a time; the active one is exposed to CSS as
-   body[data-mobile-tab], which slides a two-panel track between them.
+   body[data-mobile-tab], which slides a three-panel track between them.
    Both panels stay laid out while off-screen, so the table and subtitle
    panes can be scrolled into place before they slide in. Above md the
    attribute is ignored. ── */
 
-export type MobileTab = 'words' | 'subtitles';
+import { state } from '../state';
+import { showDefinitionPanel } from './definitions';
+
+export type MobileTab = 'words' | 'subtitles' | 'definition';
 
 // Must match the mobile breakpoint in style.css.
 const mobileQuery = window.matchMedia('(max-width: 767.98px)');
@@ -15,6 +18,7 @@ export function isMobileLayout(): boolean {
 }
 
 export function setMobileTab(tab: MobileTab): void {
+  if (tab === 'definition') showDefinitionPanel(state.selectedLemma);
   document.body.dataset['mobileTab'] = tab;
   document.querySelectorAll<HTMLButtonElement>('#mobile-tabbar button[data-tab]').forEach(btn => {
     const active = btn.dataset['tab'] === tab;

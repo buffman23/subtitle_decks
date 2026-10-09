@@ -14,6 +14,11 @@ vocabulary study list for the show or film you're watching.
   library (see below).
 - **Per-subtitle token highlighting** — analysis returns character-offset segments per
   line, so the UI can highlight the exact token behind each lemma.
+- **Word definitions** — English definitions grouped by part of speech, for every supported
+  language, from the [Wiktionary](https://en.wiktionary.org/) REST API (CC BY-SA). On
+  desktop, click a selected word again to open its definition card; on mobile, tap a word
+  and choose *Definition*. Lookups are cached in the database for 30 days; Arabic lemmas
+  missing from Wiktionary fall back to the CAMeL Tools gloss.
 - **Saveable analysis sessions** — name, revisit, and share past analyses with other users.
 - **Ignore list & blacklist filtering** — hide words you already know; filtering is
   applied both at the token level (pre-lemmatize) and at the lemma level.
@@ -47,6 +52,7 @@ read as UTF-8 with a fallback to windows-1256.
 - **Frontend** — TypeScript compiled by Vite into a single IIFE bundle; Bootstrap 5.
 - **Auth** — Authlib (Google OAuth) over Starlette `SessionMiddleware`.
 - **NLP** — camel-tools, Stanza, calamancy, fugashi/UniDic.
+- **Dictionary** — Wiktionary REST API (`page/definition`), fetched with httpx.
 
 Heavy analysis runs on a background job queue (`services/job_queue.py`). The app
 intentionally runs a single Uvicorn worker: the NLP model caches are process-local, so
@@ -60,7 +66,7 @@ subtitle_decks/
 │   ├── app/
 │   │   ├── main.py              # FastAPI app, lifespan (DB init, migrations, job queue)
 │   │   ├── config.py            # pydantic-settings, reads .env
-│   │   ├── models.py            # User, BlacklistEntry, AnalysisSession ORM models
+│   │   ├── models.py            # User, IgnoreListEntry, AnalysisSession, DefinitionCache ORM models
 │   │   ├── auth.py              # Google OAuth routes
 │   │   ├── routers/             # pages, analysis, ignorelist, sessions, demo, admin APIs
 │   │   ├── services/            # analysis pipeline + per-language processors
@@ -68,6 +74,7 @@ subtitle_decks/
 │   │   │   ├── subtitle_parser.py      # .srt parsing (decoupled)
 │   │   │   ├── processor_registry.py   # language registry — add processors here
 │   │   │   ├── arabic_processor.py, english_processor.py, ... japanese_processor.py
+│   │   │   ├── dictionary.py           # Wiktionary definitions + DB cache
 │   │   │   └── job_queue.py            # background analysis worker
 │   │   ├── templates/          # Jinja2 templates
 │   │   └── static/             # CSS + compiled JS (app/static/js/app.js, gitignored)
