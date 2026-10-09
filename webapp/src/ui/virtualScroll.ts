@@ -1,6 +1,6 @@
 import type { WordFrequency } from '../types';
 import { state, buildVisibleIndices } from '../state';
-import { buildPosIndex, togglePosPopover, hidePosPopover } from './pos';
+import { buildPosIndex, togglePosPopover, hidePosPopover, posAbbr } from './pos';
 
 let _onIgnore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
 let _onUnignore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
@@ -50,7 +50,7 @@ function rowHtml(origIdx: number): string {
   return `<tr class="result-row${selected}" id="result-row-${origIdx}" data-lemma="${escapeHtml(row.lemma)}">
       <td class="text-muted">${origIdx + 1}</td>
       <td>${escapeHtml(row.lemma)}</td>
-      <td class="pos-cell"${pos ? ` title="${escapeHtml(pos.title)}"` : ''}>${pos ? escapeHtml(pos.top) : ''}</td>
+      <td class="pos-cell"${pos ? ` title="${escapeHtml(pos.top)}"` : ''}>${pos ? escapeHtml(posAbbr(pos.top)) : ''}</td>
       <td>${row.frequency}</td>
       <td>${actionBtn}</td>
     </tr>`;
@@ -95,7 +95,11 @@ function ensureDelegation(): void {
       return;
     }
     const posCell = target.closest<HTMLElement>('td.pos-cell');
-    if (posCell && togglePosPopover(posCell)) return;
+    if (posCell) {
+      const lemma = posCell.closest<HTMLElement>('tr.result-row')?.dataset['lemma'];
+      if (lemma != null) togglePosPopover(posCell, lemma);
+      return;
+    }
 
     // Lemma selection: only when the lemma cell (2nd column) itself is clicked,
     // and not while the user is selecting text.

@@ -164,7 +164,7 @@
                 <tr>
                   <th style="width:calc(4ch + 1rem)">#<div class="col-resize-handle"></div></th>
                   <th>Word<div class="col-resize-handle"></div></th>
-                  <th style="width:7rem">POS<div class="col-resize-handle"></div></th>
+                  <th style="width:5rem">POS<div class="col-resize-handle"></div></th>
                   <th style="width:max(calc(4ch + 1rem), 6rem)">Frequency<div class="col-resize-handle"></div></th>
                   <th></th>
                 </tr>
@@ -185,6 +185,9 @@
                       <i class="bi bi-chevron-left"></i>
                     </button>
                     <span id="selected-lemma-display" dir="auto" class="subtitle-lemma-display fw-bold">—</span>
+                    <select id="pos-select" class="form-select form-select-sm py-0 pos-select" aria-label="Part of speech" disabled>
+                      <option value="">All POS</option>
+                    </select>
                     <span id="occurrence-counter" class="text-white-50 small">Select a word</span>
                     <button id="btn-next-occurrence" class="btn btn-sm btn-outline-light py-0" disabled>
                       <i class="bi bi-chevron-right"></i>

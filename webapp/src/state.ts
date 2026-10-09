@@ -15,6 +15,8 @@ export const state = {
   totalTokensCached: 0,
   parsedSubtitles: [] as SubtitleEntry[],
   selectedLemma: null as string | null,
+  // POS the subtitle navigation is filtered to for selectedLemma (null = all).
+  selectedPos: null as string | null,
   // Most frequent part of speech per lemma, derived from parsedSubtitles.
   posByLemma: new Map<string, LemmaPos>(),
   // The analysis currently being processed by the server, surfaced as a
