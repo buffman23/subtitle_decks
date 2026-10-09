@@ -13,6 +13,7 @@ from app.routers.api_analysis import router as analysis_router
 from app.routers.api_ignorelist import router as ignorelist_router
 from app.routers.api_sessions import router as sessions_router
 from app.routers.api_demo import router as demo_api_router
+from app.routers.api_definitions import router as definitions_router
 from app.routers.admin import router as admin_router
 from app.routers.api_admin import router as admin_api_router
 from app.services.job_queue import manager as job_queue
@@ -56,5 +57,6 @@ app.include_router(analysis_router)
 app.include_router(ignorelist_router)
 app.include_router(sessions_router)
 app.include_router(demo_api_router)
+app.include_router(definitions_router)
 app.include_router(admin_router)
 app.include_router(admin_api_router)

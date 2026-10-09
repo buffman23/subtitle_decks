@@ -1,6 +1,9 @@
 import type { WordFrequency } from '../types';
 import { state, buildVisibleIndices } from '../state';
 import { buildPosIndex, togglePosPopover, hidePosPopover, posAbbr } from './pos';
+import { showDefinitionCard, hideDefinitionCard, isDefinitionCardOpenFor } from './definitionCard';
+import { toggleWordActionMenu, hideWordActionMenu } from './wordActionMenu';
+import { isMobileLayout } from '../features/mobileTabs';
 
 let _onIgnore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
 let _onUnignore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
@@ -66,6 +69,8 @@ export function renderTable(): void {
   const tbody = document.getElementById('results-tbody');
   if (!tbody) return;
   hidePosPopover();  // its anchor cell is about to be replaced
+  hideDefinitionCard();
+  hideWordActionMenu();
   let html = '';
   for (const origIdx of state.visibleIndices) html += rowHtml(origIdx);
   tbody.innerHTML = html;
@@ -109,6 +114,18 @@ function ensureDelegation(): void {
     if (window.getSelection()?.toString()) return;
     const lemma = tr.dataset['lemma'];
     if (lemma == null) return;
+    // Mobile: a tap opens a menu by the word (subtitles or definition).
+    if (isMobileLayout()) {
+      toggleWordActionMenu(tr.children[1] as HTMLElement, lemma);
+      return;
+    }
+    // Desktop: the first click selects the word in the subtitles; clicking the
+    // selected word again toggles its definition card.
+    if (lemma === state.selectedLemma) {
+      if (isDefinitionCardOpenFor(lemma)) hideDefinitionCard();
+      else showDefinitionCard(tr.children[1] as HTMLElement, lemma);
+      return;
+    }
     state.selectedLemma = lemma;
     if (_onLemmaSelect) _onLemmaSelect(lemma);
     renderTable();
