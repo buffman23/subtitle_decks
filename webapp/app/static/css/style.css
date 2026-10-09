@@ -286,6 +286,7 @@
 
 /* Scrollable results table */
 .results-table-wrapper {
+  container-type: inline-size;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #dee2e6;
@@ -411,20 +412,79 @@
 #results-tbody td.pos-cell {
   font-size: .85rem;
   color: var(--bs-secondary-color);
+  cursor: pointer;
 }
 
-/* Tap-to-show POS breakdown on touch devices (see ui/pos.ts) */
+#results-tbody td.pos-cell:hover {
+  text-decoration: underline;
+}
+
+/* The table is fixed-layout, so in a narrow results panel the fixed-width
+   columns would squeeze the Word column to nothing. Drop POS first. */
+@container (max-width: 310px) {
+  #results-table th:nth-child(3),
+  #results-table td:nth-child(3) { display: none; }
+}
+
+/* Click menu of a lemma's POS breakdown (see ui/pos.ts) */
 .pos-popover {
   display: none;
   position: fixed;
   z-index: 1080;
+  min-width: 140px;
   max-width: 240px;
-  padding: .25rem .5rem;
+  padding: .25rem 0;
   background: #212529;
   color: #fff;
   border-radius: 4px;
   font-size: .8rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.pos-popover-item {
+  display: block;
+  width: 100%;
+  padding: .25rem .75rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pos-popover-item:hover { background: rgba(255,255,255,0.12); }
+.pos-popover-item.active { background: rgba(255,255,255,0.22); font-weight: 600; }
+
+/* POS filter in the subtitle navigation */
+.pos-select {
+  width: auto;
+  max-width: 9rem;
+  /* Shrink (truncating the label) before pushing the nav buttons out of a
+     narrow panel */
+  min-width: 4.5rem;
+  flex: 0 1 auto;
+  font-size: .8rem;
+}
+
+#subtitle-nav { min-width: 0; }
+#subtitle-nav > button { flex-shrink: 0; }
+
+/* Single-POS word: a plain label, not a greyed-out dropdown */
+.pos-select.pos-select-single,
+.pos-select.pos-select-single:disabled {
+  background-image: none;
+  background-color: var(--bs-body-bg);
+  padding-right: .5rem !important;
+  opacity: 1;
+  cursor: default;
+}
+
+#occurrence-counter { white-space: nowrap; }
+
+@media (max-width: 767.98px) {
+  /* Leave the selected word room in the narrow nav header */
+  .pos-select { max-width: 5.5rem; padding-right: 1.5rem; background-position: right .3rem center; }
+  #subtitle-nav { gap: .35rem !important; }
 }
 
 /* Action column: fixed, non-resizable, just wide enough for the button */

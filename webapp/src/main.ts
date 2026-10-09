@@ -1,5 +1,6 @@
 import { applyColWidths, initColResize, applySidebarWidth, initSidebarResize } from './ui/colResize';
-import { registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler } from './ui/virtualScroll';
+import { registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler, renderTable } from './ui/virtualScroll';
+import { registerPosPickHandler } from './ui/pos';
 import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler, resumePendingAnalysis } from './features/analyze';
 import { initSessions, loadSessions, checkPendingSession, openSession, registerSessionAnalysisCompleteHandler } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
@@ -46,6 +47,12 @@ registerUnignoreHandler(removeFromIgnoreList);
 registerLemmaSelectHandler(lemma => {
   if (isMobileLayout()) setMobileTab('subtitles');
   selectLemma(lemma);
+});
+// Picking a POS from a POS cell's menu selects that word filtered to the POS.
+registerPosPickHandler((lemma, pos) => {
+  if (isMobileLayout()) setMobileTab('subtitles');
+  selectLemma(lemma, pos);
+  renderTable();
 });
 const onResultsShown = () => { onAnalysisComplete(); onMobileSessionShown(); };
 registerAnalysisCompleteHandler(onResultsShown);

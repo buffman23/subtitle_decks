@@ -3,6 +3,7 @@ import { state, buildVisibleIndices } from '../state';
 import { escapeHtml, scrollTableToLemma, renderTable } from '../ui/virtualScroll';
 import { showWordTooltip, hideWordTooltip, isWordTooltipAnchor } from '../ui/wordTooltip';
 import { isMobileLayout } from './mobileTabs';
+import { posLabel, posAbbr } from '../ui/pos';
 
 type DetectedLanguage = 'arabic' | 'latin' | 'unknown';
 
@@ -14,9 +15,12 @@ interface ViewportData {
 
 // Module-level state
 let nativeSubtitles: SubtitleEntry[] = [];
-let lemmaToSubtitles: Map<string, number[]> = new Map();
+// One appearance of a lemma: the subtitle it's in and its segment's offset.
+interface Occurrence { sub: number; start: number; }
+let lemmaOccurrences: Map<string, Occurrence[]> = new Map();
+let lemmaPosOccurrences: Map<string, Map<string, Occurrence[]>> = new Map();
 let selectedLemma: string | null = null;
-let occurrenceList: number[] = [];
+let occurrenceList: Occurrence[] = [];
 let currentOccurrenceIdx = 0;
 let activeProcessedSubIdx: Set<number> = new Set();
 let activeNativeSubIdx: Set<number> = new Set();
@@ -29,19 +33,45 @@ let scrollLeader: string | null = null;
 const PROCESSED_ID = 'subtitle-viewport-processed';
 const NATIVE_ID = 'subtitle-viewport-native';
 
+function segPos(seg: SubtitleSegment): string | null {
+  return seg.analysis?.pos ? posLabel(seg.analysis.pos) : null;
+}
+
+function pushOcc(map: Map<string, Occurrence[]>, key: string, occ: Occurrence): void {
+  const arr = map.get(key);
+  if (arr) arr.push(occ);
+  else map.set(key, [occ]);
+}
+
+// Every appearance of each lemma (and lemma + POS), in reading order, so
+// prev/next steps word by word and the count matches the lemma's frequency.
 export function buildLemmaIndex(): void {
-  lemmaToSubtitles.clear();
+  lemmaOccurrences.clear();
+  lemmaPosOccurrences.clear();
   for (const sub of state.parsedSubtitles) {
-    const seen = new Set<string>();
-    for (const seg of sub.segments) {
-      if (!seen.has(seg.lemma)) {
-        seen.add(seg.lemma);
-        const arr = lemmaToSubtitles.get(seg.lemma) ?? [];
-        arr.push(sub.index);
-        lemmaToSubtitles.set(seg.lemma, arr);
-      }
+    const segs = [...sub.segments].sort((a, b) => a.start - b.start);
+    for (const seg of segs) {
+      const occ = { sub: sub.index, start: seg.start };
+      pushOcc(lemmaOccurrences, seg.lemma, occ);
+      const pos = segPos(seg);
+      if (!pos) continue;
+      let byPos = lemmaPosOccurrences.get(seg.lemma);
+      if (!byPos) lemmaPosOccurrences.set(seg.lemma, byPos = new Map());
+      pushOcc(byPos, pos, occ);
     }
   }
+}
+
+// Appearances of `lemma`, narrowed to those tagged `pos`.
+function occurrencesFor(lemma: string, pos: string | null): Occurrence[] {
+  if (pos) return lemmaPosOccurrences.get(lemma)?.get(pos) ?? [];
+  return lemmaOccurrences.get(lemma) ?? [];
+}
+
+// Index of the occurrence at (sub, start) — or, with no start, the first one
+// in that subtitle — or -1.
+function findOccurrence(sub: number, start?: number): number {
+  return occurrenceList.findIndex(o => o.sub === sub && (start === undefined || o.start === start));
 }
 
 function renderProcessedText(text: string, segments: SubtitleSegment[]): string {
@@ -50,7 +80,9 @@ function renderProcessedText(text: string, segments: SubtitleSegment[]): string 
   for (const seg of sorted) {
     if (seg.start > pos) result += escapeHtml(text.slice(pos, seg.start));
     const surface = text.slice(seg.start, seg.start + seg.length);
-    result += `<span class="sub-word" data-lemma="${escapeHtml(seg.lemma)}" data-seg-start="${seg.start}">${escapeHtml(surface)}</span>`;
+    const segPosLabel = segPos(seg);
+    const posAttr = segPosLabel ? ` data-pos="${escapeHtml(segPosLabel)}"` : '';
+    result += `<span class="sub-word" data-lemma="${escapeHtml(seg.lemma)}"${posAttr} data-seg-start="${seg.start}">${escapeHtml(surface)}</span>`;
     pos = seg.start + seg.length;
   }
   if (pos < text.length) result += escapeHtml(text.slice(pos));
@@ -116,7 +148,16 @@ function applyActiveState(containerId: string): void {
     if (!entry) continue;
     entry.classList.add('active');
     if (data.isProcessed && selectedLemma) {
-      entry.querySelectorAll<HTMLElement>(`.sub-word[data-lemma="${CSS.escape(selectedLemma)}"]`)
+      // The occurrence being navigated to gets the highlight on its own, so a
+      // subtitle with the word twice visibly steps from one to the other.
+      const current = occurrenceList[currentOccurrenceIdx];
+      if (current && current.sub === idx) {
+        entry.querySelector<HTMLElement>(`.sub-word[data-seg-start="${current.start}"]`)
+          ?.classList.add('active-word');
+        continue;
+      }
+      const posFilter = state.selectedPos ? `[data-pos="${CSS.escape(state.selectedPos)}"]` : '';
+      entry.querySelectorAll<HTMLElement>(`.sub-word[data-lemma="${CSS.escape(selectedLemma)}"]${posFilter}`)
         .forEach(el => el.classList.add('active-word'));
     }
   }
@@ -260,7 +301,7 @@ function initScrollFocus(): void {
 
 function navigateToOccurrence(idx: number): void {
   scrollLeader = null;
-  const subIdx = occurrenceList[idx];
+  const subIdx = occurrenceList[idx].sub;
   activeProcessedSubIdx = new Set([subIdx]);
   scrollToSub('subtitle-viewport-processed', subIdx);
 
@@ -277,13 +318,29 @@ function navigateToOccurrence(idx: number): void {
   updateNavControls();
 }
 
-export function selectLemma(lemma: string): void {
+export function selectLemma(lemma: string, pos: string | null = null): void {
   selectedLemma = lemma;
   state.selectedLemma = lemma;
-  occurrenceList = lemmaToSubtitles.get(lemma) ?? [];
+  state.selectedPos = pos;
+  occurrenceList = occurrencesFor(lemma, pos);
   currentOccurrenceIdx = 0;
   updateNavControls();
   if (occurrenceList.length > 0) navigateToOccurrence(0);
+}
+
+// Switch the POS filter for the selected lemma, staying on the current
+// occurrence (or failing that, its subtitle) when it's still in the list.
+function selectPos(pos: string | null): void {
+  if (!selectedLemma) return;
+  const current = occurrenceList[currentOccurrenceIdx];
+  state.selectedPos = pos;
+  occurrenceList = occurrencesFor(selectedLemma, pos);
+  let idx = current ? findOccurrence(current.sub, current.start) : -1;
+  if (idx === -1 && current) idx = findOccurrence(current.sub);
+  currentOccurrenceIdx = Math.max(0, idx);
+  updateNavControls();
+  if (occurrenceList.length > 0) navigateToOccurrence(currentOccurrenceIdx);
+  else applyActiveState(PROCESSED_ID);
 }
 
 export function navigateOccurrence(delta: 1 | -1): void {
@@ -303,6 +360,25 @@ function updateNavControls(): void {
     : (selectedLemma ? 'No occurrences' : 'Select a word');
   if (prevBtn) prevBtn.disabled = occurrenceList.length < 2;
   if (nextBtn) nextBtn.disabled = occurrenceList.length < 2;
+  updatePosSelect();
+}
+
+function updatePosSelect(): void {
+  const select = document.getElementById('pos-select') as HTMLSelectElement | null;
+  if (!select) return;
+  const counts = selectedLemma ? state.posByLemma.get(selectedLemma)?.counts ?? [] : [];
+  // A word with a single POS has nothing to choose: show just that POS as a
+  // fixed label (no "All", no arrow) rather than a one-choice dropdown.
+  const single = counts.length === 1;
+  let html = single ? '' : '<option value="">All</option>';
+  for (const [pos] of counts) {
+    html += `<option value="${escapeHtml(pos)}" title="${escapeHtml(pos)}">${escapeHtml(posAbbr(pos))}</option>`;
+  }
+  select.innerHTML = html;
+  select.value = single ? counts[0][0] : (state.selectedPos ?? '');
+  select.title = select.value || 'All parts of speech';
+  select.disabled = counts.length < 2;
+  select.classList.toggle('pos-select-single', single);
 }
 
 function ensureLemmaVisible(lemma: string): void {
@@ -323,15 +399,21 @@ function handleProcessedWordClick(lemma: string, span: HTMLElement, tooltipWasOp
   const subEntry = span.closest<HTMLElement>('.subtitle-entry');
   const spanSubIdx = subEntry ? parseInt(subEntry.id.split('-').pop()!, 10) : NaN;
 
+  // Keep the POS filter only if the clicked token matches it, so the clicked
+  // occurrence is always part of the navigation list.
+  const keepPos = lemma === selectedLemma && state.selectedPos != null
+    && span.dataset['pos'] === state.selectedPos;
+  if (!keepPos) state.selectedPos = null;
+
   ensureLemmaVisible(lemma);
   scrollTableToLemma(lemma);
   selectedLemma = lemma;
   state.selectedLemma = lemma;
-  occurrenceList = lemmaToSubtitles.get(lemma) ?? [];
+  occurrenceList = occurrencesFor(lemma, state.selectedPos);
   currentOccurrenceIdx = 0;
 
   if (!isNaN(spanSubIdx)) {
-    const occIdx = occurrenceList.indexOf(spanSubIdx);
+    const occIdx = findOccurrence(spanSubIdx, isNaN(segStart) ? undefined : segStart);
     if (occIdx !== -1) currentOccurrenceIdx = occIdx;
   }
 
@@ -404,6 +486,7 @@ export function onAnalysisComplete(): void {
   renderSubtitleViewport(state.parsedSubtitles, 'subtitle-viewport-processed', lang, true);
   selectedLemma = null;
   state.selectedLemma = null;
+  state.selectedPos = null;
   occurrenceList = [];
   currentOccurrenceIdx = 0;
   activeProcessedSubIdx = new Set();
@@ -435,6 +518,9 @@ export function initSubtitleViewer(): void {
 
   document.getElementById('btn-prev-occurrence')?.addEventListener('click', () => navigateOccurrence(-1));
   document.getElementById('btn-next-occurrence')?.addEventListener('click', () => navigateOccurrence(1));
+  document.getElementById('pos-select')?.addEventListener('change', function (this: HTMLSelectElement) {
+    selectPos(this.value || null);
+  });
 
   document.getElementById('subtitle-viewport-processed')?.addEventListener('click', e => {
     const span = (e.target as Element).closest<HTMLElement>('.sub-word[data-lemma]');
