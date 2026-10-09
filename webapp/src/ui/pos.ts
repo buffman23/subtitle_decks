@@ -1,30 +1,11 @@
 import type { SubtitleEntry } from '../types';
 import { state } from '../state';
-import { expandArabicPos } from './wordTooltip';
+import { posLabel } from './morphLabels';
+
+export { posLabel };
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// Universal Dependencies UPOS (Stanza, calamancy/spaCy)
-const UPOS_LABELS: Record<string, string> = {
-  NOUN: 'Noun', PROPN: 'Proper noun', VERB: 'Verb', AUX: 'Auxiliary',
-  ADJ: 'Adjective', ADV: 'Adverb', PRON: 'Pronoun', DET: 'Determiner',
-  ADP: 'Preposition', CCONJ: 'Conjunction', SCONJ: 'Conjunction',
-  PART: 'Particle', INTJ: 'Interjection', NUM: 'Number',
-  PUNCT: 'Punctuation', SYM: 'Symbol', X: 'Other',
-};
-
-// UniDic pos1 (Japanese)
-const UNIDIC_LABELS: Record<string, string> = {
-  '名詞': 'Noun', '動詞': 'Verb', '形容詞': 'Adjective', '形状詞': 'Adjectival noun',
-  '副詞': 'Adverb', '助詞': 'Particle', '助動詞': 'Auxiliary', '代名詞': 'Pronoun',
-  '連体詞': 'Adnominal', '接続詞': 'Conjunction', '感動詞': 'Interjection',
-  '接頭辞': 'Prefix', '接尾辞': 'Suffix',
-};
-
-export function posLabel(raw: string): string {
-  return UPOS_LABELS[raw] ?? UNIDIC_LABELS[raw] ?? expandArabicPos(raw) ?? raw;
 }
 
 // Dictionary-style abbreviations for the full labels above (all tagsets).
