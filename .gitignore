@@ -43,6 +43,11 @@ Thumbs.db
 
 # Frontend build artifacts
 webapp/app/static/js/app.js
+webapp/app/static/js/cards.js
+webapp/app/static/js/study.js
+
+# Card-creation uploads (local dev)
+webapp/data/
 webapp/node_modules/
 
 # test files

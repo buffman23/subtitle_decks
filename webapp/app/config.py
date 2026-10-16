@@ -16,6 +16,19 @@ class Settings(BaseSettings):
     # Local development only: enables a "log in as any existing user" picker on
     # the login page (no Google OAuth round-trip). MUST stay False in production.
     DEV_MODE: bool = False
+    # AnkiConnect endpoint for the server-side Anki instance that holds every
+    # user's decks (each user's decks live under a top-level deck named after
+    # their email). Must never be publicly reachable.
+    ANKICONNECT_URL: str = "http://127.0.0.1:8765"
+    ANKICONNECT_KEY: str = ""
+    # .apkg export hand-off: Anki writes the package into ANKI_EXPORT_DIR_ANKI
+    # (the path as the Anki process sees it) and the app reads it back from
+    # ANKI_EXPORT_DIR_APP (the same directory/volume as this process sees it).
+    # Both default to one local directory for single-host development.
+    ANKI_EXPORT_DIR_ANKI: str = ""
+    ANKI_EXPORT_DIR_APP: str = ""
+    # Image/audio uploaded during card creation, held until the deck is submitted.
+    CARD_MEDIA_DIR: str = "data/card_media"
 
     class Config:
         env_file = ".env"

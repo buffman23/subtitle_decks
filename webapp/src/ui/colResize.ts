@@ -1,6 +1,7 @@
 const COL_WIDTHS_KEY = 'subtitleAnalyzer.colWidths';
 const SIDEBAR_WIDTH_KEY = 'subtitleAnalyzer.sidebarWidth';
 const SIDEBAR_MIN_WIDTH = 160;
+const SIDEBAR_COLLAPSED_KEY = 'subtitleAnalyzer.sidebarCollapsed';
 
 export function applyColWidths(): void {
   const saved = localStorage.getItem(COL_WIDTHS_KEY);
@@ -70,5 +71,30 @@ export function initColResize(): void {
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     });
+  });
+}
+
+/* Minimize the sessions sidebar to a narrow rail (desktop only; below md it is
+   an offcanvas drawer). The choice is remembered across visits. */
+function setSidebarCollapsed(collapsed: boolean): void {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('btn-collapse-sidebar');
+  if (!sidebar || !btn) return;
+  sidebar.classList.toggle('collapsed', collapsed);
+  const label = collapsed ? 'Expand sessions' : 'Minimize sessions';
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('aria-expanded', String(!collapsed));
+  btn.innerHTML = `<i class="bi bi-chevron-double-${collapsed ? 'right' : 'left'}"></i>`;
+}
+
+export function initSidebarCollapse(): void {
+  const btn = document.getElementById('btn-collapse-sidebar');
+  if (!btn) return;
+  setSidebarCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
+  btn.addEventListener('click', () => {
+    const collapsed = !document.getElementById('sidebar')?.classList.contains('collapsed');
+    setSidebarCollapsed(collapsed);
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
   });
 }

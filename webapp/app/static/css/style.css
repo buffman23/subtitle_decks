@@ -557,8 +557,23 @@
 }
 
 /* Action column: fixed, non-resizable, just wide enough for the button */
-#results-table thead th:last-child {
+#results-table thead th:nth-child(5) {
   width: 50px;
+}
+
+/* Card-selection checkbox column (signed-in users; see cardSelection.ts) */
+#results-table th.card-select-cell {
+  width: 2rem;
+}
+#results-table .card-select-cell {
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 0;
+  padding-right: 0;
+}
+#results-table .card-select-cell .form-check-input {
+  cursor: pointer;
+  margin-top: 0;
 }
 
 #results-table tbody td {
@@ -568,7 +583,8 @@
   vertical-align: middle;
 }
 
-#results-table tbody td:last-child {
+#results-table tbody td:last-child,
+#results-table tbody td:nth-child(5) {
   overflow: visible;
 }
 
@@ -852,6 +868,24 @@
     flex-shrink: 0;
     overflow-y: auto;
   }
+
+  /* Minimized sessions sidebar: a narrow rail with just the expand and
+     new-session buttons (!important beats the saved resize width). */
+  #sidebar.collapsed {
+    width: 48px !important;
+    min-width: 48px;
+    overflow: hidden;
+  }
+  #sidebar.collapsed #sidebar-label,
+  #sidebar.collapsed #session-list { display: none !important; }
+  #sidebar.collapsed #sidebar-header {
+    padding: .5rem !important;
+    justify-content: center !important;
+    border-bottom: 0 !important;
+  }
+  #sidebar.collapsed #sidebar-header-actions { flex-direction: column; }
+  #sidebar.collapsed #btn-collapse-sidebar { order: -1; }
+  #sidebar.collapsed + #sidebar-resize-handle { display: none; }
 }
 
 /* ---------- Responsive: icons-only toolbar (< 576px) ---------- */
@@ -1014,3 +1048,89 @@
   .table.table-stack tr.stack-full { border: 0; padding: 0; }
   .table.table-stack tr.stack-full td { justify-content: center; text-align: center !important; }
 }
+
+/* ── Card wizard (cards.html) ─────────────────────────────────────────── */
+.cards-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-top: 1rem;
+  padding: .75rem 0;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+}
+.example-picker { background: var(--bs-tertiary-bg); }
+.example-line {
+  min-height: 1.5em;
+  font-size: 1.1rem;
+  padding: .25rem .5rem;
+  background: var(--bs-body-bg);
+  border-radius: .25rem;
+}
+.example-line mark { padding: 0 .1em; }
+.media-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 140px;
+  border-radius: .25rem;
+}
+.media-preview { margin-bottom: .5rem; }
+
+/* Card faces, shared by the wizard preview and the Study page; mirrors the
+   SubtitleDecks note type's CSS in app/services/anki_client.py. */
+.anki-card-preview,
+.anki-card {
+  text-align: center;
+  border: 1px solid var(--bs-border-color);
+  border-radius: .5rem;
+  background: var(--bs-body-bg);
+  padding: 1rem;
+}
+.anki-card-preview { font-size: .9rem; }
+.anki-card { min-height: 260px; padding: 2rem 1rem; font-size: 1.35rem; }
+.anki-word { font-size: 1.8em; font-weight: 600; }
+.anki-native { font-size: 1.4em; }
+.anki-example { color: var(--bs-secondary-color); margin-top: .75rem; }
+.anki-image img { max-width: 100%; max-height: 300px; margin-top: .75rem; border-radius: .25rem; }
+.anki-card-preview .anki-image img { max-height: 120px; }
+.anki-answer { margin: 1rem 0; }
+.anki-word .anki-play {
+  border: 0;
+  background: none;
+  padding: 0 .1em;
+  color: var(--bs-primary);
+  font-size: .8em;
+  vertical-align: middle;
+  line-height: 1;
+}
+.anki-word .anki-play:hover { color: var(--bs-primary-text-emphasis); }
+#decks-table td.count-new { color: #0d6efd; }
+#decks-table td.count-learn { color: #dc3545; }
+#decks-table td.count-review { color: #198754; }
+
+/* ── Study page (study.html) ──────────────────────────────────────────── */
+.count-new { color: #0d6efd; }
+.count-learn { color: #dc3545; }
+.count-review { color: #198754; }
+.study-counts { font-weight: 600; white-space: nowrap; }
+.study-counts .current { text-decoration: underline; }
+.study-controls { text-align: center; margin-top: 1rem; }
+.study-answers { display: flex; justify-content: center; gap: .5rem; flex-wrap: wrap; }
+.btn-answer {
+  min-width: 6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+}
+.btn-answer .interval { font-size: .75rem; opacity: .85; min-height: 1.1em; }
+.btn-again { background: #dc3545; }
+.btn-hard { background: #6c757d; }
+.btn-good { background: #198754; }
+.btn-easy { background: #0d6efd; }
+.btn-answer:hover, .btn-answer:focus-visible { color: #fff; filter: brightness(1.1); }
+.note-thumb { max-height: 48px; max-width: 80px; border-radius: .25rem; }

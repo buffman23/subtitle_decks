@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.dependencies import get_db, get_current_user
 from app.models import User
+from app.routers.api_sessions import _get_accessible_session
 from app.services.app_settings import effective_max_upload_bytes
 from app.services.processor_registry import get_available_languages
 from app.templating import templates
@@ -54,6 +55,31 @@ async def about(request: Request, db: Session = Depends(get_db)):
         "about.html",
         {"user": user},
     )
+
+
+@router.get("/sessions/{session_id}/cards", response_class=HTMLResponse)
+async def create_cards(session_id: int, request: Request, db: Session = Depends(get_db)):
+    # Card-creation wizard; its data (session + draft) is loaded by cards.js.
+    user = get_current_user(request, db)
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
+    try:
+        session, _ = _get_accessible_session(session_id, user, db)
+    except HTTPException:
+        return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse(
+        request,
+        "cards.html",
+        {"user": user, "session_id": session.id, "session_name": session.name},
+    )
+
+
+@router.get("/study", response_class=HTMLResponse)
+async def study(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
+    return templates.TemplateResponse(request, "study.html", {"user": user})
 
 
 @router.get("/login", response_class=HTMLResponse)

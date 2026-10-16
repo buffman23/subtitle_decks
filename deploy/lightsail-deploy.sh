@@ -84,8 +84,11 @@ start_container() {
   sudo docker rm -f subtitle-decks 2>/dev/null || true
   sudo docker volume create subtitle-decks-data >/dev/null
   sudo docker volume create subtitle-decks-stanza >/dev/null
+  sudo docker volume create subtitle-decks-anki-exports >/dev/null
+  sudo docker network create subtitle-decks-net >/dev/null 2>&1 || true
   # Bind to loopback only — Caddy (on the host) terminates TLS and proxies in.
-  # Models are mounted read-only from the persistent volume.
+  # Models are mounted read-only from the persistent volume. The private
+  # network reaches the Anki container (ensure_anki) as http://anki:8765.
   sudo docker run -d \
     --name subtitle-decks \
     --restart unless-stopped \
@@ -94,8 +97,46 @@ start_container() {
     -v subtitle-decks-models:/opt/camel_tools_data:ro \
     -v subtitle-decks-unidic:/opt/unidic_data:ro \
     -v subtitle-decks-stanza:/opt/stanza_data:ro \
+    -v subtitle-decks-anki-exports:/app/anki_exports \
+    --network subtitle-decks-net \
+    -e ANKICONNECT_URL=http://anki:8765 \
+    -e ANKI_EXPORT_DIR_ANKI=/exports \
+    -e ANKI_EXPORT_DIR_APP=/app/anki_exports \
     -p 127.0.0.1:8000:8000 \
     subtitle-decks
+}
+
+# Headless Anki + AnkiConnect holding every user's card decks (see
+# deploy/anki/). It sits on the private network with no published port, so only
+# the app container can reach it. The collection lives on the
+# subtitle-decks-anki-data volume; .apkg exports are handed to the app through
+# subtitle-decks-anki-exports. It is restarted only when its image changes, so
+# app deploys don't interrupt it.
+ensure_anki() {
+  sudo docker network create subtitle-decks-net >/dev/null 2>&1 || true
+  sudo docker volume create subtitle-decks-anki-data >/dev/null
+  sudo docker volume create subtitle-decks-anki-exports >/dev/null
+  sudo docker build -t subtitle-decks-anki "$REPO_DIR/deploy/anki"
+  local want have running key
+  want=$(sudo docker image inspect -f '{{.Id}}' subtitle-decks-anki)
+  have=$(sudo docker inspect -f '{{.Image}}' subtitle-decks-anki 2>/dev/null || echo)
+  running=$(sudo docker inspect -f '{{.State.Running}}' subtitle-decks-anki 2>/dev/null || echo false)
+  if [ "$want" = "$have" ] && [ "$running" = "true" ]; then
+    echo "[deploy] Anki container is up to date"
+    return 0
+  fi
+  echo "[deploy] (re)starting the Anki container..."
+  sudo docker rm -f subtitle-decks-anki 2>/dev/null || true
+  key=$(grep -E '^ANKICONNECT_KEY=' .env | cut -d= -f2- | tr -d "\"'" || true)
+  sudo docker run -d \
+    --name subtitle-decks-anki \
+    --restart unless-stopped \
+    --network subtitle-decks-net \
+    --network-alias anki \
+    -e ANKICONNECT_KEY="$key" \
+    -v subtitle-decks-anki-data:/data \
+    -v subtitle-decks-anki-exports:/exports \
+    subtitle-decks-anki
 }
 
 wait_healthy() {
@@ -212,6 +253,11 @@ sudo docker build \
   --build-arg GIT_REF="$GIT_REF" \
   --build-arg BUILD_TIME="$BUILD_TIME" \
   -t subtitle-decks .
+
+# --- Anki (card decks) -----------------------------------------------------
+echo "[deploy] ensuring the Anki container..."
+status anki "Preparing Anki…"
+ensure_anki
 
 # --- ensure camel_tools models on a persistent volume (downloaded once) ----
 # The image no longer bakes in the ~1.8GB of models. They live on the named

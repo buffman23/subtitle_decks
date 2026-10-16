@@ -210,6 +210,40 @@ uvicorn directly without Docker, if you ever drop the container approach.)
 
 ---
 
+## Anki (card decks + Study page)
+Card creation and the Study page talk to a **headless Anki desktop + AnkiConnect**
+running in its own container, built from `deploy/anki/` and started by
+`ensure_anki` in `lightsail-deploy.sh`:
+
+- **One shared collection.** Each user's decks are subdecks of a top-level deck
+  named after their email (`someone@example.com::barbarians-de`). The app is the
+  only thing that builds deck names or queries (`app/services/anki_decks.py`)
+  and it checks ownership on every note/card ID it receives.
+- **Private.** The container joins the `subtitle-decks-net` Docker network as
+  `anki` and publishes **no** port. The app reaches it at `http://anki:8765`
+  (passed with `-e`, so these values override `.env`). Nothing on the host or
+  the internet can reach AnkiConnect.
+- **Volumes:** `subtitle-decks-anki-data` holds the Anki profile and collection
+  (back it up together with `subtitle-decks-data`). `subtitle-decks-anki-exports`
+  is a scratch hand-off for `.apkg` exports: Anki writes to `/exports`, and the
+  app reads the file from `/app/anki_exports` and then deletes it.
+- **Restarts:** the Anki image is rebuilt on every deploy (cached, so it takes
+  seconds). The container is only replaced when that image changes, so ordinary
+  app deploys don't interrupt studying.
+- **Optional API key:** set `ANKICONNECT_KEY=...` in the server `.env`. The
+  deploy passes it to the Anki container, and the app reads it from `.env`.
+- **Logs / health:**
+  - Logs: `sudo docker logs subtitle-decks-anki`
+  - Health: the container healthcheck calls AnkiConnect's `version` action.
+  - From the app container:
+    `sudo docker exec subtitle-decks python -c "from app.services.anki_client import invoke; print(invoke('version'))"`.
+
+If the Anki container is down, the app keeps working. The card and study
+endpoints return 503 with "The Anki service is unavailable", and card drafts
+keep being saved.
+
+---
+
 ## Persistence note
 Because the SQLite file lives on the `subtitle-decks-data` **Docker volume**
 (not the container's ephemeral layer), user accounts/sessions/ignore lists

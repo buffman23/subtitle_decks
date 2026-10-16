@@ -9,6 +9,10 @@ export const state = {
   // sessions are read-only on content, so owner-only writes (native-subtitle
   // persistence) are skipped when this is false.
   activeSessionOwned: true,
+  activeSessionName: '',
+  // Words ticked in the results table's card column for card creation (the
+  // selection is persisted per session in its card draft; see cardSelection.ts).
+  cardSelection: new Set<string>(),
   showingIgnored: false,
   allResults: [] as WordFrequency[],
   visibleIndices: [] as number[],

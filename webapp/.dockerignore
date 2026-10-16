@@ -15,6 +15,10 @@ app.db
 .env
 # Build artifacts / caches
 app/static/js/app.js
+app/static/js/cards.js
+app/static/js/study.js
+# Local card-creation uploads (dev)
+data
 __pycache__
 **/__pycache__
 *.pyc

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Create Cards — Subtitle Decks{% endblock %}
+{% block content %}
+<div id="cards-app" class="container py-3" style="max-width:1100px"
+     data-session-id="{{ session_id }}" data-session-name="{{ session_name }}">
+
+  <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+    <h4 class="mb-0">Create cards</h4>
+    <span class="text-muted text-truncate" id="cards-session-name">{{ session_name }}</span>
+    <span class="ms-auto small text-muted" id="cards-step-label"></span>
+  </div>
+  <div class="progress mb-3" role="progressbar" aria-label="Card creation progress" style="height:6px">
+    <div class="progress-bar" id="cards-progress" style="width:0%"></div>
+  </div>
+
+  <div id="cards-loading" class="text-center text-muted py-5">
+    <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+  </div>
+
+  <!-- Step 0: deck -->
+  <section id="step-deck" class="cards-step d-none">
+    <div class="card">
+      <div class="card-body">
+        <label for="deck-name" class="form-label fw-semibold">Deck name</label>
+        <input type="text" class="form-control" id="deck-name" list="deck-options" maxlength="100"
+               autocomplete="off" placeholder="e.g. Barbarians S1">
+        <datalist id="deck-options"></datalist>
+        <div class="form-text" id="deck-hint"></div>
+        <div class="invalid-feedback" id="deck-error"></div>
+        <div class="alert alert-warning small mt-3 mb-0 d-none" id="deck-anki-warning">
+          The Anki service is unavailable right now, so existing decks can't be listed.
+          You can still prepare your cards; they are saved as you go.
+        </div>
+        <hr>
+        <p class="mb-1"><span id="deck-word-count" class="fw-semibold"></span> selected:</p>
+        <div id="deck-word-list" class="d-flex flex-wrap gap-1"></div>
+        <p class="small text-muted mt-2 mb-0">
+          Each word becomes one note with two cards: foreign → native and native → foreign.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Steps 1..N: one card per word -->
+  <section id="step-card" class="cards-step d-none">
+    <div class="row g-3">
+      <div class="col-lg-7">
+        <div class="card">
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="card-word" class="form-label fw-semibold">Foreign word <span class="badge text-bg-light border">front</span></label>
+              <div class="d-flex align-items-center gap-2">
+                <input type="text" class="form-control form-control-lg" id="card-word" dir="auto" maxlength="200">
+                <button type="button" class="btn btn-outline-primary d-none flex-shrink-0" id="card-word-play"
+                        title="Play audio" aria-label="Play audio"><i class="bi bi-volume-up"></i></button>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="card-native" class="form-label fw-semibold">Native word <span class="badge text-bg-light border">back</span></label>
+              <input type="text" class="form-control" id="card-native" dir="auto" maxlength="500">
+              <div class="invalid-feedback">A native word is required.</div>
+            </div>
+
+            <!-- Example sentence picker -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold mb-1">Example sentences <span class="text-muted fw-normal small">(optional)</span></label>
+              <div class="example-picker border rounded p-2">
+                <div class="d-flex align-items-center gap-1 small text-muted mb-1">
+                  <span>Subtitle</span>
+                  <span id="ex-time" class="font-monospace"></span>
+                  <div class="ms-auto btn-group btn-group-sm" role="group" aria-label="Occurrences">
+                    <button type="button" class="btn btn-outline-secondary" id="ex-occ-prev" title="Previous occurrence of this word"><i class="bi bi-chevron-left"></i></button>
+                    <span class="btn btn-outline-secondary disabled text-nowrap" id="ex-occ-label"></span>
+                    <button type="button" class="btn btn-outline-secondary" id="ex-occ-next" title="Next occurrence of this word"><i class="bi bi-chevron-right"></i></button>
+                  </div>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Browse lines">
+                    <button type="button" class="btn btn-outline-secondary" id="ex-line-prev" title="Previous subtitle line"><i class="bi bi-arrow-up"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" id="ex-line-next" title="Next subtitle line"><i class="bi bi-arrow-down"></i></button>
+                  </div>
+                </div>
+                <div id="ex-foreign" class="example-line" dir="auto"></div>
+                <div id="ex-native-wrap">
+                  <div class="d-flex align-items-center gap-1 small text-muted mt-2 mb-1">
+                    <span>Native subtitle</span>
+                    <div class="ms-auto btn-group btn-group-sm" role="group" aria-label="Native lines">
+                      <button type="button" class="btn btn-outline-secondary" id="ex-native-prev" title="Earlier native line"><i class="bi bi-arrow-up"></i></button>
+                      <button type="button" class="btn btn-outline-secondary" id="ex-native-next" title="Later native line"><i class="bi bi-arrow-down"></i></button>
+                    </div>
+                  </div>
+                  <div id="ex-native" class="example-line" dir="auto"></div>
+                </div>
+                <p id="ex-no-native" class="small text-muted mt-2 mb-0 d-none">
+                  This session has no native subtitles. Load them on the main page to pick translated examples.
+                </p>
+                <div class="d-flex gap-2 mt-2">
+                  <button type="button" class="btn btn-sm btn-primary" id="ex-use"><i class="bi bi-check2"></i> Use as example</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="ex-clear">Clear examples</button>
+                </div>
+              </div>
+              <div class="row g-2 mt-1">
+                <div class="col-md-6">
+                  <label for="card-example-foreign" class="form-label small mb-0">Foreign example <span class="badge text-bg-light border">front</span></label>
+                  <textarea class="form-control form-control-sm" id="card-example-foreign" rows="2" dir="auto" maxlength="5000"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <label for="card-example-native" class="form-label small mb-0">Native example <span class="badge text-bg-light border">back</span></label>
+                  <textarea class="form-control form-control-sm" id="card-example-native" rows="2" dir="auto" maxlength="5000"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Media -->
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold mb-1">Image <span class="text-muted fw-normal small">(optional)</span></label>
+                <div id="card-image-preview" class="media-preview d-none">
+                  <img alt="Card image" id="card-image-img">
+                  <button type="button" class="btn btn-sm btn-outline-danger mt-1" id="card-image-remove"><i class="bi bi-trash"></i> Remove</button>
+                </div>
+                <input type="file" class="form-control form-control-sm" id="card-image-input"
+                       accept="image/jpeg,image/png,image/gif,image/webp">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold mb-1">Audio <span class="text-muted fw-normal small">(optional)</span></label>
+                <div id="card-audio-preview" class="media-preview d-none">
+                  <div class="small text-truncate" id="card-audio-name"></div>
+                  <button type="button" class="btn btn-sm btn-outline-danger mt-1" id="card-audio-remove"><i class="bi bi-trash"></i> Remove</button>
+                </div>
+                <input type="file" class="form-control form-control-sm" id="card-audio-input"
+                       accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/wav,audio/webm">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live preview of the two cards this note produces -->
+      <div class="col-lg-5">
+        <div class="card-preview-label small text-muted mb-1">Card preview · front → back</div>
+        <div class="anki-card-preview mb-3" id="preview-forward"></div>
+        <div class="card-preview-label small text-muted mb-1">Reverse card · front → back</div>
+        <div class="anki-card-preview" id="preview-reverse"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Done -->
+  <section id="step-done" class="cards-step d-none">
+    <div class="card text-center">
+      <div class="card-body py-5">
+        <i class="bi bi-check-circle text-success" style="font-size:3rem"></i>
+        <h4 class="mt-2" id="done-title">Deck created</h4>
+        <p class="text-muted" id="done-detail"></p>
+        <a class="btn btn-primary" id="done-study" href="/study"><i class="bi bi-play-fill"></i> Study now</a>
+        <a class="btn btn-outline-secondary" id="done-back" href="/">Back to session</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <div id="cards-footer" class="cards-footer d-none">
+    <button type="button" class="btn btn-outline-danger" id="cards-cancel">Cancel</button>
+    <a class="btn btn-link text-decoration-none" id="cards-exit" href="/">Save &amp; exit</a>
+    <span class="ms-auto small text-muted" id="cards-save-status"></span>
+    <button type="button" class="btn btn-outline-secondary" id="cards-prev"><i class="bi bi-chevron-left"></i> Previous</button>
+    <button type="button" class="btn btn-primary" id="cards-next">Next <i class="bi bi-chevron-right"></i></button>
+  </div>
+</div>
+
+<audio id="card-audio-player" preload="none"></audio>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ asset_url('js/cards.js') }}"></script>
+{% endblock %}
