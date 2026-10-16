@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 \
       libxcb-xkb1 libxcb-xfixes0 libegl1 libgl1 libfontconfig1 libdbus-1-3 libnss3 \
       libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxi6 libxkbfile1 libasound2 \
+      libglib2.0-0 libpulse0 \
  && rm -rf /var/lib/apt/lists/*
 
 # Same Anki release the integration was developed and tested against.
