@@ -8,6 +8,11 @@ import { isMobileLayout } from '../features/mobileTabs';
 let _onIgnore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
 let _onUnignore: ((word: string, btn: HTMLButtonElement) => void) | null = null;
 let _onLemmaSelect: ((lemma: string) => void) | null = null;
+let _onCardSelect: ((lemmas: string[], checked: boolean) => void) | null = null;
+
+// The card-selection column exists only for signed-in users on their own
+// pages (the header cell is rendered under the same condition in index.html).
+export const cardColumnEnabled = (): boolean => IS_LOGGED_IN && !DEMO_MODE;
 
 export function registerIgnoreHandler(fn: (word: string, btn: HTMLButtonElement) => void): void {
   _onIgnore = fn;
@@ -19,6 +24,12 @@ export function registerUnignoreHandler(fn: (word: string, btn: HTMLButtonElemen
 
 export function registerLemmaSelectHandler(fn: (lemma: string) => void): void {
   _onLemmaSelect = fn;
+}
+
+export function registerCardSelectHandler(
+  fn: (lemmas: string[], checked: boolean) => void,
+): void {
+  _onCardSelect = fn;
 }
 
 export function escapeHtml(str: string): string {
@@ -55,7 +66,9 @@ function rowHtml(origIdx: number): string {
       <td>${escapeHtml(row.lemma)}</td>
       <td class="pos-cell"${pos ? ` title="${escapeHtml(pos.top)}"` : ''}>${pos ? escapeHtml(posAbbr(pos.top)) : ''}</td>
       <td>${row.frequency}</td>
-      <td>${actionBtn}</td>
+      <td>${actionBtn}</td>${cardColumnEnabled() ? `
+      <td class="card-select-cell"><input type="checkbox" class="form-check-input card-select"
+          aria-label="Select for card creation"${state.cardSelection.has(row.lemma) ? ' checked' : ''}></td>` : ''}
     </tr>`;
 }
 
@@ -74,6 +87,18 @@ export function renderTable(): void {
   let html = '';
   for (const origIdx of state.visibleIndices) html += rowHtml(origIdx);
   tbody.innerHTML = html;
+  updateSelectAllCheckbox();
+}
+
+// Header checkbox: checked when every visible row is selected, indeterminate
+// when only some are.
+export function updateSelectAllCheckbox(): void {
+  const all = document.getElementById('card-select-all') as HTMLInputElement | null;
+  if (!all) return;
+  const visible = state.visibleIndices.map(i => state.allResults[i].lemma);
+  const n = visible.filter(l => state.cardSelection.has(l)).length;
+  all.checked = n > 0 && n === visible.length;
+  all.indeterminate = n > 0 && n < visible.length;
 }
 
 let _delegated = false;
@@ -83,6 +108,17 @@ function ensureDelegation(): void {
   const tbody = document.getElementById('results-tbody');
   if (!tbody) return;
   _delegated = true;
+
+  tbody.addEventListener('change', (e) => {
+    const input = (e.target as Element).closest<HTMLInputElement>('input.card-select');
+    const lemma = input?.closest<HTMLElement>('tr.result-row')?.dataset['lemma'];
+    if (input && lemma != null && _onCardSelect) _onCardSelect([lemma], input.checked);
+  });
+  document.getElementById('card-select-all')?.addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    const visible = state.visibleIndices.map(i => state.allResults[i].lemma);
+    if (_onCardSelect) _onCardSelect(visible, input.checked);
+  });
 
   tbody.addEventListener('click', (e) => {
     const target = e.target as Element;
@@ -150,6 +186,7 @@ export function renderResults(results: WordFrequency[], totalTokens: number): vo
   state.totalTokensCached = totalTokens;
   state.showingIgnored = false;
   state.selectedLemma = null;
+  state.cardSelection = new Set();  // a session's selection is restored from its draft
   state.posByLemma = buildPosIndex(state.parsedSubtitles);
   buildVisibleIndices();
   updateSummary();

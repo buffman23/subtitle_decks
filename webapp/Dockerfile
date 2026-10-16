@@ -10,8 +10,9 @@ WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Build the IIFE bundle (vite outputs to app/static/js/app.js)
+# Build the IIFE bundles (vite outputs app.js, cards.js, study.js to app/static/js/)
 COPY tsconfig.json vite.config.ts ./
+COPY scripts/build.mjs ./scripts/build.mjs
 COPY src ./src
 RUN npm run build
 
@@ -75,7 +76,7 @@ RUN UD="$(python -c 'import unidic; print(unidic.DICDIR)')" \
 
 # Application code + the compiled frontend bundle from stage 1
 COPY app ./app
-COPY --from=frontend /build/app/static/js/app.js ./app/static/js/app.js
+COPY --from=frontend /build/app/static/js/app.js /build/app/static/js/cards.js /build/app/static/js/study.js ./app/static/js/
 
 # Build provenance, baked in by deploy/lightsail-deploy.sh (the running container
 # has no .git, so this is how the admin page knows which build is live). Placed

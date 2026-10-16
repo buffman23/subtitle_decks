@@ -1,11 +1,12 @@
-import { applyColWidths, initColResize, applySidebarWidth, initSidebarResize } from './ui/colResize';
+import { applyColWidths, initColResize, applySidebarWidth, initSidebarResize, initSidebarCollapse } from './ui/colResize';
 import { registerIgnoreHandler, registerUnignoreHandler, registerLemmaSelectHandler, renderTable } from './ui/virtualScroll';
 import { registerPosPickHandler } from './ui/pos';
 import { registerWordActionHandler } from './ui/wordActionMenu';
 import { initAnalyzeForm, initToggleIgnored, registerAnalysisCompleteHandler, resumePendingAnalysis } from './features/analyze';
-import { initSessions, loadSessions, checkPendingSession, openSession, registerSessionAnalysisCompleteHandler } from './features/sessions';
+import { loadSessions, checkPendingSession, openSession, registerSessionAnalysisCompleteHandler } from './features/sessions';
 import { initIgnoreList, addToIgnoreList, removeFromIgnoreList } from './features/ignorelist';
 import { initCsvExport } from './features/csvExport';
+import { initCardSelection, updateCreateCardsButton } from './features/cardSelection';
 import { initPosHelp } from './features/posHelp';
 import { initSharing } from './features/sharing';
 import { initSubtitleViewer, selectLemma, onAnalysisComplete } from './features/subtitleViewer';
@@ -71,15 +72,15 @@ registerPosPickHandler((lemma, pos) => {
   selectLemma(lemma, pos);
   renderTable();
 });
-const onResultsShown = () => { onAnalysisComplete(); onMobileSessionShown(); };
+const onResultsShown = () => { onAnalysisComplete(); onMobileSessionShown(); updateCreateCardsButton(); };
 registerAnalysisCompleteHandler(onResultsShown);
 registerSessionAnalysisCompleteHandler(onResultsShown);
 
 initAnalyzeForm();
 initToggleIgnored();
-initSessions();
 initIgnoreList();
 initCsvExport();
+initCardSelection();
 initSharing();
 initSubtitleViewer();
 initPosHelp();
@@ -90,6 +91,7 @@ applyColWidths();
 initColResize();
 applySidebarWidth();
 initSidebarResize();
+initSidebarCollapse();
 
 /* ── On the public demo page, just load the demo sessions into the sidebar for
    everyone (logged in or not); skip all the owned-session bootstrapping below. ── */

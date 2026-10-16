@@ -185,3 +185,81 @@ class UserUploadLimitRequest(BaseModel):
         if v is not None and v < 1:
             raise ValueError("Upload limit must be at least 1 KB.")
         return v
+
+
+# ---------------------------------------------------------------------------
+# Anki card creation / study
+# ---------------------------------------------------------------------------
+
+_TEXT_MAX = 5000
+
+
+class DraftMediaRef(BaseModel):
+    id: str
+    name: str
+    mime: str
+
+
+class DraftCard(BaseModel):
+    word: str = ""
+    native: str = ""
+    example_foreign: str = ""
+    example_native: str = ""
+    # Subtitle indexes the example picker was last positioned on.
+    example_sub_index: int | None = None
+    native_sub_index: int | None = None
+    image: DraftMediaRef | None = None
+    audio: DraftMediaRef | None = None
+
+    @field_validator("word", "native", "example_foreign", "example_native")
+    @classmethod
+    def bounded(cls, v: str) -> str:
+        if len(v) > _TEXT_MAX:
+            raise ValueError(f"Fields are limited to {_TEXT_MAX} characters.")
+        return v
+
+
+class CardDraftOut(BaseModel):
+    session_id: int
+    selected_lemmas: list[str]
+    deck_name: str | None
+    current_step: int
+    cards: dict[str, DraftCard]
+    updated_at: datetime
+
+
+class CardDraftUpdate(BaseModel):
+    """Partial update; omitted fields are left unchanged."""
+    selected_lemmas: list[str] | None = None
+    deck_name: str | None = None
+    current_step: int | None = None
+    cards: dict[str, DraftCard] | None = None
+
+
+class DraftSubmitResult(BaseModel):
+    deck: str
+    added: int
+    skipped: int
+
+
+class AnkiDeckOut(BaseModel):
+    name: str
+    new: int
+    learn: int
+    review: int
+    total: int
+
+
+class AnkiNoteOut(BaseModel):
+    note_id: int
+    word: str
+    native: str
+    example_foreign: str
+    example_native: str
+    image: str | None
+    audio: str | None
+
+
+class StudyAnswerRequest(BaseModel):
+    card_id: int
+    ease: int

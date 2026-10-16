@@ -1,10 +1,11 @@
 import { state } from '../state';
 import { flash } from '../ui/flash';
 import { renderResults } from '../ui/virtualScroll';
-import { resetUpload, viewPendingAnalysis, cancelPendingAnalysis } from './analyze';
+import { viewPendingAnalysis, cancelPendingAnalysis } from './analyze';
 import { getNativeSubtitles, restoreNativeSubtitles } from './subtitleViewer';
 import { renderShareControls } from './sharing';
 import { onMobileSessionShown } from './mobileTabs';
+import { loadCardSelection } from './cardSelection';
 
 let _onAnalysisComplete: (() => void) | null = null;
 
@@ -424,6 +425,7 @@ export async function openSession(id: number): Promise<void> {
   state.parsedSubtitles = session.subtitles ?? [];
   state.activeSessionId = id;
   state.activeSessionOwned = session.owned !== false;
+  state.activeSessionName = session.name ?? '';
 
   // Re-apply current ignore list so additions/removals since save are reflected
   const igRes = await fetch(`/api/ignorelist?language=${session.language}`);
@@ -441,6 +443,7 @@ export async function openSession(id: number): Promise<void> {
   if (_onAnalysisComplete) _onAnalysisComplete();
   restoreNativeSubtitles(Array.isArray(session.native_subtitles) && session.native_subtitles.length > 0
     ? session.native_subtitles : []);
+  if (!DEMO_MODE) void loadCardSelection(id);
   loadSessions();
 }
 
@@ -549,23 +552,4 @@ export async function checkPendingSession(): Promise<void> {
     } catch (_) { /* corrupt storage — silently discard */ }
   }
   loadSessions();
-}
-
-export function initSessions(): void {
-  document.getElementById('btn-new-session')?.addEventListener('click', () => {
-    // On the demo page, starting a new analysis means leaving it for the normal app.
-    if (DEMO_MODE) { window.location.href = '/'; return; }
-    state.activeSessionId = null;
-    state.viewingPending = false;
-    state.allResults = [];
-    document.getElementById('results-section')?.classList.add('d-none');
-    document.getElementById('upload-section')?.classList.remove('d-none');
-    // The user has moved on from the previous analysis; drop any stashed copy
-    // so a later sign-in doesn't unexpectedly resurrect it.
-    try { sessionStorage.removeItem('pendingSession'); } catch (_) { /* ignore */ }
-    resetUpload();
-    loadSessions();
-    // On mobile the upload form lives behind the Words tab.
-    onMobileSessionShown();
-  });
 }

@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user, require_admin
-from app.models import AnalysisSession, SessionShare, User
+from app.models import AnalysisSession, CardDraft, SessionShare, User
 from app.services.app_settings import (
     get_default_demo_session_id,
     set_default_demo_session_id,
@@ -184,6 +184,8 @@ async def delete_session(session_id: int, request: Request, db: Session = Depend
             SessionShare.session_id == session_id,
             SessionShare.shared_with_user_id == user.id,
         ).delete()
+        for draft in db.query(CardDraft).filter_by(session_id=session_id, user_id=user.id):
+            db.delete(draft)
     db.commit()
     return Response(status_code=204)
 

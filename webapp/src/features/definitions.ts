@@ -11,7 +11,7 @@ function escapeHtml(s: string): string {
 }
 
 type Source = 'wiktionary' | 'model';
-interface Definitions { entries: DefinitionEntry[]; source: Source; }
+export interface Definitions { entries: DefinitionEntry[]; source: Source; }
 
 // Definitions shown per POS before the "Show more" toggle.
 const SHOWN_PER_POS = 5;
@@ -48,7 +48,7 @@ async function fetchDefinitions(language: string, lemma: string): Promise<Defini
   return { entries: data.entries, source: 'wiktionary' };
 }
 
-function getDefinitions(lemma: string): Promise<Definitions> {
+export function getDefinitions(lemma: string): Promise<Definitions> {
   const key = `${state.currentLanguage}|${lemma}`;
   let pending = cache.get(key);
   if (!pending) {
@@ -62,7 +62,7 @@ function getDefinitions(lemma: string): Promise<Definitions> {
 
 /* Put the POS the processor tagged this lemma with first: an exact label match
    ranks above a containing one (e.g. "Comparative adjective" ⊃ "Adjective"). */
-function sortByTaggedPos(entries: DefinitionEntry[], lemma: string): DefinitionEntry[] {
+export function sortByTaggedPos(entries: DefinitionEntry[], lemma: string): DefinitionEntry[] {
   const top = state.posByLemma.get(lemma)?.top.toLowerCase();
   if (!top) return entries;
   const rank = (pos: string) => {

@@ -2,8 +2,8 @@
   "name": "subtitle-decks-frontend",
   "private": true,
   "scripts": {
-    "build": "vite build",
-    "build:watch": "vite build --watch",
+    "build": "node scripts/build.mjs",
+    "build:watch": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

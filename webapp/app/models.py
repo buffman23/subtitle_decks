@@ -49,6 +49,7 @@ class User(Base):
         back_populates="shared_with_user",
         cascade="all, delete-orphan",
     )
+    card_drafts: Mapped[list["CardDraft"]] = relationship(cascade="all, delete-orphan")
 
 
 class IgnoreListEntry(Base):
@@ -90,6 +91,7 @@ class AnalysisSession(Base):
     shares: Mapped[list["SessionShare"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
     )
+    card_drafts: Mapped[list["CardDraft"]] = relationship(cascade="all, delete-orphan")
 
     @property
     def language(self) -> str:
@@ -130,3 +132,26 @@ class SessionShare(Base):
     shared_with_user: Mapped["User"] = relationship(
         foreign_keys=[shared_with_user_id], back_populates="received_shares"
     )
+
+
+class CardDraft(Base):
+    """In-progress card creation for one (analysis session, user).
+
+    `selected_lemmas` is the word selection from the results table, in table
+    order. `cards` maps lemma -> {word, native, definition, example_foreign,
+    example_native, example_sub_index, native_sub_index, image, audio}, where
+    image/audio are {id, name, mime} references to files uploaded under
+    CARD_MEDIA_DIR/<draft id>/ (see routers/api_anki.py). `current_step` is
+    0 for the deck-name step, then 1..N for each selected lemma.
+    """
+    __tablename__ = "card_drafts"
+    __table_args__ = (UniqueConstraint("session_id", "user_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(Integer, ForeignKey("analysis_sessions.id"))
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    selected_lemmas: Mapped[list] = mapped_column(JSON, default=list)
+    deck_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    current_step: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cards: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

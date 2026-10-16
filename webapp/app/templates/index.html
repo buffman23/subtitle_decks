@@ -11,8 +11,9 @@
       <div id="sidebar-header" class="p-3 border-bottom d-flex justify-content-between align-items-center">
         <strong id="sidebar-label">Sessions</strong>
         <div id="sidebar-header-actions" class="d-flex gap-1">
-          <button class="btn btn-sm btn-outline-secondary" id="btn-new-session" title="New analysis">
-            <i class="bi bi-plus-lg"></i>
+          <button type="button" class="btn btn-sm btn-outline-secondary d-none d-md-inline-block" id="btn-collapse-sidebar"
+                  title="Minimize sessions" aria-label="Minimize sessions" aria-controls="session-list" aria-expanded="true">
+            <i class="bi bi-chevron-double-left"></i>
           </button>
           <button type="button" class="btn-close d-md-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
         </div>
@@ -96,6 +97,16 @@
                       data-bs-target="#actions-drawer" aria-label="Close"></button>
             </div>
             <div id="actions-drawer-body" class="offcanvas-body d-flex flex-column flex-md-row gap-2 gap-md-3 p-3 p-md-0">
+              {% if user and not demo_mode %}
+              <!-- Enabled (blue) once at least one word is ticked in the table; the
+                   wrapper carries the tooltip because disabled buttons get no hover. -->
+              <span id="create-cards-wrap" class="d-inline-block"
+                    title="Select at least one word in the table to create cards">
+                <button class="btn btn-sm btn-secondary w-100" id="btn-create-cards" disabled>
+                  <i class="bi bi-card-text"></i> <span class="btn-label">Create Cards</span>
+                </button>
+              </span>
+              {% endif %}
               <button class="btn btn-sm btn-outline-secondary" id="btn-csv">
                 <i class="bi bi-filetype-csv"></i> <span class="btn-label">Download CSV</span>
               </button>
@@ -167,6 +178,12 @@
                   <th style="width:5rem">POS<div class="col-resize-handle"></div></th>
                   <th style="width:max(calc(4ch + 1rem), 6rem)">Frequency<div class="col-resize-handle"></div></th>
                   <th></th>
+                  {% if user and not demo_mode %}
+                  <th class="card-select-cell" title="Select words for card creation">
+                    <input type="checkbox" class="form-check-input" id="card-select-all"
+                           aria-label="Select all visible words for card creation">
+                  </th>
+                  {% endif %}
                 </tr>
               </thead>
               <tbody id="results-tbody"></tbody>
@@ -300,6 +317,26 @@
     </div>
   </div>
 </div>
+{% if user and not demo_mode %}
+<!-- Confirm discarding saved card-creation progress when the word selection changes -->
+<div class="modal fade" id="card-reset-modal" tabindex="-1" aria-labelledby="card-reset-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="card-reset-title">Change word selection?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Changing the word selection will clear your existing card creation progress for this session.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="card-reset-no" data-bs-dismiss="modal">No</button>
+        <button type="button" class="btn btn-danger" id="card-reset-yes">Yes, clear progress</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Study — Subtitle Decks{% endblock %}
+{% block content %}
+<div id="study-app" class="container py-3" style="max-width:960px">
+
+  <!-- Deck list -->
+  <section id="decks-view">
+    <div class="d-flex align-items-center mb-3">
+      <h4 class="mb-0">Your decks</h4>
+      <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" id="decks-refresh" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+    <div id="decks-loading" class="text-center text-muted py-5">
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading decks…
+    </div>
+    <div id="decks-error" class="alert alert-warning d-none"></div>
+    <div id="decks-empty" class="text-center text-muted py-5 d-none">
+      <i class="bi bi-collection" style="font-size:2.5rem"></i>
+      <p class="mt-2 mb-0">No decks yet.</p>
+      <p class="small">Tick words in a session's results table, then click <strong>Create Cards</strong>.</p>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle d-none" id="decks-table">
+        <thead>
+          <tr>
+            <th>Deck</th>
+            <th class="text-end" title="New cards to study today">New</th>
+            <th class="text-end" title="Cards in learning">Learn</th>
+            <th class="text-end" title="Reviews due today">Due</th>
+            <th class="text-end" title="Cards in the deck">Total</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="decks-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Study session -->
+  <section id="study-view" class="d-none">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <button type="button" class="btn btn-sm btn-outline-secondary study-back"><i class="bi bi-arrow-left"></i> Decks</button>
+      <h5 class="mb-0 text-truncate" id="study-deck-name"></h5>
+      <div class="ms-auto study-counts" id="study-counts" title="New · Learning · Due"></div>
+    </div>
+    <div id="study-card-wrap">
+      <div class="anki-card" id="study-card" aria-live="polite"></div>
+      <div class="study-controls" id="study-controls">
+        <button type="button" class="btn btn-primary btn-lg px-5" id="study-show">Show answer</button>
+        <div id="study-answers" class="d-none study-answers">
+          <button type="button" class="btn btn-answer btn-again" data-ease="1"><small class="interval"></small>Again</button>
+          <button type="button" class="btn btn-answer btn-hard" data-ease="2"><small class="interval"></small>Hard</button>
+          <button type="button" class="btn btn-answer btn-good" data-ease="3"><small class="interval"></small>Good</button>
+          <button type="button" class="btn btn-answer btn-easy" data-ease="4"><small class="interval"></small>Easy</button>
+        </div>
+        <div class="small text-muted mt-2 d-none d-md-block">Space: show answer / Good · 1–4: answer</div>
+      </div>
+    </div>
+    <div id="study-done" class="text-center py-5 d-none">
+      <i class="bi bi-emoji-smile text-success" style="font-size:3rem"></i>
+      <h4 class="mt-2">Congratulations!</h4>
+      <p class="text-muted">You have finished this deck for now.</p>
+      <button type="button" class="btn btn-outline-secondary study-back">Back to decks</button>
+    </div>
+  </section>
+
+  <!-- Edit notes -->
+  <section id="edit-view" class="d-none">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <button type="button" class="btn btn-sm btn-outline-secondary study-back"><i class="bi bi-arrow-left"></i> Decks</button>
+      <h5 class="mb-0 text-truncate" id="edit-deck-name"></h5>
+      <input type="search" class="form-control form-control-sm ms-auto" id="edit-filter"
+             placeholder="Filter cards…" style="max-width:220px">
+    </div>
+    <div id="edit-list"></div>
+  </section>
+</div>
+
+<!-- Send a deck to the user's own Anki (desktop) through their local AnkiConnect -->
+<div class="modal fade" id="local-anki-modal" tabindex="-1" aria-labelledby="local-anki-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="local-anki-title">Send to your Anki</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Copies <strong id="local-anki-deck"></strong> into Anki on this computer.</p>
+        <ol class="small ps-3 mb-3">
+          <li>Open Anki desktop and install the
+            <a href="https://ankiweb.net/shared/info/2055492159" target="_blank" rel="noopener">AnkiConnect</a> add-on
+            (code <code>2055492159</code>), then restart Anki.</li>
+          <li>Keep Anki open, then click <strong>Connect &amp; send</strong>.</li>
+          <li>Anki will ask whether to allow this site — choose <strong>Yes</strong>.
+            Your browser may also ask to allow access to devices on your local network.</li>
+        </ol>
+        <div class="mb-2 d-none" id="local-anki-key-wrap">
+          <label for="local-anki-key" class="form-label small mb-0">AnkiConnect API key</label>
+          <input type="password" class="form-control form-control-sm" id="local-anki-key" autocomplete="off">
+        </div>
+        <div id="local-anki-status" class="small" role="status"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="local-anki-send">Connect &amp; send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="study-audio" preload="none"></audio>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ asset_url('js/study.js') }}"></script>
+{% endblock %}
