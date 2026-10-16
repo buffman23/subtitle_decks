@@ -128,7 +128,10 @@ ensure_anki() {
   echo "[deploy] (re)starting the Anki container..."
   sudo docker rm -f subtitle-decks-anki 2>/dev/null || true
   key=$(grep -E '^ANKICONNECT_KEY=' .env | cut -d= -f2- | tr -d "\"'" || true)
+  # --init: a tiny init as PID 1 forwards SIGTERM to Anki so it shuts down
+  # cleanly (Anki as PID 1 would ignore it and get SIGKILLed after 10s).
   sudo docker run -d \
+    --init \
     --name subtitle-decks-anki \
     --restart unless-stopped \
     --network subtitle-decks-net \

@@ -17,10 +17,11 @@ profile = os.environ.get("ANKI_PROFILE", "server")
 
 pm = ProfileManager(ProfileManager.get_created_base_folder(base))
 pm.setupMeta()
+# Also loads Anki's translations, which profile creation needs (outside the
+# GUI nothing else does).
+pm.setLang("en_US")
 pm.meta["firstRun"] = False
-pm.meta["defaultLang"] = "en_US"
-if profile not in pm.profiles():
-    pm.create(profile)
+pm.create(profile)  # no-op if it already exists
 pm.load(profile)
 pm.set_last_loaded_profile_name(profile)
 pm.save()
