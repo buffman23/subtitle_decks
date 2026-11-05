@@ -17,6 +17,11 @@ class LemmatizationUnavailable(Exception):
     The message should be user-facing (no stack internals)."""
 
 
+ANALYSIS_DISABLED_MESSAGE = (
+    "Subtitle analysis is disabled on this server. Saved sessions and the demo are still available."
+)
+
+
 def _process_rss() -> int:
     """Current process resident set size in bytes (0 if psutil unavailable)."""
     try:
@@ -101,6 +106,11 @@ class LanguageProcessor(ABC):
         Note: the first model loaded in a process also absorbs one-time library
         import cost, so its reading reads a little high.
         """
+        # Hard stop for low-memory deployments: every processor loads its model
+        # through here, so this one check keeps all models out of memory.
+        from app.config import settings
+        if settings.ANALYSIS_DISABLED:
+            raise LemmatizationUnavailable(ANALYSIS_DISABLED_MESSAGE)
         measure = not self.is_loaded() and not self.auto_unload
         rss_before = _process_rss() if measure else 0
         do_load()

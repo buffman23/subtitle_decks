@@ -52,7 +52,17 @@
 
       <!-- Upload form (hidden on the demo page, which auto-opens a session instead) -->
       <div id="upload-section" class="flex-grow-1 d-flex align-items-center justify-content-center{% if demo_mode %} d-none{% endif %}">
-        <form id="analyze-form" class="text-center">
+        {% if analysis_disabled %}
+        <!-- ANALYSIS_DISABLED: the form stays in the DOM (app.js wires it up) but hidden. -->
+        <div id="analysis-disabled-notice" class="text-center text-muted px-3" style="max-width:28rem">
+          <i class="bi bi-pause-circle drop-zone-icon"></i>
+          <div class="mt-2 fw-semibold">Uploading new subtitles is temporarily disabled</div>
+          <div class="small mt-1">
+            You can still open your saved sessions{% if not demo_mode %}, or try the <a href="/demo">demo</a>{% endif %}.
+          </div>
+        </div>
+        {% endif %}
+        <form id="analyze-form" class="text-center{% if analysis_disabled %} d-none{% endif %}">
           <div id="drop-zone" class="drop-zone">
             <i class="bi bi-file-earmark-arrow-up drop-zone-icon"></i>
             <div class="mt-2 fw-semibold">Drop an SRT file here</div>
