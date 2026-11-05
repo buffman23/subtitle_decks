@@ -203,6 +203,16 @@ $DOMAIN, www.$DOMAIN {
         header Cache-Control "no-store"
     }
 
+    # HandSpeak → Anki: a separate app and container (the handspeak_scraper repo, deployed
+    # with its own deploy/deploy.sh). The prefix is stripped here and passed on in
+    # X-Forwarded-Prefix so the app can build its own URLs.
+    redir /handspeak /handspeak/ 308
+    handle_path /handspeak/* {
+        reverse_proxy 127.0.0.1:8001 {
+            header_up X-Forwarded-Prefix /handspeak
+        }
+    }
+
     # The app.
     handle {
         reverse_proxy 127.0.0.1:8000

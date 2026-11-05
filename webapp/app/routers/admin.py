@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.dependencies import get_db, get_current_user
 from app.models import AnalysisSession, LanguageRow, User
 from app.services.app_settings import get_github_url, get_max_upload_bytes
@@ -98,7 +99,12 @@ async def admin_models(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "admin/models.html",
-        {"user": user, "active": "models", "models": models},
+        {
+            "user": user,
+            "active": "models",
+            "models": models,
+            "analysis_disabled": settings.ANALYSIS_DISABLED,
+        },
     )
 
 

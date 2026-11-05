@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # Local development only: enables a "log in as any existing user" picker on
     # the login page (no Google OAuth round-trip). MUST stay False in production.
     DEV_MODE: bool = False
+    # Low-memory / demo-only deployments: when True, no language model is ever
+    # loaded and subtitle upload/analysis is disabled. Saved sessions, the demo
+    # page, cards and study keep working.
+    ANALYSIS_DISABLED: bool = False
     # AnkiConnect endpoint for the server-side Anki instance that holds every
     # user's decks (each user's decks live under a top-level deck named after
     # their email). Must never be publicly reachable.

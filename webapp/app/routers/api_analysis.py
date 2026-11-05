@@ -4,11 +4,13 @@ import logging
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.dependencies import get_db, get_current_user, resolve_language_id
 from app.models import IgnoreListEntry
 from app.schemas import JobStatusResponse, JobSubmitResponse
 from app.services.app_settings import effective_max_upload_bytes
 from app.services.job_queue import Job, manager, model_lock
+from app.services.language_processor import ANALYSIS_DISABLED_MESSAGE
 from app.services.processor_registry import get_processor
 from app.templating import humanize_bytes
 
@@ -30,6 +32,8 @@ async def model_status(code: str):
 @router.post("/models/{code}/load")
 async def ensure_model_loaded(code: str):
     """Load the language model on demand (analysis lazy-loads it anyway)."""
+    if settings.ANALYSIS_DISABLED:
+        raise HTTPException(status_code=503, detail=ANALYSIS_DISABLED_MESSAGE)
     try:
         processor = get_processor(code)
     except ValueError:
@@ -52,6 +56,8 @@ async def analyze_srt(
     db: Session = Depends(get_db),
 ):
     """Enqueue an analysis job and return its id; results are polled separately."""
+    if settings.ANALYSIS_DISABLED:
+        raise HTTPException(status_code=503, detail=ANALYSIS_DISABLED_MESSAGE)
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")

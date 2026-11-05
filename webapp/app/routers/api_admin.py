@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.dependencies import get_db, require_admin
 from app.models import User
 from app.schemas import (
@@ -21,6 +22,7 @@ from app.services.app_settings import (
     set_max_upload_bytes,
 )
 from app.services.job_queue import manager, model_lock
+from app.services.language_processor import ANALYSIS_DISABLED_MESSAGE
 from app.services.processor_registry import get_processor
 
 logger = logging.getLogger(__name__)
@@ -99,6 +101,9 @@ async def _set_model(code: str, load: bool) -> dict:
         processor = get_processor(code)
     except ValueError:
         raise HTTPException(status_code=404, detail=f"Unknown language: {code!r}")
+
+    if load and settings.ANALYSIS_DISABLED:
+        raise HTTPException(status_code=503, detail=ANALYSIS_DISABLED_MESSAGE)
 
     # Don't pull a model out from under a running analysis.
     if not load and manager.model_in_use(code):

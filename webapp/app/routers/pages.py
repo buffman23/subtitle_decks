@@ -25,6 +25,7 @@ async def index(request: Request, db: Session = Depends(get_db)):
             "languages": languages,
             "max_upload_bytes": effective_max_upload_bytes(db, user),
             "demo_mode": False,
+            "analysis_disabled": settings.ANALYSIS_DISABLED,
         },
     )
 
@@ -43,6 +44,7 @@ async def demo(request: Request, db: Session = Depends(get_db)):
             "languages": languages,
             "max_upload_bytes": effective_max_upload_bytes(db, user),
             "demo_mode": True,
+            "analysis_disabled": settings.ANALYSIS_DISABLED,
         },
     )
 

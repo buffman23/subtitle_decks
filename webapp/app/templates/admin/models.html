@@ -1,6 +1,11 @@
 {% extends "admin/layout.html" %}
 {% block admin_content %}
 <h3 class="mb-4">Language Models</h3>
+{% if analysis_disabled %}
+<div class="alert alert-warning">
+  <strong>ANALYSIS_DISABLED is on.</strong> Models can't be loaded and subtitle analysis is turned off on this server.
+</div>
+{% endif %}
 <p class="text-muted">Loading a model can take a while (Arabic BERT especially). Unloading frees memory.
 With <strong>auto-unload</strong> on (default), a model is released after each analysis, so its RAM is not measured.</p>
 <div id="models-table-wrapper" class="table-responsive">
